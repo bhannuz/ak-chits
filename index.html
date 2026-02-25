@@ -38,6 +38,12 @@
         .suggestions-list { position: absolute; top: 100%; left: 0; right: 0; background: var(--input-bg); border: 1px solid var(--border); border-radius: 0 0 12px 12px; z-index: 3000; max-height: 200px; overflow-y: auto; display: none; margin-top: -12px; }
         .suggestion-item { padding: 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; }
         .suggestion-item:hover { background: #252f48; color: #f39c12; }
+        .collapse-content { display: none; }
+
+        .list-group-header { background: #1c253b; padding: 12px 15px; border-radius: 10px; margin-top: 15px; font-weight: bold; color: #f39c12; border-left: 4px solid #f39c12; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .list-member-item { padding: 10px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; display: flex; align-items: center; }
+        .list-sn { width: 35px; color: var(--text-dim); font-size: 0.75rem; font-weight: bold; }
+        .list-count-badge { font-size: 0.75rem; background: rgba(243, 156, 18, 0.15); color: #f39c12; padding: 2px 10px; border-radius: 20px; }
 
         /* PDF TEMPLATE STYLING */
         #pdf-template { display: none; background: white !important; color: black !important; padding: 40px; width: 850px; }
@@ -47,7 +53,6 @@
         .invoice-table th { background: #f0f0f0; border: 1px solid #777; padding: 10px; font-size: 13px; font-weight: bold; text-align: left; }
         .invoice-table td { border: 1px solid #bbb; padding: 10px; font-size: 12px; }
         .info-box { background: #fcfcfc; border: 1px solid #eee; padding: 15px; border-radius: 8px; font-size: 14px; display: flex; justify-content: space-between; width: 100%; }
-        .pending-tag { color: #d35400; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -97,32 +102,36 @@
             <div style="font-size:13px; color: #555;"><strong>📍 Location:</strong> Hyderabad, Telangana</div>
         </div>
         <div style="flex: 1.5; text-align: right;">
-            <div id="pdfReportTitle" style="font-size: 20px; font-weight: bold; color: #222;">REPORT</div>
+            <div style="font-size: 20px; font-weight: bold; color: #222;">CHIT SETTLEMENT REPORT</div>
             <div id="pdfDate" style="font-size: 12px; margin-top: 5px;"></div>
         </div>
     </div>
 
     <div class="info-box mb-4">
-        <div id="pdfInfoLeft" style="text-align: left;"></div>
-        <div id="pdfInfoRight" style="text-align: right;"></div>
+        <div style="text-align: left;">
+            <strong>Group Name:</strong> <span id="pdfGroupName"></span><br>
+            <strong>Start Date:</strong> <span id="pdfStartDate"></span><br>
+            <strong>End Date:</strong> <span id="pdfEndDate"></span>
+        </div>
+        <div style="text-align: right;">
+            <strong>Chit Date:</strong> Every <span id="pdfChitDay"></span> of month<br>
+            <strong>Group Progress:</strong> <span id="pdfProgress"></span><br>
+            <strong>Total Collection:</strong> <span id="pdfTotalColl"></span>
+        </div>
     </div>
 
-    <div id="pdfTableTitle" style="font-weight: bold; font-size: 14px; margin-bottom: 5px; color: #555;">PAYMENT HISTORY</div>
     <table class="invoice-table">
-        <thead id="pdfTableHeader"></thead>
+        <thead>
+            <tr>
+                <th style="width: 50px;">S.No</th>
+                <th>Member Name</th>
+                <th>Paid Today</th>
+                <th>Balance</th>
+                <th>Chit Picked?</th>
+            </tr>
+        </thead>
         <tbody id="pdfTableBody"></tbody>
     </table>
-    
-    <div id="pendingArea" style="margin-top: 25px;">
-        <div style="font-weight: bold; font-size: 14px; color: #d35400; border-bottom: 2px solid #d35400; display: inline-block; margin-bottom: 10px;">MISSING / PENDING PERIODS</div>
-        <div id="pdfPendingList" style="font-size: 12px; line-height: 1.6;"></div>
-    </div>
-
-    <div id="pdfFooterSummary" style="margin-top: 30px; text-align: right; font-weight: bold; font-size: 16px; color: #d35400;"></div>
-
-    <div style="margin-top: 50px; font-size: 10px; color: #888; border-top: 1px solid #eee; padding-top: 15px; text-align: center;">
-        * This is an official computer-generated statement. No signature required.
-    </div>
 </div>
 
 <div id="memberModal" class="modal-overlay"><div class="modal-content-custom">
@@ -142,6 +151,7 @@
     <input type="text" id="gName" class="form-input" placeholder="Group Name">
     <input type="number" id="gDuration" class="form-input" placeholder="Duration (Months)">
     <input type="number" id="gChitDay" class="form-input" placeholder="Chit Day (e.g. 5, 10, 15)">
+    <div class="small text-dim mb-1">Chit Start Date</div>
     <input type="date" id="gStart" class="form-input">
     <button class="btn-save" onclick="saveGroup()">Save Group</button>
     <button class="btn-cancel" onclick="closeModal('groupModal')">Cancel</button>
@@ -154,7 +164,10 @@
     <select id="pGroup" class="form-input" onchange="checkChitStatus()"><option value="">-- Select Group --</option></select>
     <div class="row g-2"><div class="col-6"><input type="number" id="pChit" class="form-input" placeholder="Chit Amt" oninput="calcBalance()"></div><div class="col-6"><input type="number" id="pPaid" class="form-input" placeholder="Paid Amt" oninput="calcBalance()"></div></div>
     <input type="number" id="pBal" class="form-input" placeholder="Balance" readonly>
-    <div class="form-input d-flex align-items-center gap-2 mb-2"><input type="checkbox" id="pPicked" onchange="togglePickedValue()"><label class="mb-0 small">Chit Picked?</label></div>
+    <div class="form-input d-flex align-items-center gap-2 mb-2">
+        <input type="checkbox" id="pPicked" onchange="togglePickedValue()"> 
+        <label class="mb-0 small">Chit Picked?</label>
+    </div>
     <div id="pickedValueArea" style="display:none;"><input type="number" id="pPickedVal" class="form-input" placeholder="Amount won"></div>
     <button class="btn-save" onclick="savePayment()">Sync Payment</button>
     <button class="btn-cancel" onclick="closeModal('paymentModal')">Cancel</button>
@@ -181,73 +194,15 @@
     let ALL_MEMBERS = [];
 
     function formatDate(d) { if(!d) return "-"; const [y, m, day] = d.split("-"); return `${day}/${m}/${y}`; }
-    function calculateEndDate(s, dur) { if(!s || !dur) return "-"; let d = new Date(s); d.setMonth(d.getMonth() + parseInt(dur)); return formatDate(d.toISOString().split('T')[0]); }
-    function getElapsedMonths(s) { if(!s) return 0; const start = new Date(s); const now = new Date(); return Math.max(0, ((now.getFullYear() - start.getFullYear()) * 12) + (now.getMonth() - start.getMonth()) + 1); }
-
-    async function exportMemberPDF() {
-        const mid = document.getElementById('summaryView').value;
-        const allP = await getCollection('payments');
-        const gs = await getCollection('groups');
-        const mDoc = await db.collection('members').doc(mid).get();
-        const m = mDoc.data();
-        const memberPayments = allP.filter(p => p.memberId === mid);
-
-        document.getElementById('pdfReportTitle').innerText = "MEMBER LEDGER & PENDING LIST";
-        document.getElementById('pdfDate').innerText = 'Generated: ' + new Date().toLocaleDateString('en-IN');
-        document.getElementById('pdfInfoLeft').innerHTML = `<strong>Member:</strong> ${m.name}<br><strong>Phone:</strong> ${m.phone || '-'}`;
-        document.getElementById('pdfInfoRight').innerHTML = `<strong>Total Groups Enrolled:</strong> ${[...new Set(memberPayments.map(p => p.groupId))].length || 1}`;
-
-        let historyRows = '';
-        let pendingText = '';
-        let grandTotalBal = 0;
-        
-        const uGids = [...new Set(memberPayments.map(p => p.groupId))];
-        if(m.groupId && !uGids.includes(m.groupId)) uGids.push(m.groupId);
-
-        uGids.forEach((gid) => {
-            const g = gs.find(x => x.id === gid);
-            if(!g) return;
-            const gPs = memberPayments.filter(p => p.groupId === gid);
-            const bal = gPs.reduce((s,p)=>s+p.balAmt,0);
-            grandTotalBal += bal;
-
-            // Header for specific group history
-            historyRows += `<tr style="background:#f9f9f9;"><td colspan="5"><strong>Group: ${g.name}</strong></td></tr>`;
-            gPs.forEach((p, idx) => {
-                historyRows += `<tr><td>${idx+1}</td><td>${formatDate(p.date)}</td><td>₹${p.paidAmt.toLocaleString()}</td><td>₹${p.balAmt.toLocaleString()}</td><td>${p.chitPicked ? 'YES' : 'NO'}</td></tr>`;
-            });
-
-            // Pending Logic
-            const elapsed = getElapsedMonths(g.startDate);
-            const paidMonths = gPs.map(p => new Date(p.date).getMonth() + '-' + new Date(p.date).getFullYear());
-            let missed = [];
-            
-            for(let i = 0; i < elapsed; i++) {
-                let d = new Date(g.startDate);
-                d.setMonth(d.getMonth() + i);
-                let check = d.getMonth() + '-' + d.getFullYear();
-                if(!paidMonths.includes(check)) {
-                    missed.push(d.toLocaleString('default', { month: 'long', year: 'numeric' }));
-                }
-            }
-            
-            if(missed.length > 0) {
-                pendingText += `<div><strong>${g.name}:</strong> ${missed.join(', ')}</div>`;
-            } else {
-                pendingText += `<div><strong>${g.name}:</strong> No pending periods up to date.</div>`;
-            }
-        });
-
-        document.getElementById('pdfTableHeader').innerHTML = `<tr><th style="width:50px;">S.No</th><th>Payment Date</th><th>Paid Amt</th><th>Balance</th><th>Picked?</th></tr>`;
-        document.getElementById('pdfTableBody').innerHTML = historyRows;
-        document.getElementById('pdfPendingList').innerHTML = pendingText;
-        document.getElementById('pdfFooterSummary').innerText = `Total Outstanding: ₹${grandTotalBal.toLocaleString()}`;
-
-        const el = document.getElementById('pdf-template');
-        el.style.display = 'block';
-        html2pdf().from(el).set({ margin: 10, filename: `AK_Member_${m.name}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4' } }).save().then(() => el.style.display='none');
+    
+    function calculateEndDate(startStr, duration) {
+        if(!startStr || !duration) return "-";
+        let date = new Date(startStr);
+        date.setMonth(date.getMonth() + parseInt(duration));
+        return formatDate(date.toISOString().split('T')[0]);
     }
 
+    function getElapsedMonths(s) { if(!s) return 0; const start = new Date(s); const now = new Date(); return Math.max(0, ((now.getFullYear() - start.getFullYear()) * 12) + (now.getMonth() - start.getMonth()) + 1); }
     function togglePickedValue() { document.getElementById('pickedValueArea').style.display = document.getElementById('pPicked').checked ? 'block' : 'none'; }
     function openModal(id) { document.getElementById(id).style.display = 'block'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
@@ -262,33 +217,37 @@
         if(t === 'list') renderListTab();
     }
 
-    async function loadMemberLedger() {
-        const mid = document.getElementById('summaryView').value; 
-        const container = document.getElementById('ledgerData');
-        if(!mid) { container.innerHTML = ""; return; }
-        const allP = await getCollection('payments'); 
-        const gs = await getCollection('groups'); 
-        const mDoc = await db.collection('members').doc(mid).get(); 
-        const m = mDoc.data();
-        const ps = allP.filter(p => p.memberId === mid).sort((a,b) => new Date(b.date) - new Date(a.date));
-        const uGids = [...new Set(ps.map(p => p.groupId))]; if(m && m.groupId && !uGids.includes(m.groupId)) uGids.push(m.groupId);
+    async function exportToInvoice(groupId) {
+        const gs = await getCollection('groups'); const g = gs.find(x => x.id === groupId);
+        const ms = await getCollection('members'); const ps = await getCollection('payments');
+        const gPs = ps.filter(p => p.groupId === groupId);
+        const gMs = ms.filter(m => m.groupId === groupId).sort((a,b) => a.name.localeCompare(b.name));
         
-        let h = `<div class="d-flex justify-content-end mb-3"><button class="btn btn-sm btn-info fw-bold" onclick="exportMemberPDF()">📄 Member Receipt (PDF)</button></div>`;
-        uGids.forEach(gid => {
-            const g = gs.find(x => x.id === gid); if(!g) return;
-            const gPs = ps.filter(p => p.groupId === gid); const pick = gPs.find(p => p.chitPicked === 1);
-            h += `<div class="mb-4 p-3" style="background:rgba(255,255,255,0.03); border-radius:15px; border:1px solid #252f48;"><div class="d-flex justify-content-between align-items-center mb-2"><span class="fw-bold text-info">${g.name}</span><span><button class="btn-action" onclick="editMember('${mid}','${m.name}','${m.phone}','${gid}')">✏️</button></span></div><table class="table-custom"><thead><tr><th>Date</th><th>Paid</th><th>Bal</th><th></th></tr></thead><tbody>`;
-            gPs.forEach(p => { h += `<tr><td>${formatDate(p.date)}</td><td>₹${p.paidAmt.toLocaleString()}</td><td>₹${p.balAmt.toLocaleString()}</td><td><button onclick="deletePayment('${p.id}')" style="background:none;border:none;color:#ff4757;">❌</button></td></tr>`; });
-            h += `</tbody></table></div>`;
+        document.getElementById('pdfGroupName').innerText = g.name;
+        document.getElementById('pdfStartDate').innerText = formatDate(g.startDate);
+        document.getElementById('pdfEndDate').innerText = calculateEndDate(g.startDate, g.duration);
+        document.getElementById('pdfChitDay').innerText = g.chitDay || "-";
+        document.getElementById('pdfTotalColl').innerText = '₹' + gPs.reduce((s,p) => s + p.paidAmt, 0).toLocaleString('en-IN');
+        document.getElementById('pdfProgress').innerText = `${Math.max(0, g.duration - getElapsedMonths(g.startDate))} Months Left`;
+        document.getElementById('pdfDate').innerText = 'Report Generated: ' + new Date().toLocaleDateString('en-IN');
+
+        let rows = '';
+        gMs.forEach((m, i) => {
+            const mPs = gPs.filter(x => x.memberId === m.id);
+            const pick = mPs.find(p => p.chitPicked === 1);
+            rows += `<tr><td>${i+1}</td><td>${m.name}</td><td>₹${mPs.reduce((s,p)=>s+p.paidAmt,0).toLocaleString()}</td><td>₹${mPs.reduce((s,p)=>s+p.balAmt,0).toLocaleString()}</td><td>${pick ? 'YES (₹'+pick.pickedValue.toLocaleString()+')' : 'NO'}</td></tr>`;
         });
-        container.innerHTML = h;
+        document.getElementById('pdfTableBody').innerHTML = rows;
+
+        const el = document.getElementById('pdf-template');
+        el.style.display = 'block';
+        html2pdf().from(el).set({ margin: 10, filename: `AK_Report_${g.name}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).save().then(() => el.style.display='none');
     }
 
     function filterSearch(inputId, listId, hiddenId) {
         const query = document.getElementById(inputId).value.toLowerCase();
         const list = document.getElementById(listId);
-        list.innerHTML = ""; 
-        if(!query) { list.style.display = "none"; if(hiddenId === "summaryView") document.getElementById('ledgerData').innerHTML = ""; return; }
+        list.innerHTML = ""; if(!query) { list.style.display = "none"; return; }
         const filtered = ALL_MEMBERS.filter(m => m.name.toLowerCase().includes(query));
         if(filtered.length > 0) {
             list.style.display = "block";
@@ -302,6 +261,69 @@
     }
 
     async function getCollection(col) { const snap = await db.collection(col).get(); return snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); }
+
+    async function renderListTab() {
+        const gs = await getCollection('groups'); const ms = await getCollection('members');
+        let h = '';
+        gs.sort((a,b) => a.name.localeCompare(b.name)).forEach(g => {
+            const gMs = ms.filter(m => m.groupId === g.id).sort((a,b) => a.name.localeCompare(b.name));
+            h += `<div class="list-group-header" onclick="document.getElementById('list-col-${g.id}').style.display = document.getElementById('list-col-${g.id}').style.display==='block'?'none':'block'"><span>${g.name} (Day ${g.chitDay || '-'})</span><span class="list-count-badge">Count: ${gMs.length}</span></div><div id="list-col-${g.id}" class="collapse-content">`;
+            gMs.forEach((m, idx) => { h += `<div class="list-member-item"><span class="list-sn">${idx + 1}.</span> ${m.name}</div>`; });
+            h += `</div>`;
+        });
+        document.getElementById('simpleListArea').innerHTML = h;
+    }
+
+    async function saveGroup() {
+        const n = document.getElementById('gName').value.trim(); 
+        const d = parseInt(document.getElementById('gDuration').value); 
+        const s = document.getElementById('gStart').value; 
+        const c = document.getElementById('gChitDay').value;
+        const eid = document.getElementById('editGroupId').value;
+        if(n && d && s) { if(eid) await db.collection('groups').doc(eid).update({name:n, duration:d, startDate:s, chitDay:c}); else await db.collection('groups').add({name:n, duration:d, startDate:s, chitDay:c}); updateUI(); closeModal('groupModal'); }
+    }
+    function openAddGroup() { document.getElementById('groupModalTitle').innerText = "Add Group"; document.getElementById('editGroupId').value = ""; document.getElementById('gName').value = ""; document.getElementById('gDuration').value = ""; document.getElementById('gChitDay').value = ""; document.getElementById('gStart').value = ""; openModal('groupModal'); }
+    async function editGroup(id, n, d, s, c) { document.getElementById('groupModalTitle').innerText = "Edit Group"; document.getElementById('editGroupId').value = id; document.getElementById('gName').value = n; document.getElementById('gDuration').value = d; document.getElementById('gStart').value = s||""; document.getElementById('gChitDay').value = c||""; openModal('groupModal'); }
+    async function deleteGroup(id) { if(confirm("Del Group?")) { await db.collection('groups').doc(id).delete(); updateUI(); renderGroupsTab(); } }
+
+    async function saveMember() {
+        const n = document.getElementById('mName').value.trim(); const g = document.getElementById('mGroup').value; const eid = document.getElementById('editMemberId').value;
+        if(n && g) { if(eid) await db.collection('members').doc(eid).update({name:n, phone:document.getElementById('mPhone').value, groupId:g}); else await db.collection('members').add({name:n, phone:document.getElementById('mPhone').value, groupId:g}); updateUI(); closeModal('memberModal'); }
+    }
+    function openAddMember() { document.getElementById('memberModalTitle').innerText = "Add Member"; document.getElementById('editMemberId').value = ""; document.getElementById('mName').value = ""; document.getElementById('mPhone').value = ""; document.getElementById('deleteMemberArea').style.display='none'; openModal('memberModal'); }
+    async function editMember(id, n, p, g) { document.getElementById('memberModalTitle').innerText = "Edit Member"; document.getElementById('editMemberId').value = id; document.getElementById('mName').value = n; document.getElementById('mPhone').value = p; document.getElementById('mGroup').value = g; document.getElementById('deleteMemberArea').style.display='block'; openModal('memberModal'); }
+    async function deleteMemberFromModal() { const id = document.getElementById('editMemberId').value; if(confirm("Del Member?")) { await db.collection('members').doc(id).delete(); updateUI(); closeModal('memberModal'); } }
+
+    async function linkGroupForPayment() {
+        const mid = document.getElementById('pMember').value; const mDoc = await db.collection('members').doc(mid).get(); const m = mDoc.data(); const gs = await getCollection('groups');
+        document.getElementById('pGroup').innerHTML = gs.map(g => `<option value="${g.id}" ${g.id === m.groupId ? 'selected' : ''}>${g.name}</option>`).join('');
+        checkChitStatus();
+    }
+    async function checkChitStatus() {
+        const mid = document.getElementById('pMember').value; const gid = document.getElementById('pGroup').value; if(!mid || !gid) return;
+        const ps = await db.collection('payments').where('memberId', '==', mid).where('groupId', '==', gid).where('chitPicked', '==', 1).get();
+        const cb = document.getElementById('pPicked'); cb.checked = !ps.empty; cb.disabled = !ps.empty; togglePickedValue();
+    }
+    async function savePayment() {
+        const mid = document.getElementById('pMember').value; const gid = document.getElementById('pGroup').value; const paid = parseFloat(document.getElementById('pPaid').value);
+        if(mid && gid && !isNaN(paid)) { await db.collection('payments').add({ memberId: mid, groupId: gid, chitAmt: parseFloat(document.getElementById('pChit').value)||0, paidAmt: paid, balAmt: parseFloat(document.getElementById('pBal').value)||0, date: document.getElementById('pDate').value, chitPicked: document.getElementById('pPicked').checked?1:0, pickedValue: parseFloat(document.getElementById('pPickedVal').value)||0 }); updateUI(); closeModal('paymentModal'); loadMemberLedger(); }
+    }
+    async function deletePayment(id) { if(confirm("Del record?")) { await db.collection('payments').doc(id).delete(); loadMemberLedger(); updateUI(); } }
+
+    async function loadMemberLedger() {
+        const mid = document.getElementById('summaryView').value; const container = document.getElementById('ledgerData');
+        const allP = await getCollection('payments'); const ps = allP.filter(p => p.memberId === mid).sort((a,b) => new Date(b.date) - new Date(a.date));
+        const gs = await getCollection('groups'); const mDoc = await db.collection('members').doc(mid).get(); const m = mDoc.data();
+        const uGids = [...new Set(ps.map(p => p.groupId))]; if(m && m.groupId && !uGids.includes(m.groupId)) uGids.push(m.groupId);
+        let h = '';
+        uGids.forEach(gid => {
+            const g = gs.find(x => x.id === gid); const gPs = ps.filter(p => p.groupId === gid); const pick = gPs.find(p => p.chitPicked === 1);
+            h += `<div class="mb-4 p-3" style="background:rgba(255,255,255,0.03); border-radius:15px; border:1px solid #252f48;"><div class="d-flex justify-content-between align-items-center mb-2"><span class="fw-bold text-info">${g?g.name:'-'}</span><span><button class="btn-action" onclick="editMember('${mid}','${m.name}','${m.phone}','${gid}')">✏️</button><span class="badge ${pick?'bg-success':'bg-secondary'}">${pick?'✔':'⏳'}</span></span></div><div class="table-responsive"><table class="table-custom"><thead><tr><th>Date</th><th>Chit</th><th>Paid</th><th>Bal</th><th></th></tr></thead><tbody>`;
+            gPs.forEach(p => { h += `<tr><td>${formatDate(p.date)}</td><td>₹${p.chitAmt.toLocaleString()}</td><td>₹${p.paidAmt.toLocaleString()}</td><td class="text-warning">₹${p.balAmt.toLocaleString()}</td><td><button onclick="deletePayment('${p.id}')" style="background:none;border:none;color:#ff4757;">❌</button></td></tr>`; });
+            h += `</tbody></table></div></div>`;
+        });
+        container.innerHTML = h;
+    }
 
     async function updateUI() {
         const m = await getCollection('members'); const g = await getCollection('groups'); const p = await getCollection('payments');
@@ -317,41 +339,12 @@
         gs.forEach(g => {
             const gPs = ps.filter(p => p.groupId === g.id); const gMs = ms.filter(m => m.groupId === g.id).sort((a,b) => a.name.localeCompare(b.name));
             const left = Math.max(0, g.duration - getElapsedMonths(g.startDate));
-            h += `<div class="p-3 mb-3" style="background:var(--card-bg); border-radius:15px; border:1px solid var(--border);"><div class="d-flex justify-content-between align-items-center pb-2" onclick="document.getElementById('col-${g.id}').style.display=document.getElementById('col-${g.id}').style.display==='block'?'none':'block'" style="cursor:pointer;"><div><div class="fw-bold text-warning">${g.name} ✏️</div><div class="text-dim small">Day: ${g.chitDay || '-'}</div></div><div class="text-end"><div class="fw-bold text-info">${left} / ${g.duration}</div><div class="text-dim small">Left</div></div></div><div id="col-${g.id}" class="collapse-content border-top border-secondary mt-2"><div class="py-2 text-end"><button class="btn btn-sm btn-outline-secondary me-1" onclick="editGroup('${g.id}','${g.name}',${g.duration},'${g.startDate}','${g.chitDay}')">Edit</button></div><table class="table-custom"><thead><tr><th>Name</th><th>Chit</th><th>Bal</th></tr></thead><tbody>`;
-            gMs.forEach(m => { const mPs = gPs.filter(x => x.memberId === m.id); h += `<tr><td>${m.name}</td><td>₹${mPs.length?mPs[0].chitAmt.toLocaleString():0}</td><td>₹${mPs.reduce((s,p)=>s+p.balAmt,0).toLocaleString()}</td></tr>`; });
+            h += `<div class="p-3 mb-3" style="background:var(--card-bg); border-radius:15px; border:1px solid var(--border);"><div class="d-flex justify-content-between align-items-center pb-2" onclick="document.getElementById('col-${g.id}').style.display=document.getElementById('col-${g.id}').style.display==='block'?'none':'block'" style="cursor:pointer;"><div><div class="fw-bold text-warning">${g.name} ✏️</div><div class="text-dim small">Starts: ${formatDate(g.startDate)} | Day: ${g.chitDay || '-'}</div></div><div class="text-end"><div class="fw-bold text-info">${left} / ${g.duration}</div><div class="text-dim small">Left</div></div></div><div id="col-${g.id}" class="collapse-content border-top border-secondary mt-2"><div class="py-2 text-end"><button class="btn btn-sm btn-info me-1" onclick="exportToInvoice('${g.id}')">📄 PDF Report</button><button class="btn btn-sm btn-outline-secondary me-1" onclick="editGroup('${g.id}','${g.name}',${g.duration},'${g.startDate}','${g.chitDay}')">Edit</button><button class="btn btn-sm btn-outline-danger" onclick="deleteGroup('${g.id}')">Del</button></div><table class="table-custom"><thead><tr><th>Name</th><th>Chit</th><th>Bal</th><th>Won</th></tr></thead><tbody>`;
+            gMs.forEach(m => { const mPs = gPs.filter(x => x.memberId === m.id); const pick = mPs.find(p => p.chitPicked === 1); h += `<tr><td>${m.name}</td><td>₹${mPs.length?mPs[0].chitAmt.toLocaleString():0}</td><td>₹${mPs.reduce((s,p)=>s+p.balAmt,0).toLocaleString()}</td><td>${pick?'₹'+pick.pickedValue.toLocaleString():'-'}</td></tr>`; });
             h += '</tbody></table></div></div>';
         });
         document.getElementById('groupListArea').innerHTML = h;
     }
-
-    async function renderListTab() {
-        const gs = await getCollection('groups'); const ms = await getCollection('members');
-        let h = '';
-        gs.forEach(g => {
-            const gMs = ms.filter(m => m.groupId === g.id).sort((a,b) => a.name.localeCompare(b.name));
-            h += `<div class="list-group-header" onclick="document.getElementById('list-col-${g.id}').style.display = document.getElementById('list-col-${g.id}').style.display==='block'?'none':'block'"><span>${g.name}</span><span class="list-count-badge">${gMs.length}</span></div><div id="list-col-${g.id}" class="collapse-content">`;
-            gMs.forEach((m, idx) => { h += `<div class="list-member-item"><span class="list-sn">${idx + 1}.</span> ${m.name}</div>`; });
-            h += `</div>`;
-        });
-        document.getElementById('simpleListArea').innerHTML = h;
-    }
-
-    async function saveGroup() {
-        const n = document.getElementById('gName').value.trim(); const d = parseInt(document.getElementById('gDuration').value); const s = document.getElementById('gStart').value; const c = document.getElementById('gChitDay').value; const eid = document.getElementById('editGroupId').value;
-        if(n && d && s) { if(eid) await db.collection('groups').doc(eid).update({name:n, duration:d, startDate:s, chitDay:c}); else await db.collection('groups').add({name:n, duration:d, startDate:s, chitDay:c}); updateUI(); closeModal('groupModal'); }
-    }
-
-    async function saveMember() {
-        const n = document.getElementById('mName').value.trim(); const g = document.getElementById('mGroup').value; const eid = document.getElementById('editMemberId').value;
-        if(n && g) { if(eid) await db.collection('members').doc(eid).update({name:n, phone:document.getElementById('mPhone').value, groupId:g}); else await db.collection('members').add({name:n, phone:document.getElementById('mPhone').value, groupId:g}); updateUI(); closeModal('memberModal'); }
-    }
-
-    async function savePayment() {
-        const mid = document.getElementById('pMember').value; const gid = document.getElementById('pGroup').value; const paid = parseFloat(document.getElementById('pPaid').value);
-        if(mid && gid && !isNaN(paid)) { await db.collection('payments').add({ memberId: mid, groupId: gid, chitAmt: parseFloat(document.getElementById('pChit').value)||0, paidAmt: paid, balAmt: parseFloat(document.getElementById('pBal').value)||0, date: document.getElementById('pDate').value, chitPicked: document.getElementById('pPicked').checked?1:0, pickedValue: parseFloat(document.getElementById('pPickedVal').value)||0 }); closeModal('paymentModal'); updateUI(); loadMemberLedger(); }
-    }
-
-    async function deletePayment(id) { if(confirm("Del record?")) { await db.collection('payments').doc(id).delete(); loadMemberLedger(); updateUI(); } }
 
     async function exportFullBackup() {
         const d = { m: await getCollection('members'), g: await getCollection('groups'), p: await getCollection('payments') };
