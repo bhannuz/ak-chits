@@ -40,23 +40,19 @@
         .suggestion-item:hover { background: #252f48; color: #f39c12; }
         .collapse-content { display: none; }
 
-        /* LIST TAB STYLING */
-        .list-group-header { 
-            background: #1c253b; padding: 12px 15px; border-radius: 10px; margin-top: 15px; 
-            font-weight: bold; color: #f39c12; border-left: 4px solid #f39c12; 
-            cursor: pointer; display: flex; justify-content: space-between; align-items: center;
-        }
+        .list-group-header { background: #1c253b; padding: 12px 15px; border-radius: 10px; margin-top: 15px; font-weight: bold; color: #f39c12; border-left: 4px solid #f39c12; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         .list-member-item { padding: 10px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; display: flex; align-items: center; }
         .list-sn { width: 35px; color: var(--text-dim); font-size: 0.75rem; font-weight: bold; }
         .list-count-badge { font-size: 0.75rem; background: rgba(243, 156, 18, 0.15); color: #f39c12; padding: 2px 10px; border-radius: 20px; }
 
-        /* PDF TEMPLATE */
-        #pdf-template { display: none; background: white !important; color: black !important; padding: 40px; }
+        /* PDF TEMPLATE STYLING */
+        #pdf-template { display: none; background: white !important; color: black !important; padding: 40px; width: 800px; }
         .invoice-header { border-bottom: 3px solid #f39c12; padding-bottom: 15px; margin-bottom: 25px; }
-        .invoice-title { font-size: 24px; font-weight: bold; color: #f39c12; text-transform: uppercase; }
+        .invoice-title { font-size: 26px; font-weight: bold; color: #f39c12; text-transform: uppercase; }
         .invoice-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        .invoice-table th { background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; font-size: 12px; }
-        .invoice-table td { border: 1px solid #dee2e6; padding: 10px; font-size: 11px; }
+        .invoice-table th { background: #f2f2f2; border: 1px solid #aaa; padding: 10px; font-size: 12px; text-align: left; }
+        .invoice-table td { border: 1px solid #ccc; padding: 10px; font-size: 11px; }
+        .info-box { background: #fafafa; border: 1px solid #eee; padding: 15px; border-radius: 8px; font-size: 13px; }
     </style>
 </head>
 <body>
@@ -99,15 +95,47 @@
 </div>
 
 <div id="pdf-template">
-    <div class="invoice-header d-flex justify-content-between">
-        <div><div class="invoice-title">AK Chit Funds</div><div style="font-size: 14px; margin-top: 5px;">📞 Phone: 7799****</div></div>
-        <div class="text-end"><div style="font-size: 18px; font-weight: bold;">Group Settlement Report</div><div id="pdfDate" style="font-size: 12px;"></div></div>
+    <div class="invoice-header d-flex justify-content-between align-items-center">
+        <div>
+            <div class="invoice-title">AK Events Organisers</div>
+            <div style="margin-top:5px;"><strong>📞 Phone:</strong> 8121723153</div>
+            <div><strong>📍 Location:</strong> Hyderabad, Telangana</div>
+        </div>
+        <div class="text-end">
+            <div style="font-size: 18px; font-weight: bold; color: #333;">CHIT SETTLEMENT REPORT</div>
+            <div id="pdfDate" style="font-size: 12px; margin-top: 5px;"></div>
+        </div>
     </div>
-    <div class="row mb-4" style="background: #fdfdfd; padding: 15px; border: 1px solid #eee;">
-        <div class="col-6"><strong>Group:</strong> <span id="pdfGroupName"></span><br><strong>Start Date:</strong> <span id="pdfStartDate"></span></div>
-        <div class="col-6 text-end"><strong>Total Coll:</strong> <span id="pdfTotalColl"></span><br><strong>Progress:</strong> <span id="pdfProgress"></span></div>
+
+    <div class="info-box row mb-4 mx-0">
+        <div class="col-6">
+            <strong>Group Name:</strong> <span id="pdfGroupName"></span><br>
+            <strong>Start Date:</strong> <span id="pdfStartDate"></span><br>
+            <strong>End Date:</strong> <span id="pdfEndDate"></span>
+        </div>
+        <div class="col-6 text-end">
+            <strong>Total Duration:</strong> <span id="pdfDuration"></span> Months<br>
+            <strong>Group Progress:</strong> <span id="pdfProgress"></span><br>
+            <strong>Total Collection:</strong> <span id="pdfTotalColl"></span>
+        </div>
     </div>
-    <table class="invoice-table"><thead><tr><th>Name</th><th>Phone</th><th>Balance</th><th>Won Value</th><th>Date</th></tr></thead><tbody id="pdfTableBody"></tbody></table>
+
+    <table class="invoice-table">
+        <thead>
+            <tr>
+                <th style="width: 40px;">S.No</th>
+                <th>Member Name</th>
+                <th>Till Today Paid</th>
+                <th>Balance</th>
+                <th>Chit Picked?</th>
+            </tr>
+        </thead>
+        <tbody id="pdfTableBody"></tbody>
+    </table>
+
+    <div style="margin-top: 40px; font-size: 10px; color: #666; border-top: 1px solid #ddd; padding-top: 10px;">
+        * This is an official computer-generated statement from AK Events Organisers.
+    </div>
 </div>
 
 <div id="memberModal" class="modal-overlay"><div class="modal-content-custom">
@@ -165,6 +193,14 @@
     let ALL_MEMBERS = [];
 
     function formatDate(d) { if(!d) return "-"; const [y, m, day] = d.split("-"); return `${day}/${m}/${y}`; }
+    
+    function calculateEndDate(startStr, duration) {
+        if(!startStr || !duration) return "-";
+        let date = new Date(startStr);
+        date.setMonth(date.getMonth() + parseInt(duration));
+        return formatDate(date.toISOString().split('T')[0]);
+    }
+
     function getElapsedMonths(s) { if(!s) return 0; const start = new Date(s); const now = new Date(); return Math.max(0, ((now.getFullYear() - start.getFullYear()) * 12) + (now.getMonth() - start.getMonth()) + 1); }
     function togglePickedValue() { document.getElementById('pickedValueArea').style.display = document.getElementById('pPicked').checked ? 'block' : 'none'; }
     function openModal(id) { document.getElementById(id).style.display = 'block'; }
@@ -180,9 +216,37 @@
         if(t === 'list') renderListTab();
     }
 
-    function toggleListCollapse(gid) {
-        const content = document.getElementById('list-collapse-' + gid);
-        content.style.display = content.style.display === 'block' ? 'none' : 'block';
+    async function exportToInvoice(groupId) {
+        const gs = await getCollection('groups'); const g = gs.find(x => x.id === groupId);
+        const ms = await getCollection('members'); const ps = await getCollection('payments');
+        const gPs = ps.filter(p => p.groupId === groupId);
+        const gMs = ms.filter(m => m.groupId === groupId).sort((a,b) => a.name.localeCompare(b.name));
+        
+        document.getElementById('pdfGroupName').innerText = g.name;
+        document.getElementById('pdfStartDate').innerText = formatDate(g.startDate);
+        document.getElementById('pdfEndDate').innerText = calculateEndDate(g.startDate, g.duration);
+        document.getElementById('pdfDuration').innerText = g.duration;
+        document.getElementById('pdfTotalColl').innerText = '₹' + gPs.reduce((s,p) => s + p.paidAmt, 0).toLocaleString();
+        document.getElementById('pdfProgress').innerText = `${Math.max(0, g.duration - getElapsedMonths(g.startDate))} Months Left`;
+        document.getElementById('pdfDate').innerText = 'Report Generated: ' + new Date().toLocaleDateString('en-IN');
+
+        let rows = '';
+        gMs.forEach((m, i) => {
+            const mPs = gPs.filter(x => x.memberId === m.id);
+            const totalPaid = mPs.reduce((s,p) => s + p.paidAmt, 0);
+            const totalBal = mPs.reduce((s,p) => s + p.balAmt, 0);
+            const pick = mPs.find(p => p.chitPicked === 1);
+            rows += `<tr>
+                <td>${i+1}</td>
+                <td>${m.name}</td>
+                <td>₹${totalPaid.toLocaleString()}</td>
+                <td>₹${totalBal.toLocaleString()}</td>
+                <td>${pick ? 'YES (₹'+pick.pickedValue.toLocaleString()+')' : 'NO'}</td>
+            </tr>`;
+        });
+        document.getElementById('pdfTableBody').innerHTML = rows;
+        const el = document.getElementById('pdf-template'); el.style.display = 'block';
+        html2pdf().from(el).set({ margin:10, filename:`AK_Chit_Report_${g.name}.pdf`, jsPDF:{format:'a4'} }).save().then(() => el.style.display='none');
     }
 
     function filterSearch(inputId, listId, hiddenId) {
@@ -208,39 +272,11 @@
         let h = '';
         gs.sort((a,b) => a.name.localeCompare(b.name)).forEach(g => {
             const gMs = ms.filter(m => m.groupId === g.id).sort((a,b) => a.name.localeCompare(b.name));
-            h += `
-                <div class="list-group-header" onclick="toggleListCollapse('${g.id}')">
-                    <span>${g.name}</span>
-                    <span class="list-count-badge">Count: ${gMs.length}</span>
-                </div>
-                <div id="list-collapse-${g.id}" class="collapse-content" style="display:none; background:rgba(255,255,255,0.02); border-radius:0 0 10px 10px;">`;
-            
-            gMs.forEach((m, idx) => {
-                h += `<div class="list-member-item"><span class="list-sn">${idx + 1}.</span> ${m.name}</div>`;
-            });
-            if(gMs.length === 0) h += `<div class="list-member-item text-dim small">No members enrolled.</div>`;
+            h += `<div class="list-group-header" onclick="document.getElementById('list-col-${g.id}').style.display = document.getElementById('list-col-${g.id}').style.display==='block'?'none':'block'"><span>${g.name}</span><span class="list-count-badge">Count: ${gMs.length}</span></div><div id="list-col-${g.id}" class="collapse-content">`;
+            gMs.forEach((m, idx) => { h += `<div class="list-member-item"><span class="list-sn">${idx + 1}.</span> ${m.name}</div>`; });
             h += `</div>`;
         });
-        document.getElementById('simpleListArea').innerHTML = h || '<div class="text-center py-5">No Data Found</div>';
-    }
-
-    async function exportToInvoice(groupId) {
-        const groups = await getCollection('groups'); const g = groups.find(x => x.id === groupId);
-        const ms = await getCollection('members'); const ps = await getCollection('payments');
-        const gPs = ps.filter(p => p.groupId === groupId);
-        const gMs = ms.filter(m => m.groupId === groupId || [...new Set(gPs.map(p => p.memberId))].includes(m.id)).sort((a,b) => a.name.localeCompare(b.name));
-        document.getElementById('pdfGroupName').innerText = g.name; document.getElementById('pdfStartDate').innerText = formatDate(g.startDate);
-        document.getElementById('pdfTotalColl').innerText = '₹' + gPs.reduce((s,p) => s + p.paidAmt, 0).toLocaleString();
-        document.getElementById('pdfProgress').innerText = `${Math.max(0, g.duration - getElapsedMonths(g.startDate))} / ${g.duration}`;
-        document.getElementById('pdfDate').innerText = 'Report Date: ' + new Date().toLocaleDateString();
-        let rows = '';
-        gMs.forEach(m => {
-            const mPs = gPs.filter(x => x.memberId === m.id); const pick = mPs.find(p => p.chitPicked === 1);
-            rows += `<tr><td>${m.name}</td><td>${m.phone||'-'}</td><td>₹${mPs.reduce((s,p)=>s+p.balAmt,0).toLocaleString()}</td><td>${pick?'₹'+pick.pickedValue.toLocaleString():'-'}</td><td>${pick?formatDate(pick.date):'-'}</td></tr>`;
-        });
-        document.getElementById('pdfTableBody').innerHTML = rows;
-        const el = document.getElementById('pdf-template'); el.style.display = 'block';
-        html2pdf().from(el).set({ margin:10, filename:`AK_Report_${g.name}.pdf`, jsPDF:{format:'a4'} }).save().then(() => el.style.display='none');
+        document.getElementById('simpleListArea').innerHTML = h;
     }
 
     async function saveGroup() {
@@ -289,7 +325,7 @@
             gPs.forEach(p => { h += `<tr><td>${formatDate(p.date)}</td><td>₹${p.chitAmt}</td><td>₹${p.paidAmt}</td><td class="text-warning">₹${p.balAmt}</td><td><button onclick="deletePayment('${p.id}')" style="background:none;border:none;color:#ff4757;">❌</button></td></tr>`; });
             h += `</tbody></table></div></div>`;
         });
-        container.innerHTML = h || '<div class="text-center text-dim py-3">No activity.</div>';
+        container.innerHTML = h;
     }
 
     async function updateUI() {
@@ -300,8 +336,6 @@
         document.getElementById('mGroup').innerHTML = '<option value="">-- Group --</option>' + g.map(x => `<option value="${x.id}">${x.name}</option>`).join('');
     }
 
-    function toggleCollapse(gid) { const content = document.getElementById('collapse-' + gid); content.style.display = content.style.display === 'block' ? 'none' : 'block'; }
-
     async function renderGroupsTab() {
         const gs = await getCollection('groups'); const ms = await getCollection('members'); const ps = await getCollection('payments');
         let h = '';
@@ -309,12 +343,12 @@
             const gPs = ps.filter(p => p.groupId === g.id); const gMs = ms.filter(m => m.groupId === g.id).sort((a,b) => a.name.localeCompare(b.name));
             const left = Math.max(0, g.duration - getElapsedMonths(g.startDate));
             h += `<div class="p-3 mb-3" style="background:var(--card-bg); border-radius:15px; border:1px solid var(--border);">
-                <div class="d-flex justify-content-between align-items-center pb-2" onclick="toggleCollapse('${g.id}')" style="cursor:pointer;">
+                <div class="d-flex justify-content-between align-items-center pb-2" onclick="document.getElementById('col-${g.id}').style.display=document.getElementById('col-${g.id}').style.display==='block'?'none':'block'" style="cursor:pointer;">
                     <div><div class="fw-bold text-warning">${g.name} ✏️</div><div class="text-dim small">Start: ${formatDate(g.startDate)}</div></div>
                     <div class="text-end"><div class="fw-bold text-info">${left} / ${g.duration}</div><div class="text-dim small">Left</div></div>
                 </div>
-                <div id="collapse-${g.id}" class="collapse-content border-top border-secondary mt-2">
-                    <div class="py-2 text-end"><button class="btn btn-sm btn-info me-1" onclick="exportToInvoice('${g.id}')">📄 PDF</button><button class="btn btn-sm btn-outline-secondary me-1" onclick="editGroup('${g.id}','${g.name}',${g.duration},'${g.startDate}')">Edit</button><button class="btn btn-sm btn-outline-danger" onclick="deleteGroup('${g.id}')">Del</button></div>
+                <div id="col-${g.id}" class="collapse-content border-top border-secondary mt-2">
+                    <div class="py-2 text-end"><button class="btn btn-sm btn-info me-1" onclick="exportToInvoice('${g.id}')">📄 PDF Report</button><button class="btn btn-sm btn-outline-secondary me-1" onclick="editGroup('${g.id}','${g.name}',${g.duration},'${g.startDate}')">Edit</button><button class="btn btn-sm btn-outline-danger" onclick="deleteGroup('${g.id}')">Del</button></div>
                     <table class="table-custom"><thead><tr><th>Name</th><th>Chit</th><th>Bal</th><th>Won</th></tr></thead><tbody>`;
             gMs.forEach(m => {
                 const mPs = gPs.filter(x => x.memberId === m.id); const pick = mPs.find(p => p.chitPicked === 1);
@@ -322,7 +356,7 @@
             });
             h += '</tbody></table></div></div>';
         });
-        document.getElementById('groupListArea').innerHTML = h || '<div class="text-center py-5">No Groups</div>';
+        document.getElementById('groupListArea').innerHTML = h;
     }
 
     async function exportFullBackup() {
