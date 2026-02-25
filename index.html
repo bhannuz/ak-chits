@@ -3,149 +3,200 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AK Chit Funds Portal</title>
-    
+    <title>AK Chit Funds</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
-    
-    <link rel="manifest" href="manifest.json">
-
     <style>
-        body { background-color: #f0f2f5; padding-top: 30px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .card { border: none; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 25px; }
-        .card-header { background-color: #ffffff; border-bottom: 1px solid #eee; font-weight: bold; color: #1a73e8; border-radius: 15px 15px 0 0 !important; }
-        .btn-primary { background-color: #1a73e8; border: none; padding: 12px; font-weight: 600; border-radius: 8px; transition: 0.3s; }
-        .btn-primary:hover { background-color: #1557b0; }
-        .btn-success { border-radius: 8px; font-weight: 600; }
-        .table thead { background-color: #f8f9fa; color: #5f6368; }
+        :root {
+            --bg-dark: #050a18;
+            --card-bg: #11192e;
+            --accent-gold: #f39c12;
+            --text-main: #ffffff;
+            --text-dim: #8e9aaf;
+        }
+
+        body { 
+            background-color: var(--bg-dark); 
+            color: var(--text-main);
+            font-family: 'Segoe UI', sans-serif;
+            padding-bottom: 90px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #1c2641;
+        }
+        .logo { color: var(--accent-gold); font-weight: bold; font-size: 1.2rem; }
+
+        /* Dashboard Stats boxes from your screenshot */
+        .stat-box {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid #1c2641;
+        }
+        .stat-num { font-size: 1.4rem; font-weight: bold; display: block; }
+        .stat-label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; }
+
+        /* The Big Orange "New Payment" style button */
+        .btn-payment {
+            background: linear-gradient(90deg, #f39c12, #e67e22);
+            color: #000;
+            border: none;
+            border-radius: 15px;
+            padding: 20px;
+            width: 100%;
+            font-weight: bold;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .form-dark {
+            background: var(--card-bg);
+            border: 1px solid #1c2641;
+            color: white;
+            border-radius: 10px;
+        }
+        .form-dark:focus { background: #161f36; color: white; border-color: var(--accent-gold); box-shadow: none; }
+
+        /* Bottom Nav */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: #0a1021;
+            display: flex;
+            justify-content: space-around;
+            padding: 12px;
+            border-top: 1px solid #1c2641;
+            z-index: 1000;
+        }
+        .nav-item { text-align: center; color: var(--text-dim); font-size: 0.7rem; text-decoration: none; cursor: pointer; }
+        .nav-item.active { color: var(--accent-gold); }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2 class="text-center mb-4 fw-bold">AK Chit Funds Portal</h2>
+<div class="container py-3">
+    <div class="header mb-4">
+        <div class="logo">🏆 AK Chit Funds</div>
+        <div>
+            <span class="badge bg-dark text-warning border border-warning">ADMIN</span>
+            <button class="btn btn-outline-danger btn-sm ms-2" style="font-size: 10px;">LOGOUT</button>
+        </div>
+    </div>
 
-    <div class="card">
-        <div class="card-header">Add New Member</div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-5">
-                    <input type="text" id="name" class="form-control" placeholder="Member Name">
-                </div>
-                <div class="col-md-5">
-                    <input type="text" id="phone" class="form-control" placeholder="Phone Number">
-                </div>
-                <div class="col-md-2">
-                    <button onclick="saveMember()" class="btn btn-primary w-100">Save Locally</button>
-                </div>
+    <div class="row g-2 mb-4 text-center">
+        <div class="col-4">
+            <div class="stat-box">
+                <span class="stat-num" id="memberCount">0</span>
+                <span class="stat-label">Members</span>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="stat-box">
+                <span class="stat-num" id="groupCount">0</span>
+                <span class="stat-label">Groups</span>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="stat-box">
+                <span class="stat-num text-success">₹0</span>
+                <span class="stat-label">Today</span>
             </div>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <span>Members List</span>
-            <button onclick="exportToCSV()" class="btn btn-sm btn-success">Download Excel Backup</button>
+    <button class="btn-payment" onclick="document.getElementById('addMemberSection').scrollIntoView()">
+        <span style="font-size: 1.2rem;">💳 New Payment</span><br>
+        <span style="font-size: 0.7rem; opacity: 0.8;">Record receipt for a member</span>
+    </button>
+
+    <div id="addGroupSection" class="p-3 mb-4" style="background: #11192e; border-radius: 15px; border: 1px dashed #f39c12;">
+        <h6 class="text-warning mb-3">Group Master</h6>
+        <div class="input-group">
+            <input type="text" id="groupName" class="form-control form-dark" placeholder="e.g. Group A - 1L">
+            <button class="btn btn-warning fw-bold" onclick="saveGroup()">Create</button>
         </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead>
-                        <tr>
-                            <th class="ps-4">Name</th>
-                            <th>Phone</th>
-                            <th class="text-end pe-4">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="memberData">
-                        </tbody>
-                </table>
-            </div>
-        </div>
+    </div>
+
+    <div id="addMemberSection" class="p-3 mb-5" style="background: #11192e; border-radius: 15px;">
+        <h6 class="text-warning mb-3">Add Member</h6>
+        <input type="text" id="mName" class="form-control form-dark mb-2" placeholder="Full Name">
+        <input type="text" id="mPhone" class="form-control form-dark mb-2" placeholder="Phone Number">
+        <select id="mGroup" class="form-select form-dark mb-3">
+            <option value="">-- Assign Group --</option>
+        </select>
+        <button class="btn btn-warning w-100 fw-bold" onclick="saveMember()">Add to Database</button>
     </div>
 </div>
 
+<div class="bottom-nav">
+    <div class="nav-item active">🏠<br>Home</div>
+    <div class="nav-item" onclick="alert('Group list coming soon!')">📁<br>Groups</div>
+    <div class="nav-item" onclick="exportToCSV()">📥<br>Backup</div>
+</div>
+
 <script>
-    // 1. Initialize Database
+    // 1. Initialize DB with Versioning for Groups
     const db = new Dexie("AKChitFundsDB");
-    db.version(1).stores({
-        members: "++id, name, phone"
+    db.version(1).stores({ 
+        members: "++id, name, phone, groupId",
+        groups: "++id, name" 
     });
 
-    // 2. Save Data Function
+    // 2. Save Functions
+    async function saveGroup() {
+        const name = document.getElementById('groupName').value;
+        if (!name) return alert("Enter group name");
+        await db.groups.add({ name });
+        document.getElementById('groupName').value = '';
+        updateUI();
+    }
+
     async function saveMember() {
-        const nameInput = document.getElementById('name');
-        const phoneInput = document.getElementById('phone');
-        
-        if (!nameInput.value || !phoneInput.value) {
-            alert("Please enter both Name and Phone");
-            return;
-        }
+        const name = document.getElementById('mName').value;
+        const phone = document.getElementById('mPhone').value;
+        const groupId = document.getElementById('mGroup').value;
+        if (!name || !phone) return alert("Fill Name and Phone");
 
-        await db.members.add({ 
-            name: nameInput.value, 
-            phone: phoneInput.value,
-            date: new Date().toLocaleDateString() 
-        });
-
-        nameInput.value = '';
-        phoneInput.value = '';
-        renderMembers();
+        await db.members.add({ name, phone, groupId });
+        document.getElementById('mName').value = '';
+        document.getElementById('mPhone').value = '';
+        updateUI();
     }
 
-    // 3. Display Data Function
-    async function renderMembers() {
-        const members = await db.members.toArray();
-        const tableBody = document.getElementById('memberData');
-        
-        tableBody.innerHTML = members.map(m => `
-            <tr>
-                <td class="ps-4 fw-bold">${m.name}</td>
-                <td>${m.phone}</td>
-                <td class="text-end pe-4">
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteMember(${m.id})">Delete</button>
-                </td>
-            </tr>
-        `).join('');
+    // 3. UI Update Logic
+    async function updateUI() {
+        const mCount = await db.members.count();
+        const gCount = await db.groups.count();
+        document.getElementById('memberCount').innerText = mCount;
+        document.getElementById('groupCount').innerText = gCount;
+
+        // Populate Member Dropdown with groups
+        const groups = await db.groups.toArray();
+        const select = document.getElementById('mGroup');
+        select.innerHTML = '<option value="">-- Assign Group --</option>' + 
+            groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
     }
 
-    // 4. Delete Function
-    async function deleteMember(id) {
-        if(confirm("Delete this member?")) {
-            await db.members.delete(id);
-            renderMembers();
-        }
-    }
-
-    // 5. Excel/CSV Backup Function
+    // 4. Excel Backup
     async function exportToCSV() {
-        const allMembers = await db.members.toArray();
-        if (allMembers.length === 0) return alert("No data to backup!");
-
-        let csv = "Name,Phone,Date\n";
-        allMembers.forEach(m => {
-            csv += `${m.name},${m.phone},${m.date}\n`;
-        });
-
+        const members = await db.members.toArray();
+        let csv = "Name,Phone,GroupID\n" + members.map(m => `${m.name},${m.phone},${m.groupId}`).join("\n");
         const blob = new Blob([csv], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
+        const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.setAttribute('href', url);
-        a.setAttribute('download', `AK_Chit_Backup_${new Date().toLocaleDateString()}.csv`);
+        a.href = url;
+        a.download = "AK_Chit_Backup.csv";
         a.click();
     }
 
-    // Initial Load
-    renderMembers();
-
-    // Register Service Worker for Offline
-    if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-            navigator.serviceWorker.register("sw.js");
-        });
-    }
+    updateUI();
 </script>
-
 </body>
 </html>
