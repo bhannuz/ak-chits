@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AK Chit Funds - Management Portal</title>
+    <title>AK Chit Funds - Time-Track Ledger</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
@@ -33,7 +33,6 @@
         .btn-action { background: transparent; border: none; cursor: pointer; padding: 2px 5px; font-size: 0.9rem; }
         .btn-del { color: #ff4757; }
         .btn-edit { color: #3498db; }
-        .search-container { position: relative; width: 100%; }
         .suggestions-list { position: absolute; top: 100%; left: 0; right: 0; background: var(--input-bg); border: 1px solid var(--border); border-radius: 0 0 12px 12px; z-index: 3000; max-height: 200px; overflow-y: auto; display: none; margin-top: -12px; }
         .suggestion-item { padding: 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; }
         .suggestion-item:hover { background: #252f48; color: #f39c12; }
@@ -56,7 +55,7 @@
         </div>
         <button class="btn btn-warning w-100 py-3 mt-4 fw-bold shadow" onclick="openModal('paymentModal')" style="border-radius:20px;">💳 Record Payment</button>
         <div class="p-3 my-4" style="background:var(--card-bg); border-radius:20px; border:1px solid var(--border);">
-            <div class="search-container mb-3">
+            <div class="search-container mb-3" style="position:relative;">
                 <input type="text" id="summarySearch" class="form-input" placeholder="🔍 Search Member Name..." oninput="filterSearch('summarySearch', 'summaryList', 'summaryView')">
                 <input type="hidden" id="summaryView"><div id="summaryList" class="suggestions-list"></div>
             </div>
@@ -69,34 +68,37 @@
     </div>
 
     <div id="groupsTab" class="tab-content">
-        <h5 class="mt-4 mb-3 text-warning text-center">Group Summary</h5>
+        <h5 class="mt-4 mb-3 text-warning text-center">Group Collections</h5>
         <div id="groupListArea"></div>
     </div>
 </div>
 
 <div id="memberModal" class="modal-overlay"><div class="modal-content-custom">
-    <div class="fw-bold mb-3" id="memberModalTitle">Add Member</div>
+    <div class="fw-bold mb-3" id="memberModalTitle">Member Settings</div>
     <input type="hidden" id="editMemberId">
     <input type="text" id="mName" class="form-input" placeholder="Full Name">
     <select id="mGroup" class="form-input"><option value="">-- Primary Group --</option></select>
     <input type="text" id="mPhone" class="form-input" placeholder="Phone No">
-    <button class="btn-save" onclick="saveMember()">Save Changes</button>
+    <button class="btn-save" onclick="saveMember()">Save Member</button>
     <button class="btn-cancel" onclick="closeModal('memberModal')">Cancel</button>
 </div></div>
 
 <div id="groupModal" class="modal-overlay"><div class="modal-content-custom">
-    <div class="fw-bold mb-3" id="groupModalTitle">Add Group</div>
+    <div class="fw-bold mb-3" id="groupModalTitle">Group Settings</div>
     <input type="hidden" id="editGroupId">
     <input type="text" id="gName" class="form-input" placeholder="Group Name">
-    <input type="number" id="gDuration" class="form-input" placeholder="Duration (Months)">
-    <button class="btn-save" onclick="saveGroup()">Save Changes</button>
+    <div class="small text-dim mb-1">Duration (Months)</div>
+    <input type="number" id="gDuration" class="form-input" placeholder="21">
+    <div class="small text-dim mb-1">Start Date</div>
+    <input type="date" id="gStart" class="form-input">
+    <button class="btn-save" onclick="saveGroup()">Save Group</button>
     <button class="btn-cancel" onclick="closeModal('groupModal')">Cancel</button>
 </div></div>
 
 <div id="paymentModal" class="modal-overlay"><div class="modal-content-custom">
     <div class="fw-bold mb-3">Record Payment</div>
     <input type="date" id="pDate" class="form-input">
-    <div class="search-container">
+    <div class="search-container" style="position:relative;">
         <input type="text" id="pMemberSearch" class="form-input" placeholder="🔍 Search Member..." oninput="filterSearch('pMemberSearch', 'pMemberList', 'pMember')">
         <input type="hidden" id="pMember"><div id="pMemberList" class="suggestions-list"></div>
     </div>
@@ -132,6 +134,16 @@
 
     function formatDate(d) { if(!d) return "-"; const [y, m, day] = d.split("-"); return `${day}/${m}/${y}`; }
 
+    // Logic to calculate elapsed months from start date
+    function getElapsedMonths(startDateStr) {
+        if(!startDateStr) return 0;
+        const start = new Date(startDateStr);
+        const now = new Date();
+        const years = now.getFullYear() - start.getFullYear();
+        const months = now.getMonth() - start.getMonth();
+        return Math.max(0, (years * 12) + months + 1); // +1 because Jan to Jan is Month 1
+    }
+
     function filterSearch(inputId, listId, hiddenId) {
         const query = document.getElementById(inputId).value.toLowerCase();
         const list = document.getElementById(listId);
@@ -166,25 +178,22 @@
         content.style.display = content.style.display === 'block' ? 'none' : 'block';
     }
 
-    // GROUP MANAGEMENT
-    function openAddGroup() { document.getElementById('groupModalTitle').innerText = "Add New Group"; document.getElementById('editGroupId').value = ""; document.getElementById('gName').value = ""; document.getElementById('gDuration').value = ""; openModal('groupModal'); }
-    async function editGroup(id, name, dur) { document.getElementById('groupModalTitle').innerText = "Edit Group Details"; document.getElementById('editGroupId').value = id; document.getElementById('gName').value = name; document.getElementById('gDuration').value = dur; openModal('groupModal'); }
-    async function deleteGroup(id) { if(confirm("Permanently delete this group and all member links? (Payments stay in history)")) { await db.collection('groups').doc(id).delete(); updateUI(); renderGroupsTab(); } }
     async function saveGroup() {
         const n = document.getElementById('gName').value.trim();
         const d_val = parseInt(document.getElementById('gDuration').value);
+        const s_val = document.getElementById('gStart').value;
         const eid = document.getElementById('editGroupId').value;
-        if(n && !isNaN(d_val)) {
-            if(eid) { await db.collection('groups').doc(eid).update({ name: n, duration: d_val }); }
-            else { await db.collection('groups').add({ name: n, duration: d_val }); }
+        if(n && !isNaN(d_val) && s_val) {
+            if(eid) { await db.collection('groups').doc(eid).update({ name: n, duration: d_val, startDate: s_val }); }
+            else { await db.collection('groups').add({ name: n, duration: d_val, startDate: s_val }); }
             updateUI(); closeModal('groupModal'); renderGroupsTab();
-        }
+        } else alert("Fill Name, Duration and Start Date");
     }
 
-    // MEMBER MANAGEMENT
-    function openAddMember() { document.getElementById('memberModalTitle').innerText = "Add New Member"; document.getElementById('editMemberId').value = ""; document.getElementById('mName').value = ""; document.getElementById('mPhone').value = ""; openModal('memberModal'); }
-    async function editMember(id, name, phone, gid) { document.getElementById('memberModalTitle').innerText = "Edit Member Info"; document.getElementById('editMemberId').value = id; document.getElementById('mName').value = name; document.getElementById('mPhone').value = phone; document.getElementById('mGroup').value = gid; openModal('memberModal'); }
-    async function deleteMember(id) { if(confirm("Delete this member? History will remain.")) { await db.collection('members').doc(id).delete(); updateUI(); renderGroupsTab(); } }
+    function openAddGroup() { document.getElementById('groupModalTitle').innerText = "Add Group"; document.getElementById('editGroupId').value = ""; document.getElementById('gName').value = ""; document.getElementById('gDuration').value = ""; document.getElementById('gStart').value = ""; openModal('groupModal'); }
+    async function editGroup(id, name, dur, start) { document.getElementById('groupModalTitle').innerText = "Edit Group"; document.getElementById('editGroupId').value = id; document.getElementById('gName').value = name; document.getElementById('gDuration').value = dur; document.getElementById('gStart').value = start || ""; openModal('groupModal'); }
+    async function deleteGroup(id) { if(confirm("Del Group?")) { await db.collection('groups').doc(id).delete(); updateUI(); renderGroupsTab(); } }
+
     async function saveMember() {
         const n = document.getElementById('mName').value.trim();
         const g = document.getElementById('mGroup').value;
@@ -194,6 +203,9 @@
         else { await db.collection('members').add({ name: n, phone: document.getElementById('mPhone').value, groupId: g }); }
         updateUI(); closeModal('memberModal');
     }
+    function openAddMember() { document.getElementById('memberModalTitle').innerText = "Add Member"; document.getElementById('editMemberId').value = ""; document.getElementById('mName').value = ""; document.getElementById('mPhone').value = ""; openModal('memberModal'); }
+    async function editMember(id, name, phone, gid) { document.getElementById('memberModalTitle').innerText = "Edit Member"; document.getElementById('editMemberId').value = id; document.getElementById('mName').value = name; document.getElementById('mPhone').value = phone; document.getElementById('mGroup').value = gid; openModal('memberModal'); }
+    async function deleteMember(id) { if(confirm("Del Member?")) { await db.collection('members').doc(id).delete(); updateUI(); renderGroupsTab(); } }
 
     async function linkGroupForPayment() {
         const mid = document.getElementById('pMember').value;
@@ -251,11 +263,7 @@
                 </div>
                 <div class="table-responsive"><table class="table-custom"><thead><tr><th>Date</th><th>Chit</th><th>Paid</th><th>Bal</th><th></th></tr></thead><tbody>`;
             gPs.forEach(p => { h += `<tr><td>${formatDate(p.date)}</td><td>₹${p.chitAmt}</td><td>₹${p.paidAmt}</td><td class="text-warning">₹${p.balAmt}</td><td><button class="btn-delete" onclick="deletePayment('${p.id}')">❌</button></td></tr>`; });
-            h += `</tbody></table></div>
-                <div class="d-flex justify-content-between mt-2 pt-2 border-top border-secondary">
-                    <span class="small text-dim">Total Paid: ₹${totalPaid}</span>
-                    <span class="fw-bold text-warning">Bal: ₹${totalBal}</span>
-                </div></div>`;
+            h += `</tbody></table></div><div class="mt-2 text-end fw-bold text-warning border-top border-secondary pt-2">Paid: ₹${totalPaid} | Bal: ₹${totalBal}</div></div>`;
         });
         container.innerHTML = h || '<div class="text-center text-dim py-3">No activity.</div>';
     }
@@ -277,22 +285,24 @@
             const gPs = ps.filter(p => p.groupId === g.id); 
             const uids = [...new Set(gPs.map(p => p.memberId))];
             const gTotalColl = gPs.reduce((s, p) => s + p.paidAmt, 0);
-            const groupMembers = ms.filter(m => m.groupId === g.id || uids.includes(m.id)).sort((a,b) => a.name.localeCompare(b.name));
-            const totalMonthsPossible = groupMembers.length * g.duration;
-            const totalPendingMonths = totalMonthsPossible - gPs.length;
+            const gMs = ms.filter(m => m.groupId === g.id || uids.includes(m.id)).sort((a,b) => a.name.localeCompare(b.name));
+            
+            // Time-based calculation for pending months
+            const elapsed = getElapsedMonths(g.startDate);
+            const pendingForGroupHeader = Math.max(0, g.duration - elapsed);
 
             h += `<div class="p-3 mb-3" style="background:var(--card-bg); border-radius:15px; border:1px solid var(--border);">
                 <div class="d-flex justify-content-between align-items-center pb-2" onclick="toggleCollapse('${g.id}')" style="cursor:pointer;">
-                    <div><div class="fw-bold text-warning">${g.name} ✏️</div><div class="text-dim small">Collected: ₹${gTotalColl}</div></div>
-                    <div class="text-end"><div class="fw-bold text-info">${totalPendingMonths} / ${totalMonthsPossible}</div><div class="text-dim small">Pending Months</div></div>
+                    <div><div class="fw-bold text-warning">${g.name} ✏️</div><div class="text-dim small">Start: ${formatDate(g.startDate)}</div></div>
+                    <div class="text-end"><div class="fw-bold text-info">${pendingForGroupHeader} / ${g.duration}</div><div class="text-dim small">Months Left</div></div>
                 </div>
                 <div id="collapse-${g.id}" class="collapse-content border-top border-secondary mt-2">
                     <div class="py-2 text-end">
-                        <button class="btn btn-sm btn-outline-info me-2" onclick="editGroup('${g.id}','${g.name}',${g.duration})">Edit Group</button>
+                        <button class="btn btn-sm btn-outline-info me-2" onclick="editGroup('${g.id}','${g.name}',${g.duration},'${g.startDate}')">Edit Group</button>
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteGroup('${g.id}')">Delete Group</button>
                     </div>
                     <table class="table-custom"><thead><tr><th>Name</th><th>Balance</th><th class="text-end">Picked</th></tr></thead><tbody>`;
-            groupMembers.forEach(m => {
+            gMs.forEach(m => {
                 const mPs = gPs.filter(x => x.memberId === m.id);
                 const mBal = mPs.reduce((s, p) => s + p.balAmt, 0); 
                 const pk = mPs.find(p => p.chitPicked === 1);
