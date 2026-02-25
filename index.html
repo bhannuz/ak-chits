@@ -174,6 +174,7 @@
 
     async function linkGroupForPayment() {
         const mid = document.getElementById('pMember').value;
+        if(!mid) return;
         const mDoc = await db.collection('members').doc(mid).get();
         const m = mDoc.data();
         const gs = await getCollection('groups');
@@ -215,13 +216,18 @@
         uGids.forEach(gid => {
             const g = gs.find(x => x.id === gid);
             const gPs = ps.filter(p => p.groupId === gid);
-            const total = gPs.reduce((s, p) => s + p.paidAmt, 0);
+            const totalPaid = gPs.reduce((s, p) => s + p.paidAmt, 0);
+            const totalBal = gPs.reduce((s, p) => s + p.balAmt, 0);
             const pick = gPs.some(p => p.chitPicked === 1);
             h += `<div class="mb-4 p-3" style="background:rgba(255,255,255,0.03); border-radius:15px; border:1px solid #252f48;">
-                <div class="d-flex justify-content-between align-items-center mb-2"><span class="fw-bold text-info">${g?g.name:'-'}</span><span class="badge ${pick?'bg-success':'bg-secondary'}">${pick?'✔':'⏳'}</span></div>
+                <div class="d-flex justify-content-between align-items-center mb-2"><span class="fw-bold text-info">${g?g.name:'-'}</span><span class="badge ${pick?'bg-success':'bg-secondary'}">${pick?'✔ Picked':'⏳ Pending'}</span></div>
                 <div class="table-responsive"><table class="table-custom"><thead><tr><th>Date</th><th>Chit</th><th>Paid</th><th>Bal</th><th></th></tr></thead><tbody>`;
             gPs.forEach(p => { h += `<tr><td>${formatDate(p.date)}</td><td>₹${p.chitAmt}</td><td>₹${p.paidAmt}</td><td class="text-warning">₹${p.balAmt}</td><td><button class="btn-delete" onclick="deletePayment('${p.id}')">❌</button></td></tr>`; });
-            h += `</tbody></table></div><div class="mt-2 text-end fw-bold text-warning border-top border-secondary pt-2">Total: ₹${total}</div></div>`;
+            h += `</tbody></table></div>
+                <div class="d-flex justify-content-between mt-2 pt-2 border-top border-secondary">
+                    <span class="small text-dim">Total Paid: ₹${totalPaid}</span>
+                    <span class="fw-bold text-warning">Bal: ₹${totalBal}</span>
+                </div></div>`;
         });
         container.innerHTML = h || '<div class="text-center text-dim py-3">No activity.</div>';
     }
@@ -242,19 +248,26 @@
         gs.forEach(g => {
             const gPs = ps.filter(p => p.groupId === g.id); 
             const uids = [...new Set(gPs.map(p => p.memberId))];
-            const gTotal = gPs.reduce((s, p) => s + p.paidAmt, 0);
+            const gTotalColl = gPs.reduce((s, p) => s + p.paidAmt, 0);
+            
+            // Calculate total pending months across entire group
+            const groupMembers = ms.filter(m => m.groupId === g.id || uids.includes(m.id)).sort((a,b) => a.name.localeCompare(b.name));
+            const totalMonthsPossible = groupMembers.length * g.duration;
+            const totalMonthsPaid = gPs.length;
+            const totalPendingMonths = totalMonthsPossible - totalMonthsPaid;
+
             h += `<div class="p-3 mb-3" style="background:var(--card-bg); border-radius:15px; border:1px solid var(--border);">
                 <div class="d-flex justify-content-between align-items-center border-bottom border-secondary pb-2 mb-2">
-                    <div><div class="fw-bold text-warning">${g.name}</div><div class="text-dim small">${g.duration} Months</div></div>
-                    <div class="text-end"><div class="fw-bold text-success">₹${gTotal}</div><div class="text-dim small">Total Collected</div></div>
+                    <div><div class="fw-bold text-warning">${g.name}</div><div class="text-dim small">Collected: ₹${gTotalColl}</div></div>
+                    <div class="text-end"><div class="fw-bold text-info">${totalPendingMonths} / ${totalMonthsPossible}</div><div class="text-dim small">Pending Months</div></div>
                 </div>
-                <table class="table-custom mt-2"><thead><tr><th>Name</th><th>Paid</th><th class="text-end">Progress</th></tr></thead><tbody>`;
-            const gMs = ms.filter(m => m.groupId === g.id || uids.includes(m.id)).sort((a,b) => a.name.localeCompare(b.name));
-            gMs.forEach(m => {
+                <table class="table-custom mt-2"><thead><tr><th>Name</th><th>Balance</th><th class="text-end">Picked</th></tr></thead><tbody>`;
+            
+            groupMembers.forEach(m => {
                 const mPs = gPs.filter(x => x.memberId === m.id);
-                const mTotal = mPs.reduce((s, p) => s + p.paidAmt, 0); 
-                const count = mPs.length;
-                h += `<tr><td>${m.name}</td><td>₹${mTotal}</td><td class="text-end fw-bold text-info">${count} / ${g.duration}</td></tr>`;
+                const mBal = mPs.reduce((s, p) => s + p.balAmt, 0); 
+                const pk = mPs.find(p => p.chitPicked === 1);
+                h += `<tr><td>${m.name}</td><td>₹${mBal}</td><td class="text-end fw-bold text-success">${pk ? '✔' : '-'}</td></tr>`;
             });
             h += '</tbody></table></div>';
         });
