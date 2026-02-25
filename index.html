@@ -24,11 +24,10 @@
         .nav-item.active { color: #f39c12; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        .group-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 15px; margin-bottom: 20px; }
         .table-custom { color: white; font-size: 0.75rem; width: 100%; }
         .table-custom th { color: var(--text-dim); border-bottom: 1px solid var(--border); padding: 8px; }
         .table-custom td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .check-green { color: #2ecc71; font-weight: bold; }
+        .btn-delete { background: transparent; border: none; color: #ff4757; font-size: 0.8rem; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -59,23 +58,22 @@
     </div>
 
     <div id="groupsTab" class="tab-content">
-        <h5 class="mt-4 mb-3 text-warning">Group Collections</h5>
-        <div id="groupListArea">
-            </div>
+        <h5 class="mt-4 mb-3 text-warning">Group Overview</h5>
+        <div id="groupListArea"></div>
     </div>
 </div>
 
 <div id="memberModal" class="modal-overlay"><div class="modal-content-custom">
     <div class="fw-bold mb-3">Manage Member</div>
     <input type="text" id="mName" class="form-input" placeholder="Full Name">
-    <select id="mGroup" class="form-input"><option value="">-- Enroll in Group --</option></select>
+    <select id="mGroup" class="form-input"><option value="">-- Select Primary Group --</option></select>
     <input type="text" id="mPhone" class="form-input" placeholder="Phone No">
     <button class="btn-save" onclick="saveMember()">Save Member</button>
     <button class="btn-cancel" onclick="closeModal('memberModal')">Cancel</button>
 </div></div>
 
 <div id="groupModal" class="modal-overlay"><div class="modal-content-custom">
-    <div class="fw-bold mb-3">Manage Group Master</div>
+    <div class="fw-bold mb-3">Manage Group</div>
     <input type="text" id="gName" class="form-input" placeholder="Group Name">
     <input type="number" id="gDuration" class="form-input" placeholder="Duration (Months)">
     <button class="btn-save" onclick="saveGroup()">Save Group</button>
@@ -86,7 +84,7 @@
     <div class="fw-bold mb-3">Record Payment</div>
     <input type="date" id="pDate" class="form-input">
     <select id="pMember" class="form-input" onchange="linkGroupForPayment()"><option value="">-- Select Member --</option></select>
-    <select id="pGroup" class="form-input"><option value="">-- Group --</option></select>
+    <select id="pGroup" class="form-input"><option value="">-- Select Group --</option></select>
     <div class="row g-2">
         <div class="col-6"><input type="number" id="pChit" class="form-input" placeholder="Chit Amt" oninput="calcBalance()"></div>
         <div class="col-6"><input type="number" id="pPaid" class="form-input" placeholder="Paid Amt" oninput="calcBalance()"></div>
@@ -100,12 +98,11 @@
 <div class="nav-bar">
     <div class="nav-item active" id="navHome" onclick="switchTab('home')">🏠<br>Home</div>
     <div class="nav-item" id="navGroups" onclick="switchTab('groups')">📁<br>Groups</div>
-    <div class="nav-item" onclick="exportCSV()">📥<br>Backup</div>
 </div>
 
 <script>
     const db = new Dexie("AKChitFundsDB");
-    db.version(7).stores({ members: "++id, name, phone, groupId", groups: "++id, name, duration", payments: "++id, memberId, groupId, chitAmt, paidAmt, balAmt, date, chitPicked" });
+    db.version(8).stores({ members: "++id, &name, phone, groupId", groups: "++id, name, duration", payments: "++id, memberId, groupId, chitAmt, paidAmt, balAmt, date, chitPicked" });
 
     function openModal(id) { document.getElementById(id).style.display = 'block'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
@@ -133,23 +130,27 @@
         const name = document.getElementById('mName').value;
         const phone = document.getElementById('mPhone').value;
         const groupId = document.getElementById('mGroup').value;
-        if(name && groupId) { await db.members.add({ name, phone, groupId: parseInt(groupId) }); updateUI(); closeModal('memberModal'); }
+        try {
+            if(name && groupId) { await db.members.add({ name, phone, groupId: parseInt(groupId) }); updateUI(); closeModal('memberModal'); }
+        } catch(e) { alert("Member already exists. Add payments to join new groups."); }
     }
 
     async function linkGroupForPayment() {
         const mId = document.getElementById('pMember').value;
         if(!mId) return;
         const m = await db.members.get(parseInt(mId));
-        const g = await db.groups.get(parseInt(m.groupId));
-        document.getElementById('pGroup').innerHTML = `<option value="${g.id}">${g.name}</option>`;
+        const allGroups = await db.groups.toArray();
+        document.getElementById('pGroup').innerHTML = allGroups.map(g => `<option value="${g.id}" ${g.id === m.groupId ? 'selected' : ''}>${g.name}</option>`).join('');
     }
 
     async function savePayment() {
+        const pAmt = parseFloat(document.getElementById('pPaid').value);
+        if(isNaN(pAmt)) return alert("Enter amount");
         await db.payments.add({
             memberId: parseInt(document.getElementById('pMember').value),
             groupId: parseInt(document.getElementById('pGroup').value),
             chitAmt: parseFloat(document.getElementById('pChit').value) || 0,
-            paidAmt: parseFloat(document.getElementById('pPaid').value) || 0,
+            paidAmt: pAmt,
             balAmt: parseFloat(document.getElementById('pBal').value) || 0,
             date: document.getElementById('pDate').value,
             chitPicked: document.getElementById('pPicked').checked ? 1 : 0
@@ -157,30 +158,46 @@
         updateUI(); closeModal('paymentModal');
     }
 
+    async function deletePayment(id) {
+        if(confirm("Delete this record?")) { await db.payments.delete(id); updateUI(); loadMemberLedger(); }
+    }
+
+    async function loadMemberLedger() {
+        const mId = document.getElementById('summaryView').value;
+        const container = document.getElementById('ledgerData');
+        if(!mId) return container.innerHTML = '';
+        const pays = await db.payments.where('memberId').equals(parseInt(mId)).toArray();
+        const groups = await db.groups.toArray();
+
+        let html = '<table class="table-custom mt-3"><thead><tr><th>Date</th><th>Group</th><th>Paid</th><th>Action</th></tr></thead><tbody>';
+        pays.forEach(p => {
+            const g = groups.find(group => group.id === p.groupId);
+            html += `<tr><td>${p.date}</td><td>${g ? g.name : '-'}</td><td>₹${p.paidAmt}</td><td><button class="btn-delete" onclick="deletePayment(${p.id})">Del</button></td></tr>`;
+        });
+        container.innerHTML = html + '</tbody></table>';
+    }
+
     async function renderGroupsTab() {
         const groups = await db.groups.toArray();
         const members = await db.members.toArray();
         const payments = await db.payments.toArray();
         let html = '';
-
         for(let g of groups) {
-            const gMembers = members.filter(m => m.groupId === g.id);
-            html += `<div class="group-container">
-                <div class="d-flex justify-content-between mb-2"><span class="fw-bold text-warning">${g.name}</span><span class="small text-dim">${g.duration} Months</span></div>
-                <div class="table-responsive"><table class="table-custom">
-                <thead><tr><th>Member</th><th>Paid</th><th>Picked</th></tr></thead><tbody>`;
-            
-            for(let m of gMembers) {
-                const mPays = payments.filter(p => p.memberId === m.id && p.groupId === g.id);
-                const totalPaid = mPays.reduce((s, p) => s + p.paidAmt, 0);
-                const pickRecord = mPays.find(p => p.chitPicked === 1);
-                const pickedStatus = pickRecord ? `<span class="check-green">✔ (${pickRecord.date})</span>` : '-';
-                
-                html += `<tr><td>${m.name}</td><td>₹${totalPaid}</td><td>${pickedStatus}</td></tr>`;
-            }
-            html += `</tbody></table></div></div>`;
+            const gPays = payments.filter(p => p.groupId === g.id);
+            const uMemberIds = [...new Set(gPays.map(p => p.memberId))];
+            html += `<div class="p-3 mb-3" style="background:var(--card-bg); border-radius:15px; border:1px solid var(--border);">
+                <div class="fw-bold text-warning mb-2">${g.name}</div>
+                <table class="table-custom"><thead><tr><th>Member</th><th>Total</th><th>Picked</th></tr></thead><tbody>`;
+            uMemberIds.forEach(mId => {
+                const m = members.find(member => member.id === mId);
+                const mPays = gPays.filter(p => p.memberId === mId);
+                const total = mPays.reduce((s, p) => s + p.paidAmt, 0);
+                const pick = mPays.find(p => p.chitPicked === 1);
+                html += `<tr><td>${m ? m.name : 'Unknown'}</td><td>₹${total}</td><td>${pick ? '✔' : '-'}</td></tr>`;
+            });
+            html += '</tbody></table></div>';
         }
-        document.getElementById('groupListArea').innerHTML = html || '<div class="text-center py-5 opacity-50">No groups found.</div>';
+        document.getElementById('groupListArea').innerHTML = html || '<div class="text-center py-5">No Group Data</div>';
     }
 
     async function updateUI() {
@@ -190,15 +207,14 @@
         document.getElementById('memberCount').innerText = members.length;
         document.getElementById('groupCount').innerText = groups.length;
         const today = new Date().toISOString().split('T')[0];
-        document.getElementById('todayColl').innerText = `₹${payments.filter(p => p.date === today).reduce((s, p) => s + p.paidAmt, 0)}`;
-
+        const total = payments.filter(p => p.date === today).reduce((s, p) => s + (p.paidAmt || 0), 0);
+        document.getElementById('todayColl').innerText = `₹${total}`;
         const mList = '<option value="">-- Select Member --</option>' + members.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
         document.getElementById('summaryView').innerHTML = mList;
         document.getElementById('pMember').innerHTML = mList;
         document.getElementById('mGroup').innerHTML = '<option value="">-- Enroll in Group --</option>' + groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
     }
 
-    function exportCSV() { /* Logic as before */ }
     document.getElementById('pDate').valueAsDate = new Date();
     updateUI();
 </script>
