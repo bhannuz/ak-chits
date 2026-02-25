@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AK Chit Funds - Cloud Ledger</title>
+    <title>AK Chit Funds - Pro Ledger</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
@@ -27,10 +27,14 @@
         .nav-item.active { color: #f39c12; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        .table-custom { color: white; font-size: 0.75rem; width: 100%; }
-        .table-custom th { color: var(--text-dim); border-bottom: 1px solid var(--border); padding: 8px; }
-        .table-custom td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .btn-delete { background: transparent; border: none; color: #ff4757; font-size: 0.7rem; }
+        .table-custom { color: white; font-size: 0.7rem; width: 100%; }
+        .table-custom th { color: var(--text-dim); border-bottom: 1px solid var(--border); padding: 5px; }
+        .table-custom td { padding: 8px 5px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .btn-delete { background: transparent; border: none; color: #ff4757; font-size: 0.8rem; cursor: pointer; }
+        .search-container { position: relative; width: 100%; }
+        .suggestions-list { position: absolute; top: 100%; left: 0; right: 0; background: var(--input-bg); border: 1px solid var(--border); border-radius: 0 0 12px 12px; z-index: 3000; max-height: 200px; overflow-y: auto; display: none; margin-top: -12px; }
+        .suggestion-item { padding: 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; }
+        .suggestion-item:hover { background: #252f48; color: #f39c12; }
     </style>
 </head>
 <body>
@@ -47,14 +51,14 @@
             <div class="col-4"><div class="stat-card"><span class="stat-num" id="groupCount">-</span><span class="stat-label">Groups</span></div></div>
             <div class="col-4"><div class="stat-card"><span class="stat-num text-success" id="todayColl">₹0</span><span class="stat-label">Today</span></div></div>
         </div>
-
         <button class="btn btn-warning w-100 py-3 mt-4 fw-bold shadow" onclick="openModal('paymentModal')" style="border-radius:20px;">💳 Record Payment</button>
-
         <div class="p-3 my-4" style="background:var(--card-bg); border-radius:20px; border:1px solid var(--border);">
-            <select class="form-input border-0 p-0 mb-3" id="summaryView" onchange="loadMemberLedger()" style="background:transparent; border-bottom: 1px solid #333;"><option value="">-- Loading Cloud Data --</option></select>
+            <div class="search-container mb-3">
+                <input type="text" id="summarySearch" class="form-input" placeholder="🔍 Search Member Name..." oninput="filterSearch('summarySearch', 'summaryList', 'summaryView')">
+                <input type="hidden" id="summaryView"><div id="summaryList" class="suggestions-list"></div>
+            </div>
             <div id="ledgerData"></div>
         </div>
-
         <div class="d-flex gap-2">
             <button class="btn btn-outline-secondary w-100 py-3" style="border-radius:15px; color:white; border-color:var(--border);" onclick="openModal('memberModal')">➕ Member</button>
             <button class="btn btn-outline-secondary w-100 py-3" style="border-radius:15px; color:white; border-color:var(--border);" onclick="openModal('groupModal')">🏦 Group Master</button>
@@ -72,7 +76,7 @@
     <input type="text" id="mName" class="form-input" placeholder="Full Name">
     <select id="mGroup" class="form-input"><option value="">-- Primary Group --</option></select>
     <input type="text" id="mPhone" class="form-input" placeholder="Phone No">
-    <button class="btn-save" id="btnSaveMember" onclick="saveMember()">Save to Cloud</button>
+    <button class="btn-save" onclick="saveMember()">Save Member</button>
     <button class="btn-cancel" onclick="closeModal('memberModal')">Cancel</button>
 </div></div>
 
@@ -80,35 +84,35 @@
     <div class="fw-bold mb-3">Add Group</div>
     <input type="text" id="gName" class="form-input" placeholder="Group Name">
     <input type="number" id="gDuration" class="form-input" placeholder="Duration (Months)">
-    <button class="btn-save" id="btnSaveGroup" onclick="saveGroup()">Save to Cloud</button>
+    <button class="btn-save" onclick="saveGroup()">Save Group</button>
     <button class="btn-cancel" onclick="closeModal('groupModal')">Cancel</button>
 </div></div>
 
 <div id="paymentModal" class="modal-overlay"><div class="modal-content-custom">
     <div class="fw-bold mb-3">Record Payment</div>
     <input type="date" id="pDate" class="form-input">
-    <select id="pMember" class="form-input" onchange="linkGroupForPayment()"><option value="">-- Select Member --</option></select>
+    <div class="search-container">
+        <input type="text" id="pMemberSearch" class="form-input" placeholder="🔍 Search Member..." oninput="filterSearch('pMemberSearch', 'pMemberList', 'pMember')">
+        <input type="hidden" id="pMember"><div id="pMemberList" class="suggestions-list"></div>
+    </div>
     <select id="pGroup" class="form-input" onchange="checkChitStatus()"><option value="">-- Select Group --</option></select>
     <div class="row g-2">
         <div class="col-6"><input type="number" id="pChit" class="form-input" placeholder="Chit Amt" oninput="calcBalance()"></div>
         <div class="col-6"><input type="number" id="pPaid" class="form-input" placeholder="Paid Amt" oninput="calcBalance()"></div>
     </div>
     <input type="number" id="pBal" class="form-input" placeholder="Balance" readonly>
-    <div class="form-input d-flex align-items-center gap-2"><input type="checkbox" id="pPicked"> <label class="mb-0 small text-white">Chit Picked?</label></div>
-    <button class="btn-save" id="btnSavePayment" onclick="savePayment()">Sync Payment</button>
+    <div class="form-input d-flex align-items-center gap-2"><input type="checkbox" id="pPicked"> <label class="mb-0 small">Chit Picked?</label></div>
+    <button class="btn-save" onclick="savePayment()">Sync Payment</button>
     <button class="btn-cancel" onclick="closeModal('paymentModal')">Cancel</button>
 </div></div>
 
 <div class="nav-bar">
     <div class="nav-item active" id="navHome" onclick="switchTab('home')">🏠<br>Home</div>
     <div class="nav-item" id="navGroups" onclick="switchTab('groups')">📁<br>Groups</div>
-    <div class="nav-item" onclick="exportFullBackup()">💾<br>Save Copy</div>
+    <div class="nav-item" onclick="exportFullBackup()">💾<br>Backup</div>
 </div>
 
 <script>
-    // ==========================================
-    // PASTE YOUR FIREBASE CONFIGURATION HERE
-    // ==========================================
     const firebaseConfig = {
         apiKey: "AIzaSyB9_sBL83skvIaOVAE8msHwIWq8QQwhxFU",
         authDomain: "ak-chit-funds.firebaseapp.com",
@@ -117,107 +121,63 @@
         messagingSenderId: "297195194526",
         appId: "1:297195194526:web:b71c7c09dcf8610211938f"
     };
-    
-    // Initialize Firebase
-    try {
-        firebase.initializeApp(firebaseConfig);
-    } catch(err) {
-        alert("Firebase Setup Error: " + err.message);
-    }
+    firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    let ALL_MEMBERS = [];
 
-    // Helper function with Error Tracking
-    async function getCollection(colName) {
-        try {
-            const snapshot = await db.collection(colName).get();
-            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        } catch (error) {
-            console.error("Database connection failed:", error);
-            alert("Connection Error while loading data: " + error.message);
-            return [];
-        }
+    function formatDate(d) { if(!d) return "-"; const [y, m, day] = d.split("-"); return `${day}/${m}/${y}`; }
+
+    function filterSearch(inputId, listId, hiddenId) {
+        const query = document.getElementById(inputId).value.toLowerCase();
+        const list = document.getElementById(listId);
+        list.innerHTML = "";
+        if(!query) { list.style.display = "none"; return; }
+        const filtered = ALL_MEMBERS.filter(m => m.name.toLowerCase().includes(query));
+        if(filtered.length > 0) {
+            list.style.display = "block";
+            filtered.forEach(m => {
+                const div = document.createElement("div"); div.className = "suggestion-item"; div.innerText = m.name;
+                div.onclick = () => { document.getElementById(inputId).value = m.name; document.getElementById(hiddenId).value = m.id; list.style.display = "none";
+                    if(hiddenId === "summaryView") loadMemberLedger(); if(hiddenId === "pMember") linkGroupForPayment(); };
+                list.appendChild(div);
+            });
+        } else { list.style.display = "none"; }
     }
 
-    // Modal Helpers
+    async function getCollection(col) { const snap = await db.collection(col).get(); return snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); }
     function openModal(id) { document.getElementById(id).style.display = 'block'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-    function calcBalance() {
-        const c = parseFloat(document.getElementById('pChit').value) || 0;
-        const p = parseFloat(document.getElementById('pPaid').value) || 0;
-        document.getElementById('pBal').value = c - p;
-    }
+    function calcBalance() { const c = parseFloat(document.getElementById('pChit').value) || 0; const p = parseFloat(document.getElementById('pPaid').value) || 0; document.getElementById('pBal').value = c - p; }
 
-    function switchTab(tab) {
+    function switchTab(t) {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-        if(tab === 'home') { document.getElementById('homeTab').classList.add('active'); document.getElementById('navHome').classList.add('active'); }
+        if(t === 'home') { document.getElementById('homeTab').classList.add('active'); document.getElementById('navHome').classList.add('active'); }
         else { document.getElementById('groupsTab').classList.add('active'); document.getElementById('navGroups').classList.add('active'); renderGroupsTab(); }
     }
 
-    // --- DIAGNOSTIC SAVING FUNCTIONS ---
     async function saveGroup() {
-        const name = document.getElementById('gName').value.trim();
-        const dur = parseInt(document.getElementById('gDuration').value);
-        const btn = document.getElementById('btnSaveGroup');
-        
-        if(name && !isNaN(dur)) {
-            try {
-                btn.innerText = "Saving to Cloud...";
-                btn.disabled = true;
-                
-                await db.collection('groups').add({ name, duration: dur });
-                
-                alert("✅ Success: Group saved successfully!");
-                updateUI(); 
-                closeModal('groupModal');
-            } catch (error) {
-                alert("❌ FIREBASE ERROR: " + error.message);
-            } finally {
-                btn.innerText = "Save to Cloud";
-                btn.disabled = false;
-            }
-        } else {
-            alert("⚠️ Please fill in both Group Name and Duration.");
-        }
+        const n = document.getElementById('gName').value.trim();
+        const d_val = parseInt(document.getElementById('gDuration').value);
+        if(n && !isNaN(d_val)) { await db.collection('groups').add({ name: n, duration: d_val }); updateUI(); closeModal('groupModal'); }
     }
 
     async function saveMember() {
-        const name = document.getElementById('mName').value.trim();
-        const gId = document.getElementById('mGroup').value; 
-        const btn = document.getElementById('btnSaveMember');
-        
-        if(!name || !gId) return alert("⚠️ Enter Name and Group");
-
-        try {
-            btn.innerText = "Saving to Cloud...";
-            btn.disabled = true;
-
-            const existing = await db.collection('members').where('name', '==', name).get();
-            if(!existing.empty) {
-                alert("⚠️ Member '" + name + "' already exists!");
-                btn.innerText = "Save to Cloud";
-                btn.disabled = false;
-                return;
-            }
-
-            await db.collection('members').add({ name, phone: document.getElementById('mPhone').value, groupId: gId });
-            alert("✅ Success: Member saved!");
-            updateUI(); closeModal('memberModal');
-        } catch (error) {
-            alert("❌ FIREBASE ERROR: " + error.message);
-        } finally {
-            btn.innerText = "Save to Cloud";
-            btn.disabled = false;
-        }
+        const n = document.getElementById('mName').value.trim();
+        const g = document.getElementById('mGroup').value;
+        if(!n || !g) return alert("Fill Name and Group!");
+        const ex = await db.collection('members').where('name', '==', n).get();
+        if(!ex.empty) return alert("Member Exists!");
+        await db.collection('members').add({ name: n, phone: document.getElementById('mPhone').value, groupId: g });
+        updateUI(); closeModal('memberModal');
     }
 
     async function linkGroupForPayment() {
         const mid = document.getElementById('pMember').value;
-        if(!mid) return;
         const mDoc = await db.collection('members').doc(mid).get();
         const m = mDoc.data();
-        const allG = await getCollection('groups');
-        document.getElementById('pGroup').innerHTML = allG.map(g => `<option value="${g.id}" ${g.id === m.groupId ? 'selected' : ''}>${g.name}</option>`).join('');
+        const gs = await getCollection('groups');
+        document.getElementById('pGroup').innerHTML = gs.map(g => `<option value="${g.id}" ${g.id === m.groupId ? 'selected' : ''}>${g.name}</option>`).join('');
         checkChitStatus();
     }
 
@@ -225,140 +185,88 @@
         const mid = document.getElementById('pMember').value;
         const gid = document.getElementById('pGroup').value;
         if(!mid || !gid) return;
-
-        const pays = await db.collection('payments')
-            .where('memberId', '==', mid).where('groupId', '==', gid).where('chitPicked', '==', 1).get();
-        
-        const checkbox = document.getElementById('pPicked');
-        if(!pays.empty) { checkbox.checked = true; checkbox.disabled = true; } 
-        else { checkbox.checked = false; checkbox.disabled = false; }
+        const ps = await db.collection('payments').where('memberId', '==', mid).where('groupId', '==', gid).where('chitPicked', '==', 1).get();
+        const cb = document.getElementById('pPicked'); cb.checked = !ps.empty; cb.disabled = !ps.empty;
     }
 
     async function savePayment() {
         const mid = document.getElementById('pMember').value;
         const gid = document.getElementById('pGroup').value;
         const paid = parseFloat(document.getElementById('pPaid').value);
-        const btn = document.getElementById('btnSavePayment');
-
         if(mid && gid && !isNaN(paid)) {
-            try {
-                btn.innerText = "Syncing...";
-                btn.disabled = true;
-
-                await db.collection('payments').add({
-                    memberId: mid, groupId: gid,
-                    chitAmt: parseFloat(document.getElementById('pChit').value) || 0,
-                    paidAmt: paid, balAmt: parseFloat(document.getElementById('pBal').value) || 0,
-                    date: document.getElementById('pDate').value,
-                    chitPicked: document.getElementById('pPicked').checked ? 1 : 0
-                });
-                
-                alert("✅ Success: Payment synced!");
-                updateUI(); closeModal('paymentModal'); loadMemberLedger(); 
-            } catch(error) {
-                alert("❌ FIREBASE ERROR: " + error.message);
-            } finally {
-                btn.innerText = "Sync Payment";
-                btn.disabled = false;
-            }
-        } else alert("⚠️ Missing Payment Data");
+            await db.collection('payments').add({ memberId: mid, groupId: gid, chitAmt: parseFloat(document.getElementById('pChit').value) || 0, paidAmt: paid, balAmt: parseFloat(document.getElementById('pBal').value) || 0, date: document.getElementById('pDate').value, chitPicked: document.getElementById('pPicked').checked ? 1 : 0 });
+            updateUI(); closeModal('paymentModal'); loadMemberLedger();
+        }
     }
 
-    async function deletePayment(id) {
-        if(confirm("Delete this record from the Cloud?")) { await db.collection('payments').doc(id).delete(); loadMemberLedger(); updateUI(); }
-    }
+    async function deletePayment(id) { if(confirm("Del record?")) { await db.collection('payments').doc(id).delete(); loadMemberLedger(); updateUI(); } }
 
     async function loadMemberLedger() {
         const mid = document.getElementById('summaryView').value;
         const container = document.getElementById('ledgerData');
-        if(!mid || mid === "Syncing Cloud...") { container.innerHTML = '<div class="text-center text-dim py-3 small">Select a member.</div>'; return; }
-
-        const allPays = await getCollection('payments');
-        const pays = allPays.filter(p => p.memberId === mid).sort((a,b) => new Date(b.date) - new Date(a.date));
-        const groups = await getCollection('groups');
+        const allP = await getCollection('payments');
+        const ps = allP.filter(p => p.memberId === mid).sort((a,b) => new Date(b.date) - new Date(a.date));
+        const gs = await getCollection('groups');
         const mDoc = await db.collection('members').doc(mid).get();
-        const member = mDoc.data();
-
-        const uniqueGroupIds = [...new Set(pays.map(p => p.groupId))];
-        if(member && member.groupId && !uniqueGroupIds.includes(member.groupId)) { uniqueGroupIds.push(member.groupId); }
-
-        if(uniqueGroupIds.length === 0) { container.innerHTML = '<div class="text-center text-dim py-3 small">No groups assigned yet.</div>'; return; }
-
-        let html = '';
-        uniqueGroupIds.forEach(gid => {
-            const g = groups.find(x => x.id === gid);
-            const groupPays = pays.filter(p => p.groupId === gid);
-            const totalPaid = groupPays.reduce((sum, p) => sum + p.paidAmt, 0);
-            const hasPicked = groupPays.some(p => p.chitPicked === 1);
-
-            html += `<div class="mb-4 p-3" style="background:rgba(255,255,255,0.03); border-radius:15px; border:1px solid #252f48;">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="fw-bold text-info">${g ? g.name : 'Unknown Group'}</span>
-                    <span class="badge ${hasPicked ? 'bg-success' : 'bg-secondary'}" style="font-size:10px;">${hasPicked ? '✔ Picked' : '⏳ Pending'}</span>
-                </div>
-                <div class="table-responsive">
-                    <table class="table-custom mt-2 mb-0">
-                        <thead><tr><th>Date</th><th>Paid</th><th>Bal</th><th>Action</th></tr></thead>
-                        <tbody>`;
-            
-            if (groupPays.length === 0) { html += `<tr><td colspan="4" class="text-center text-dim py-2 border-0">No payments yet</td></tr>`; } 
-            else { groupPays.forEach(p => { html += `<tr><td>${p.date}</td><td>₹${p.paidAmt}</td><td class="text-warning">₹${p.balAmt}</td><td><button class="btn-delete" onclick="deletePayment('${p.id}')">Del</button></td></tr>`; }); }
-            
-            html += `</tbody></table></div>
-                <div class="d-flex justify-content-between mt-2 pt-2 border-top border-secondary">
-                    <span class="small text-dim">Total Contribution:</span>
-                    <span class="fw-bold text-warning">₹${totalPaid}</span>
-                </div></div>`;
+        const m = mDoc.data();
+        const uGids = [...new Set(ps.map(p => p.groupId))];
+        if(m && m.groupId && !uGids.includes(m.groupId)) uGids.push(m.groupId);
+        let h = '';
+        uGids.forEach(gid => {
+            const g = gs.find(x => x.id === gid);
+            const gPs = ps.filter(p => p.groupId === gid);
+            const total = gPs.reduce((s, p) => s + p.paidAmt, 0);
+            const pick = gPs.some(p => p.chitPicked === 1);
+            h += `<div class="mb-4 p-3" style="background:rgba(255,255,255,0.03); border-radius:15px; border:1px solid #252f48;">
+                <div class="d-flex justify-content-between align-items-center mb-2"><span class="fw-bold text-info">${g?g.name:'-'}</span><span class="badge ${pick?'bg-success':'bg-secondary'}">${pick?'✔':'⏳'}</span></div>
+                <div class="table-responsive"><table class="table-custom"><thead><tr><th>Date</th><th>Chit</th><th>Paid</th><th>Bal</th><th></th></tr></thead><tbody>`;
+            gPs.forEach(p => { h += `<tr><td>${formatDate(p.date)}</td><td>₹${p.chitAmt}</td><td>₹${p.paidAmt}</td><td class="text-warning">₹${p.balAmt}</td><td><button class="btn-delete" onclick="deletePayment('${p.id}')">❌</button></td></tr>`; });
+            h += `</tbody></table></div><div class="mt-2 text-end fw-bold text-warning border-top border-secondary pt-2">Total: ₹${total}</div></div>`;
         });
-        container.innerHTML = html;
+        container.innerHTML = h || '<div class="text-center text-dim py-3">No activity.</div>';
     }
 
     async function updateUI() {
-        document.getElementById('summaryView').innerHTML = '<option>Syncing Cloud...</option>';
-        const m = await getCollection('members');
-        const g = await getCollection('groups');
-        const p = await getCollection('payments');
-        
+        const m = await getCollection('members'); const g = await getCollection('groups'); const p = await getCollection('payments');
+        ALL_MEMBERS = m.sort((a,b) => a.name.localeCompare(b.name));
         document.getElementById('memberCount').innerText = m.length;
         document.getElementById('groupCount').innerText = g.length;
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('todayColl').innerText = `₹${p.filter(x => x.date === today).reduce((s, x) => s + (x.paidAmt || 0), 0)}`;
-
-        const mOpt = '<option value="">-- Select Member --</option>' + m.map(x => `<option value="${x.id}">${x.name}</option>`).join('');
-        const gOpt = '<option value="">-- Select Group --</option>' + g.map(x => `<option value="${x.id}">${x.name}</option>`).join('');
-        
-        const currentSummary = document.getElementById('summaryView').value;
-        document.getElementById('summaryView').innerHTML = mOpt;
-        if(currentSummary && currentSummary !== "Syncing Cloud...") { document.getElementById('summaryView').value = currentSummary; loadMemberLedger(); } 
-        else if (m.length > 0) { document.getElementById('summaryView').value = m[0].id; loadMemberLedger(); }
-
-        document.getElementById('pMember').innerHTML = mOpt; document.getElementById('mGroup').innerHTML = gOpt;
+        document.getElementById('mGroup').innerHTML = '<option value="">-- Group --</option>' + g.map(x => `<option value="${x.id}">${x.name}</option>`).join('');
     }
 
     async function renderGroupsTab() {
         const gs = await getCollection('groups'); const ms = await getCollection('members'); const ps = await getCollection('payments');
-        let html = '';
-        for(let g of gs) {
-            const gPs = ps.filter(p => p.groupId === g.id); const uIds = [...new Set(gPs.map(p => p.memberId))];
-            html += `<div class="p-3 mb-3" style="background:var(--card-bg); border-radius:15px; border:1px solid var(--border);"><div class="fw-bold text-warning mb-2">${g.name} (${g.duration} Mo)</div><table class="table-custom"><thead><tr><th>Member</th><th>Total</th><th>Picked</th></tr></thead><tbody>`;
-            uIds.forEach(id => {
-                const m = ms.find(x => x.id === id); const mPs = gPs.filter(x => x.memberId === id);
-                const total = mPs.reduce((s, p) => s + (p.paidAmt || 0), 0); const pick = mPs.find(p => p.chitPicked === 1);
-                html += `<tr><td>${m?m.name:'-'}</td><td>₹${total}</td><td class="text-success fw-bold">${pick?'✔ ('+pick.date+')':'-'}</td></tr>`;
+        let h = '';
+        gs.forEach(g => {
+            const gPs = ps.filter(p => p.groupId === g.id); 
+            const uids = [...new Set(gPs.map(p => p.memberId))];
+            const gTotal = gPs.reduce((s, p) => s + p.paidAmt, 0);
+            h += `<div class="p-3 mb-3" style="background:var(--card-bg); border-radius:15px; border:1px solid var(--border);">
+                <div class="d-flex justify-content-between align-items-center border-bottom border-secondary pb-2 mb-2">
+                    <div><div class="fw-bold text-warning">${g.name}</div><div class="text-dim small">${g.duration} Months</div></div>
+                    <div class="text-end"><div class="fw-bold text-success">₹${gTotal}</div><div class="text-dim small">Total Collected</div></div>
+                </div>
+                <table class="table-custom mt-2"><thead><tr><th>Name</th><th>Paid</th><th class="text-end">Progress</th></tr></thead><tbody>`;
+            const gMs = ms.filter(m => m.groupId === g.id || uids.includes(m.id)).sort((a,b) => a.name.localeCompare(b.name));
+            gMs.forEach(m => {
+                const mPs = gPs.filter(x => x.memberId === m.id);
+                const mTotal = mPs.reduce((s, p) => s + p.paidAmt, 0); 
+                const count = mPs.length;
+                h += `<tr><td>${m.name}</td><td>₹${mTotal}</td><td class="text-end fw-bold text-info">${count} / ${g.duration}</td></tr>`;
             });
-            html += '</tbody></table></div>';
-        }
-        document.getElementById('groupListArea').innerHTML = html || '<div class="text-center py-5">No Data</div>';
+            h += '</tbody></table></div>';
+        });
+        document.getElementById('groupListArea').innerHTML = h;
     }
 
     async function exportFullBackup() {
-        const d = { members: await getCollection('members'), groups: await getCollection('groups'), payments: await getCollection('payments') };
-        const b = new Blob([JSON.stringify(d, null, 2)], { type: "application/json" });
-        const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = `AK_CLOUD_BACKUP_${new Date().toLocaleDateString()}.json`; a.click();
+        const d = { m: await getCollection('members'), g: await getCollection('groups'), p: await getCollection('payments') };
+        const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(d, null, 2)], {type:"application/json"})); a.download = `AK_BACKUP.json`; a.click();
     }
-
     document.getElementById('pDate').valueAsDate = new Date();
-    setTimeout(updateUI, 500); 
+    setTimeout(updateUI, 500);
 </script>
 </body>
 </html>
