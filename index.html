@@ -47,7 +47,7 @@
         .invoice-table th { background: #f0f0f0; border: 1px solid #777; padding: 10px; font-size: 13px; font-weight: bold; text-align: left; }
         .invoice-table td { border: 1px solid #bbb; padding: 10px; font-size: 12px; }
         .info-box { background: #fcfcfc; border: 1px solid #eee; padding: 15px; border-radius: 8px; font-size: 14px; display: flex; justify-content: space-between; width: 100%; }
-        .outstanding-box { background: rgba(211, 84, 0, 0.1); border: 1px solid #d35400; color: #d35400; padding: 15px; border-radius: 15px; margin-bottom: 20px; font-weight: bold; text-align: center; }
+        .pending-tag { color: #d35400; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -195,7 +195,7 @@
         document.getElementById('pdfReportTitle').innerText = "MEMBER LEDGER & PENDING LIST";
         document.getElementById('pdfDate').innerText = 'Generated: ' + new Date().toLocaleDateString('en-IN');
         document.getElementById('pdfInfoLeft').innerHTML = `<strong>Member:</strong> ${m.name}<br><strong>Phone:</strong> ${m.phone || '-'}`;
-        document.getElementById('pdfInfoRight').innerHTML = `<strong>Statement Period:</strong> Till Today`;
+        document.getElementById('pdfInfoRight').innerHTML = `<strong>Total Groups Enrolled:</strong> ${[...new Set(memberPayments.map(p => p.groupId))].length || 1}`;
 
         let historyRows = '';
         let pendingText = '';
@@ -211,59 +211,75 @@
             const bal = gPs.reduce((s,p)=>s+p.balAmt,0);
             grandTotalBal += bal;
 
+            // Header for specific group history
             historyRows += `<tr style="background:#f9f9f9;"><td colspan="5"><strong>Group: ${g.name}</strong></td></tr>`;
             gPs.forEach((p, idx) => {
                 historyRows += `<tr><td>${idx+1}</td><td>${formatDate(p.date)}</td><td>₹${p.paidAmt.toLocaleString()}</td><td>₹${p.balAmt.toLocaleString()}</td><td>${p.chitPicked ? 'YES' : 'NO'}</td></tr>`;
             });
 
+            // Pending Logic
             const elapsed = getElapsedMonths(g.startDate);
             const paidMonths = gPs.map(p => new Date(p.date).getMonth() + '-' + new Date(p.date).getFullYear());
             let missed = [];
+            
             for(let i = 0; i < elapsed; i++) {
-                let d = new Date(g.startDate); d.setMonth(d.getMonth() + i);
+                let d = new Date(g.startDate);
+                d.setMonth(d.getMonth() + i);
                 let check = d.getMonth() + '-' + d.getFullYear();
-                if(!paidMonths.includes(check)) missed.push(d.toLocaleString('default', { month: 'long', year: 'numeric' }));
+                if(!paidMonths.includes(check)) {
+                    missed.push(d.toLocaleString('default', { month: 'long', year: 'numeric' }));
+                }
             }
-            pendingText += missed.length > 0 ? `<div><strong>${g.name}:</strong> ${missed.join(', ')}</div>` : `<div><strong>${g.name}:</strong> All clear.</div>`;
+            
+            if(missed.length > 0) {
+                pendingText += `<div><strong>${g.name}:</strong> ${missed.join(', ')}</div>`;
+            } else {
+                pendingText += `<div><strong>${g.name}:</strong> No pending periods up to date.</div>`;
+            }
         });
 
-        document.getElementById('pdfTableHeader').innerHTML = `<tr><th style="width:50px;">S.No</th><th>Date</th><th>Paid Amt</th><th>Balance</th><th>Picked?</th></tr>`;
+        document.getElementById('pdfTableHeader').innerHTML = `<tr><th style="width:50px;">S.No</th><th>Payment Date</th><th>Paid Amt</th><th>Balance</th><th>Picked?</th></tr>`;
         document.getElementById('pdfTableBody').innerHTML = historyRows;
         document.getElementById('pdfPendingList').innerHTML = pendingText;
         document.getElementById('pdfFooterSummary').innerText = `Total Outstanding: ₹${grandTotalBal.toLocaleString()}`;
 
-        const el = document.getElementById('pdf-template'); el.style.display = 'block';
-        html2pdf().from(el).set({ margin: 10, filename: `AK_Member_${m.name}.pdf`, html2canvas: { scale: 2 }, jsPDF: { format: 'a4' } }).save().then(() => el.style.display='none');
+        const el = document.getElementById('pdf-template');
+        el.style.display = 'block';
+        html2pdf().from(el).set({ margin: 10, filename: `AK_Member_${m.name}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4' } }).save().then(() => el.style.display='none');
+    }
+
+    function togglePickedValue() { document.getElementById('pickedValueArea').style.display = document.getElementById('pPicked').checked ? 'block' : 'none'; }
+    function openModal(id) { document.getElementById(id).style.display = 'block'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    function calcBalance() { const c = parseFloat(document.getElementById('pChit').value)||0; const p = parseFloat(document.getElementById('pPaid').value)||0; document.getElementById('pBal').value = c-p; }
+
+    function switchTab(t) {
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        document.getElementById(t+'Tab').classList.add('active');
+        document.getElementById('nav'+t.charAt(0).toUpperCase() + t.slice(1)).classList.add('active');
+        if(t === 'groups') renderGroupsTab();
+        if(t === 'list') renderListTab();
     }
 
     async function loadMemberLedger() {
         const mid = document.getElementById('summaryView').value; 
         const container = document.getElementById('ledgerData');
         if(!mid) { container.innerHTML = ""; return; }
-        
         const allP = await getCollection('payments'); 
         const gs = await getCollection('groups'); 
         const mDoc = await db.collection('members').doc(mid).get(); 
         const m = mDoc.data();
-        const ps = allP.filter(p => p.memberId === mid);
-        
+        const ps = allP.filter(p => p.memberId === mid).sort((a,b) => new Date(b.date) - new Date(a.date));
         const uGids = [...new Set(ps.map(p => p.groupId))]; if(m && m.groupId && !uGids.includes(m.groupId)) uGids.push(m.groupId);
-        const grandBal = ps.reduce((s,p) => s + p.balAmt, 0);
-
-        let h = `<div class="outstanding-box">Total Outstanding Balance: ₹${grandBal.toLocaleString()}</div>
-                 <div class="d-flex justify-content-end mb-3"><button class="btn btn-sm btn-info fw-bold" onclick="exportMemberPDF()">📄 Member Receipt (PDF)</button></div>`;
         
+        let h = `<div class="d-flex justify-content-end mb-3"><button class="btn btn-sm btn-info fw-bold" onclick="exportMemberPDF()">📄 Member Receipt (PDF)</button></div>`;
         uGids.forEach(gid => {
             const g = gs.find(x => x.id === gid); if(!g) return;
-            const gPs = ps.filter(p => p.groupId === gid);
-            const gPaid = gPs.reduce((s,p) => s + p.paidAmt, 0);
-            const gBal = gPs.reduce((s,p) => s + p.balAmt, 0);
-            
-            h += `<div class="mb-4 p-3" style="background:rgba(255,255,255,0.03); border-radius:15px; border:1px solid #252f48;">
-                    <div class="d-flex justify-content-between align-items-center mb-2"><span class="fw-bold text-info">${g.name}</span><button class="btn-action" onclick="editMember('${mid}','${m.name}','${m.phone}','${gid}')">✏️</button></div>
-                    <table class="table-custom"><thead><tr><th>Date</th><th>Paid</th><th>Bal</th><th></th></tr></thead><tbody>`;
-            gPs.forEach(p => { h += `<tr><td>${formatDate(p.date)}</td><td>₹${p.paidAmt.toLocaleString()}</td><td class="text-warning">₹${p.balAmt.toLocaleString()}</td><td><button onclick="deletePayment('${p.id}')" style="background:none;border:none;color:#ff4757;">❌</button></td></tr>`; });
-            h += `</tbody></table><div class="mt-2 text-end small border-top pt-1 border-secondary">Total Paid: ₹${gPaid.toLocaleString()} | Balance: ₹${gBal.toLocaleString()}</div></div>`;
+            const gPs = ps.filter(p => p.groupId === gid); const pick = gPs.find(p => p.chitPicked === 1);
+            h += `<div class="mb-4 p-3" style="background:rgba(255,255,255,0.03); border-radius:15px; border:1px solid #252f48;"><div class="d-flex justify-content-between align-items-center mb-2"><span class="fw-bold text-info">${g.name}</span><span><button class="btn-action" onclick="editMember('${mid}','${m.name}','${m.phone}','${gid}')">✏️</button></span></div><table class="table-custom"><thead><tr><th>Date</th><th>Paid</th><th>Bal</th><th></th></tr></thead><tbody>`;
+            gPs.forEach(p => { h += `<tr><td>${formatDate(p.date)}</td><td>₹${p.paidAmt.toLocaleString()}</td><td>₹${p.balAmt.toLocaleString()}</td><td><button onclick="deletePayment('${p.id}')" style="background:none;border:none;color:#ff4757;">❌</button></td></tr>`; });
+            h += `</tbody></table></div>`;
         });
         container.innerHTML = h;
     }
@@ -286,6 +302,7 @@
     }
 
     async function getCollection(col) { const snap = await db.collection(col).get(); return snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); }
+
     async function updateUI() {
         const m = await getCollection('members'); const g = await getCollection('groups'); const p = await getCollection('payments');
         ALL_MEMBERS = m.sort((a,b) => a.name.localeCompare(b.name));
@@ -300,7 +317,7 @@
         gs.forEach(g => {
             const gPs = ps.filter(p => p.groupId === g.id); const gMs = ms.filter(m => m.groupId === g.id).sort((a,b) => a.name.localeCompare(b.name));
             const left = Math.max(0, g.duration - getElapsedMonths(g.startDate));
-            h += `<div class="p-3 mb-3" style="background:var(--card-bg); border-radius:15px; border:1px solid var(--border);"><div class="d-flex justify-content-between align-items-center pb-2" onclick="document.getElementById('col-${g.id}').style.display=document.getElementById('col-${g.id}').style.display==='block'?'none':'block'" style="cursor:pointer;"><div><div class="fw-bold text-warning">${g.name} ✏️</div><div class="text-dim small">Starts: ${formatDate(g.startDate)}</div></div><div class="text-end"><div class="fw-bold text-info">${left} / ${g.duration}</div><div class="text-dim small">Left</div></div></div><div id="col-${g.id}" class="collapse-content border-top border-secondary mt-2"><div class="py-2 text-end"><button class="btn btn-sm btn-info me-1" onclick="exportToInvoice('${g.id}')">📄 Report</button><button class="btn btn-sm btn-outline-secondary me-1" onclick="editGroup('${g.id}','${g.name}',${g.duration},'${g.startDate}','${g.chitDay}')">Edit</button></div><table class="table-custom"><thead><tr><th>Name</th><th>Chit</th><th>Bal</th></tr></thead><tbody>`;
+            h += `<div class="p-3 mb-3" style="background:var(--card-bg); border-radius:15px; border:1px solid var(--border);"><div class="d-flex justify-content-between align-items-center pb-2" onclick="document.getElementById('col-${g.id}').style.display=document.getElementById('col-${g.id}').style.display==='block'?'none':'block'" style="cursor:pointer;"><div><div class="fw-bold text-warning">${g.name} ✏️</div><div class="text-dim small">Day: ${g.chitDay || '-'}</div></div><div class="text-end"><div class="fw-bold text-info">${left} / ${g.duration}</div><div class="text-dim small">Left</div></div></div><div id="col-${g.id}" class="collapse-content border-top border-secondary mt-2"><div class="py-2 text-end"><button class="btn btn-sm btn-outline-secondary me-1" onclick="editGroup('${g.id}','${g.name}',${g.duration},'${g.startDate}','${g.chitDay}')">Edit</button></div><table class="table-custom"><thead><tr><th>Name</th><th>Chit</th><th>Bal</th></tr></thead><tbody>`;
             gMs.forEach(m => { const mPs = gPs.filter(x => x.memberId === m.id); h += `<tr><td>${m.name}</td><td>₹${mPs.length?mPs[0].chitAmt.toLocaleString():0}</td><td>₹${mPs.reduce((s,p)=>s+p.balAmt,0).toLocaleString()}</td></tr>`; });
             h += '</tbody></table></div></div>';
         });
@@ -319,11 +336,6 @@
         document.getElementById('simpleListArea').innerHTML = h;
     }
 
-    async function exportFullBackup() {
-        const d = { m: await getCollection('members'), g: await getCollection('groups'), p: await getCollection('payments') };
-        const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(d, null, 2)], {type:"application/json"})); a.download = `AK_BACKUP.json`; a.click();
-    }
-
     async function saveGroup() {
         const n = document.getElementById('gName').value.trim(); const d = parseInt(document.getElementById('gDuration').value); const s = document.getElementById('gStart').value; const c = document.getElementById('gChitDay').value; const eid = document.getElementById('editGroupId').value;
         if(n && d && s) { if(eid) await db.collection('groups').doc(eid).update({name:n, duration:d, startDate:s, chitDay:c}); else await db.collection('groups').add({name:n, duration:d, startDate:s, chitDay:c}); updateUI(); closeModal('groupModal'); }
@@ -334,23 +346,16 @@
         if(n && g) { if(eid) await db.collection('members').doc(eid).update({name:n, phone:document.getElementById('mPhone').value, groupId:g}); else await db.collection('members').add({name:n, phone:document.getElementById('mPhone').value, groupId:g}); updateUI(); closeModal('memberModal'); }
     }
 
-    async function linkGroupForPayment() {
-        const mid = document.getElementById('pMember').value; if(!mid) return;
-        const mDoc = await db.collection('members').doc(mid).get(); const m = mDoc.data(); const gs = await getCollection('groups');
-        document.getElementById('pGroup').innerHTML = gs.map(g => `<option value="${g.id}" ${g.id === m.groupId ? 'selected' : ''}>${g.name}</option>`).join('');
-    }
-
     async function savePayment() {
         const mid = document.getElementById('pMember').value; const gid = document.getElementById('pGroup').value; const paid = parseFloat(document.getElementById('pPaid').value);
         if(mid && gid && !isNaN(paid)) { await db.collection('payments').add({ memberId: mid, groupId: gid, chitAmt: parseFloat(document.getElementById('pChit').value)||0, paidAmt: paid, balAmt: parseFloat(document.getElementById('pBal').value)||0, date: document.getElementById('pDate').value, chitPicked: document.getElementById('pPicked').checked?1:0, pickedValue: parseFloat(document.getElementById('pPickedVal').value)||0 }); closeModal('paymentModal'); updateUI(); loadMemberLedger(); }
     }
 
     async function deletePayment(id) { if(confirm("Del record?")) { await db.collection('payments').doc(id).delete(); loadMemberLedger(); updateUI(); } }
-    
-    function switchTab(t) {
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        document.getElementById(t+'Tab').classList.add('active');
-        updateUI();
+
+    async function exportFullBackup() {
+        const d = { m: await getCollection('members'), g: await getCollection('groups'), p: await getCollection('payments') };
+        const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(d, null, 2)], {type:"application/json"})); a.download = `AK_BACKUP.json`; a.click();
     }
     document.getElementById('pDate').valueAsDate = new Date();
     setTimeout(updateUI, 500);
