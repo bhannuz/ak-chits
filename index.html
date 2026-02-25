@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AK Chit Funds - Admin Portal</title>
+    <title>AK Chit Funds - Pro Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
@@ -19,10 +19,8 @@
         .stat-num { font-size: 1.4rem; font-weight: bold; display: block; }
         .stat-label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; }
         
-        /* ALERTS */
         .due-alert-box { background: rgba(243, 156, 18, 0.1); border: 1px solid rgba(243, 156, 18, 0.3); border-radius: 15px; padding: 15px; margin-top: 20px; display: none; }
         .due-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .due-item:last-child { border-bottom: none; }
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; padding: 20px; overflow-y: auto; }
         .modal-content-custom { background: var(--card-bg); border-radius: 25px; padding: 25px; max-width: 450px; margin: 20px auto; border: 1px solid var(--border); }
@@ -52,12 +50,16 @@
 
         /* PDF TEMPLATE STYLING */
         #pdf-template { display: none; background: white !important; color: black !important; padding: 40px; width: 850px; }
-        .invoice-header { border-bottom: 3px solid #f39c12; padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-start; }
-        .invoice-title { font-size: 32px; font-weight: bold; color: #f39c12; margin: 0; }
+        .invoice-header { border-bottom: 3px solid #f39c12; padding-bottom: 15px; margin-bottom: 25px; display: table; width: 100%; }
+        .header-left { display: table-cell; vertical-align: top; text-align: left; width: 60%; }
+        .header-right { display: table-cell; vertical-align: top; text-align: right; width: 40%; }
+        .invoice-title { font-size: 32px; font-weight: bold; color: #f39c12; margin: 0; line-height: 1.2; }
         .invoice-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .invoice-table th { background: #f0f0f0; border: 1px solid #777; padding: 10px; font-size: 13px; font-weight: bold; text-align: left; }
-        .invoice-table td { border: 1px solid #bbb; padding: 10px; font-size: 12px; }
-        .info-box { background: #fcfcfc; border: 1px solid #eee; padding: 15px; border-radius: 8px; font-size: 14px; display: flex; justify-content: space-between; width: 100%; }
+        .invoice-table th { background: #f0f0f0; border: 1px solid #777; padding: 8px; font-size: 11px; font-weight: bold; text-align: left; }
+        .invoice-table td { border: 1px solid #bbb; padding: 8px; font-size: 11px; }
+        .info-box { background: #fcfcfc; border: 1px solid #eee; padding: 15px; border-radius: 8px; font-size: 13px; display: table; width: 100%; }
+        .info-left, .info-right { display: table-cell; width: 50%; }
+        .total-due-row { background: #fff8e1; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -69,11 +71,7 @@
     </div>
 
     <div id="homeTab" class="tab-content active">
-        <div id="dueAlerts" class="due-alert-box">
-            <div class="small fw-bold text-warning mb-2">🔔 PAYMENTS DUE TODAY</div>
-            <div id="dueList"></div>
-        </div>
-
+        <div id="dueAlerts" class="due-alert-box"><div class="small fw-bold text-warning mb-2">🔔 PAYMENTS DUE TODAY</div><div id="dueList"></div></div>
         <div class="row g-2 mt-4 text-center">
             <div class="col-4"><div class="stat-card"><span class="stat-num" id="memberCount">-</span><span class="stat-label">Members</span></div></div>
             <div class="col-4"><div class="stat-card"><span class="stat-num" id="groupCount">-</span><span class="stat-label">Groups</span></div></div>
@@ -87,84 +85,31 @@
             </div>
             <div id="ledgerData"></div>
         </div>
-        <div class="d-flex gap-2">
-            <button class="btn btn-outline-secondary w-100 py-3" onclick="openAddMember()">➕ Member</button>
-            <button class="btn btn-outline-secondary w-100 py-3" onclick="openAddGroup()">🏦 Group</button>
-        </div>
+        <div class="d-flex gap-2"><button class="btn btn-outline-secondary w-100 py-3" onclick="openAddMember()">➕ Member</button><button class="btn btn-outline-secondary w-100 py-3" onclick="openAddGroup()">🏦 Group</button></div>
     </div>
 
-    <div id="groupsTab" class="tab-content">
-        <h5 class="mt-4 mb-3 text-warning text-center">Group Collections</h5>
-        <div id="groupListArea"></div>
-    </div>
-
-    <div id="listTab" class="tab-content">
-        <h5 class="mt-4 mb-3 text-warning text-center">Member Directory</h5>
-        <div id="simpleListArea"></div>
-    </div>
+    <div id="groupsTab" class="tab-content"><h5 class="mt-4 mb-3 text-warning text-center">Group Collections</h5><div id="groupListArea"></div></div>
+    <div id="listTab" class="tab-content"><h5 class="mt-4 mb-3 text-warning text-center">Member Directory</h5><div id="simpleListArea"></div></div>
 </div>
 
 <div id="pdf-template">
-    <div class="invoice-header">
-        <div style="flex: 2;">
-            <div class="invoice-title">AK CHIT FUNDS</div>
-            <div style="margin-top:8px; font-size:16px;"><strong>📞 Phone:</strong> 77*******</div>
-            <div style="font-size:13px; color: #555;"><strong>📍 Location:</strong> Hyderabad, Telangana</div>
-        </div>
-        <div style="flex: 1.5; text-align: right;">
-            <div style="font-size: 20px; font-weight: bold; color: #222;">CHIT SETTLEMENT REPORT</div>
-            <div id="pdfDate" style="font-size: 12px; margin-top: 5px; color: #666;"></div>
-        </div>
-    </div>
-
-    <div class="info-box mb-4">
-        <div style="text-align: left; width:50%;">
-            <strong>Group Name:</strong> <span id="pdfGroupName"></span><br>
-            <strong>Start Date:</strong> <span id="pdfStartDate"></span><br>
-            <strong>End Date:</strong> <span id="pdfEndDate"></span>
-        </div>
-        <div style="text-align: right; width:50%;">
-            <strong>Chit Date:</strong> Every <span id="pdfChitDay"></span> of month<br>
-            <strong>Group Progress:</strong> <span id="pdfProgress"></span><br>
-            <strong>Total Collection:</strong> <span id="pdfTotalColl"></span>
-        </div>
-    </div>
-
-    <table class="invoice-table">
-        <thead><tr><th style="width:50px;">S.No</th><th>Member Name</th><th>Till Today Paid</th><th>Balance</th><th>Chit Picked?</th></tr></thead>
-        <tbody id="pdfTableBody"></tbody>
-        <tfoot><tr><td colspan="3" style="text-align:right; font-weight:bold; padding:12px;">Total Balance Due:</td><td id="pdfTotalDue" colspan="2" style="font-weight:bold; color:#d35400; padding:12px;">₹0</td></tr></tfoot>
-    </table>
+    <div class="invoice-header"><div class="header-left"><div class="invoice-title">AK CHIT FUNDS</div><div style="margin-top:5px; font-size:16px;"><strong>📞 Phone:</strong> 77*******</div></div><div class="header-right"><div style="font-size: 18px; font-weight: bold;">CHIT SETTLEMENT REPORT</div><div id="pdfDate" style="font-size: 11px; margin-top: 5px;"></div></div></div>
+    <div class="info-box mb-4"><div class="info-left"><strong>Group Name:</strong> <span id="pdfGroupName"></span><br><strong>Start Date:</strong> <span id="pdfStartDate"></span><br><strong>End Date:</strong> <span id="pdfEndDate"></span></div><div class="info-right" style="text-align:right;"><strong>Chit Date:</strong> Every <span id="pdfChitDay"></span> of month<br><strong>Group Progress:</strong> <span id="pdfProgress"></span><br><strong>Total Collection:</strong> <span id="pdfTotalColl"></span></div></div>
+    <table class="invoice-table"><thead><tr><th style="width:40px;">S.No</th><th>Member Name</th><th>Till Today Paid</th><th>Balance</th><th>Chit Picked?</th></tr></thead><tbody id="pdfTableBody"></tbody><tfoot><tr class="total-due-row"><td colspan="3" style="text-align:right;">Total Balance Due:</td><td id="pdfTotalDue" colspan="2">₹0</td></tr></tfoot></table>
 </div>
 
-<div id="memberModal" class="modal-overlay"><div class="modal-content-custom">
-    <div class="fw-bold mb-3" id="memberModalTitle">Member Settings</div>
-    <input type="hidden" id="editMemberId">
-    <input type="text" id="mName" class="form-input" placeholder="Full Name">
-    <select id="mGroup" class="form-input"><option value="">-- Primary Group --</option></select>
-    <input type="text" id="mPhone" class="form-input" placeholder="Phone No">
-    <div id="deleteMemberArea" style="display:none;"><button class="btn btn-danger w-100 mb-3 py-2 fw-bold rounded-3" onclick="deleteMemberFromModal()">Delete Member</button></div>
-    <button class="btn-save" onclick="saveMember()">Save Member</button>
-    <button class="btn-cancel" onclick="closeModal('memberModal')">Cancel</button>
-</div></div>
+<div id="memberModal" class="modal-overlay"><div class="modal-content-custom"><div class="fw-bold mb-3" id="memberModalTitle">Member Settings</div><input type="hidden" id="editMemberId"><input type="text" id="mName" class="form-input" placeholder="Full Name"><select id="mGroup" class="form-input"><option value="">-- Primary Group --</option></select><input type="text" id="mPhone" class="form-input" placeholder="Phone No"><div id="deleteMemberArea" style="display:none;"><button class="btn btn-danger w-100 mb-3 py-2 fw-bold rounded-3" onclick="deleteMemberFromModal()">Delete Member</button></div><button class="btn-save" onclick="saveMember()">Save Member</button><button class="btn-cancel" onclick="closeModal('memberModal')">Cancel</button></div></div>
 
-<div id="groupModal" class="modal-overlay"><div class="modal-content-custom">
-    <div class="fw-bold mb-3" id="groupModalTitle">Group Settings</div>
-    <input type="hidden" id="editGroupId">
-    <input type="text" id="gName" class="form-input" placeholder="Group Name">
-    <input type="number" id="gDuration" class="form-input" placeholder="Duration (Months)">
-    <input type="number" id="gChitDay" class="form-input" placeholder="Chit Day (e.g. 5, 10, 15)">
-    <div class="small text-dim mb-1">Chit Start Date</div>
-    <input type="date" id="gStart" class="form-input">
-    <button class="btn-save" onclick="saveGroup()">Save Group</button>
-    <button class="btn-cancel" onclick="closeModal('groupModal')">Cancel</button>
-</div></div>
+<div id="groupModal" class="modal-overlay"><div class="modal-content-custom"><div class="fw-bold mb-3" id="groupModalTitle">Group Settings</div><input type="hidden" id="editGroupId"><input type="text" id="gName" class="form-input" placeholder="Group Name"><input type="number" id="gDuration" class="form-input" placeholder="Duration (Months)"><input type="number" id="gChitDay" class="form-input" placeholder="Chit Day (e.g. 5, 10, 15)"><input type="date" id="gStart" class="form-input"><button class="btn-save" onclick="saveGroup()">Save Group</button><button class="btn-cancel" onclick="closeModal('groupModal')">Cancel</button></div></div>
 
 <div id="paymentModal" class="modal-overlay"><div class="modal-content-custom">
     <div class="fw-bold mb-3">Record Payment</div>
     <input type="date" id="pDate" class="form-input">
-    <div class="search-container" style="position:relative;"><input type="text" id="pMemberSearch" class="form-input" placeholder="🔍 Search Member..." oninput="filterSearch('pMemberSearch', 'pMemberList', 'pMember')"><input type="hidden" id="pMember"><div id="pMemberList" class="suggestions-list"></div></div>
-    <select id="pGroup" class="form-input" onchange="checkChitStatus()"><option value="">-- Select Group --</option></select>
+    <div class="search-container" style="position:relative;">
+        <input type="text" id="pMemberSearch" class="form-input" placeholder="🔍 Search Member..." oninput="filterSearch('pMemberSearch', 'pMemberList', 'pMember')">
+        <input type="hidden" id="pMember"><div id="pMemberList" class="suggestions-list"></div>
+    </div>
+    <select id="pGroup" class="form-input" onchange="checkChitStatus()"><option value="">-- Select Member First --</option></select>
     <div class="row g-2"><div class="col-6"><input type="number" id="pChit" class="form-input" placeholder="Chit Amt" oninput="calcBalance()"></div><div class="col-6"><input type="number" id="pPaid" class="form-input" placeholder="Paid Amt" oninput="calcBalance()"></div></div>
     <input type="number" id="pBal" class="form-input" placeholder="Balance" readonly>
     <div class="form-input d-flex align-items-center gap-2 mb-2"><input type="checkbox" id="pPicked" onchange="togglePickedValue()"><label class="mb-0 small">Chit Picked?</label></div>
@@ -212,15 +157,35 @@
     }
 
     async function checkReminders() {
-        const gs = await getCollection('groups');
-        const today = new Date().getDate();
-        const box = document.getElementById('dueAlerts');
-        const list = document.getElementById('dueList');
+        const gs = await getCollection('groups'); const today = new Date().getDate();
         const dueGroups = gs.filter(g => parseInt(g.chitDay) === today);
+        const box = document.getElementById('dueAlerts');
         if(dueGroups.length > 0) {
             box.style.display = 'block';
-            list.innerHTML = dueGroups.map(g => `<div class="due-item"><span>💰 <strong>${g.name}</strong> Collection</span><span class="badge bg-warning text-dark">Day ${g.chitDay}</span></div>`).join('');
+            document.getElementById('dueList').innerHTML = dueGroups.map(g => `<div class="due-item"><span>💰 <strong>${g.name}</strong> Collection</span><span class="badge bg-warning text-dark">Day ${g.chitDay}</span></div>`).join('');
         } else box.style.display = 'none';
+    }
+
+    async function linkGroupForPayment() {
+        const mid = document.getElementById('pMember').value;
+        if(!mid) return;
+        
+        // Find ALL groups this member is enrolled in
+        const membersData = await getCollection('members');
+        const memberInfo = membersData.find(m => m.id === mid);
+        const groups = await getCollection('groups');
+        
+        // Filter groups where the member is enrolled (Direct link via groupId)
+        const enrolledGroups = groups.filter(g => g.id === memberInfo.groupId);
+        
+        // Display filtered groups in dropdown
+        const pGroupSelect = document.getElementById('pGroup');
+        if(enrolledGroups.length > 0) {
+            pGroupSelect.innerHTML = enrolledGroups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+            checkChitStatus();
+        } else {
+            pGroupSelect.innerHTML = '<option value="">No Groups Found</option>';
+        }
     }
 
     async function exportToInvoice(groupId) {
@@ -242,7 +207,7 @@
         });
         document.getElementById('pdfTableBody').innerHTML = r; document.getElementById('pdfTotalDue').innerText = '₹' + totalDue.toLocaleString('en-IN');
         const el = document.getElementById('pdf-template'); el.style.display = 'block';
-        html2pdf().from(el).set({ margin: 10, filename: `AK_Chit_Report_${g.name}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).save().then(() => el.style.display='none');
+        html2pdf().from(el).set({ margin: 10, filename: `AK_Report_${g.name}.pdf`, html2canvas: { scale: 2 }, jsPDF: { format: 'a4' } }).save().then(() => el.style.display='none');
     }
 
     function filterSearch(inputId, listId, hiddenId) {
@@ -254,8 +219,13 @@
             list.style.display = "block";
             filtered.forEach(m => {
                 const div = document.createElement("div"); div.className = "suggestion-item"; div.innerText = m.name;
-                div.onclick = () => { document.getElementById(inputId).value = m.name; document.getElementById(hiddenId).value = m.id; list.style.display = "none";
-                    if(hiddenId === "summaryView") loadMemberLedger(); if(hiddenId === "pMember") linkGroupForPayment(); };
+                div.onclick = () => { 
+                    document.getElementById(inputId).value = m.name; 
+                    document.getElementById(hiddenId).value = m.id; 
+                    list.style.display = "none";
+                    if(hiddenId === "summaryView") loadMemberLedger(); 
+                    if(hiddenId === "pMember") linkGroupForPayment(); 
+                };
                 list.appendChild(div);
             });
         } else list.style.display = "none";
@@ -291,11 +261,6 @@
     async function editMember(id, n, p, g) { document.getElementById('memberModalTitle').innerText = "Edit Member"; document.getElementById('editMemberId').value = id; document.getElementById('mName').value = n; document.getElementById('mPhone').value = p; document.getElementById('mGroup').value = g; document.getElementById('deleteMemberArea').style.display='block'; openModal('memberModal'); }
     async function deleteMemberFromModal() { const id = document.getElementById('editMemberId').value; if(confirm("Del Member?")) { await db.collection('members').doc(id).delete(); updateUI(); closeModal('memberModal'); } }
 
-    async function linkGroupForPayment() {
-        const mid = document.getElementById('pMember').value; const mDoc = await db.collection('members').doc(mid).get(); const m = mDoc.data(); const gs = await getCollection('groups');
-        document.getElementById('pGroup').innerHTML = gs.map(g => `<option value="${g.id}" ${g.id === m.groupId ? 'selected' : ''}>${g.name}</option>`).join('');
-        checkChitStatus();
-    }
     async function checkChitStatus() {
         const mid = document.getElementById('pMember').value; const gid = document.getElementById('pGroup').value; if(!mid || !gid) return;
         const ps = await db.collection('payments').where('memberId', '==', mid).where('groupId', '==', gid).where('chitPicked', '==', 1).get();
