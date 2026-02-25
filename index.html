@@ -38,22 +38,21 @@
         .suggestions-list { position: absolute; top: 100%; left: 0; right: 0; background: var(--input-bg); border: 1px solid var(--border); border-radius: 0 0 12px 12px; z-index: 3000; max-height: 200px; overflow-y: auto; display: none; margin-top: -12px; }
         .suggestion-item { padding: 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; }
         .suggestion-item:hover { background: #252f48; color: #f39c12; }
+        .collapse-content { display: none; }
 
-        /* LIST TAB STYLING */
         .list-group-header { background: #1c253b; padding: 12px 15px; border-radius: 10px; margin-top: 15px; font-weight: bold; color: #f39c12; border-left: 4px solid #f39c12; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         .list-member-item { padding: 10px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; display: flex; align-items: center; }
         .list-sn { width: 35px; color: var(--text-dim); font-size: 0.75rem; font-weight: bold; }
-        .group-checkbox-area { max-height: 150px; overflow-y: auto; background: var(--input-bg); padding: 10px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 15px; }
+        .list-count-badge { font-size: 0.75rem; background: rgba(243, 156, 18, 0.15); color: #f39c12; padding: 2px 10px; border-radius: 20px; }
 
-        /* PDF TEMPLATE */
-        #pdf-template { display: none; background: white !important; color: black !important; padding: 30px; width: 750px; margin: 0 auto; }
-        .invoice-header { border-bottom: 3px solid #f39c12; padding-bottom: 10px; margin-bottom: 20px; display: table; width: 100%; }
-        .header-left { display: table-cell; text-align: left; width: 60%; }
-        .header-right { display: table-cell; text-align: right; width: 40%; }
-        .invoice-title { font-size: 32px; font-weight: bold; color: #f39c12; margin: 0; }
+        /* PDF TEMPLATE STYLING */
+        #pdf-template { display: none; background: white !important; color: black !important; padding: 40px; width: 850px; }
+        .invoice-header { border-bottom: 3px solid #f39c12; padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-start; }
+        .invoice-title { font-size: 32px; font-weight: bold; color: #f39c12; margin: 0; line-height: 1.2; }
         .invoice-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .invoice-table th { background: #f0f0f0; border: 1px solid #777; padding: 8px; font-size: 11px; }
-        .invoice-table td { border: 1px solid #bbb; padding: 8px; font-size: 11px; }
+        .invoice-table th { background: #f0f0f0; border: 1px solid #777; padding: 10px; font-size: 13px; font-weight: bold; text-align: left; }
+        .invoice-table td { border: 1px solid #bbb; padding: 10px; font-size: 12px; }
+        .info-box { background: #fcfcfc; border: 1px solid #eee; padding: 15px; border-radius: 8px; font-size: 14px; display: flex; justify-content: space-between; width: 100%; }
     </style>
 </head>
 <body>
@@ -72,8 +71,10 @@
         </div>
         <button class="btn btn-warning w-100 py-3 mt-4 fw-bold shadow" onclick="openModal('paymentModal')" style="border-radius:20px;">💳 Record Payment</button>
         <div class="p-3 my-4" style="background:var(--card-bg); border-radius:20px; border:1px solid var(--border);">
-            <input type="text" id="summarySearch" class="form-input" placeholder="🔍 Search Member..." oninput="filterSearch('summarySearch', 'summaryList', 'summaryView')">
-            <input type="hidden" id="summaryView"><div id="summaryList" class="suggestions-list"></div>
+            <div class="search-container mb-3" style="position:relative;">
+                <input type="text" id="summarySearch" class="form-input" placeholder="🔍 Search Member..." oninput="filterSearch('summarySearch', 'summaryList', 'summaryView')">
+                <input type="hidden" id="summaryView"><div id="summaryList" class="suggestions-list"></div>
+            </div>
             <div id="ledgerData"></div>
         </div>
         <div class="d-flex gap-2">
@@ -82,62 +83,92 @@
         </div>
     </div>
 
-    <div id="groupsTab" class="tab-content"><div id="groupListArea"></div></div>
-    <div id="listTab" class="tab-content"><div id="simpleListArea"></div></div>
+    <div id="groupsTab" class="tab-content">
+        <h5 class="mt-4 mb-3 text-warning text-center">Group Collections</h5>
+        <div id="groupListArea"></div>
+    </div>
 
-    <div id="backupTab" class="tab-content">
-        <h5 class="mt-4 mb-3 text-warning text-center">Data Management</h5>
-        <div class="stat-card p-4">
-            <button class="btn btn-warning w-100 py-3 mb-4 fw-bold" onclick="exportFullBackup()">💾 Download JSON Backup</button>
-            <hr style="border-color: var(--border);">
-            <div class="small text-dim mb-2">Upload Backup to Restore:</div>
-            <input type="file" id="restoreFile" class="form-control mb-2 bg-dark text-white border-secondary" accept=".json">
-            <button class="btn btn-outline-info w-100 py-3" onclick="restoreFromJSON()">🔄 Restore from File</button>
-        </div>
+    <div id="listTab" class="tab-content">
+        <h5 class="mt-4 mb-3 text-warning text-center">Member Directory</h5>
+        <div id="simpleListArea"></div>
     </div>
 </div>
 
 <div id="pdf-template">
     <div class="invoice-header">
-        <div class="header-left">
+        <div style="flex: 2;">
             <div class="invoice-title">AK CHIT FUNDS</div>
-            <div style="margin-top:5px; font-size:16px;"><strong>📞 Phone:</strong> 77*******</div>
+            <div style="margin-top:8px; font-size:16px;"><strong>📞 Phone:</strong> 77*******</div>
+            <div style="font-size:13px; color: #555;"><strong>📍 Location:</strong> Hyderabad, Telangana</div>
         </div>
-        <div class="header-right">
-            <div style="font-size: 18px; font-weight: bold;">CHIT SETTLEMENT REPORT</div>
-            <div id="pdfDate" style="font-size: 11px;"></div>
+        <div style="flex: 1.5; text-align: right;">
+            <div style="font-size: 20px; font-weight: bold; color: #222;">CHIT SETTLEMENT REPORT</div>
+            <div id="pdfDate" style="font-size: 12px; margin-top: 5px;"></div>
         </div>
     </div>
-    <div id="pdfBody"></div>
+
+    <div class="info-box mb-4">
+        <div style="text-align: left;">
+            <strong>Group Name:</strong> <span id="pdfGroupName"></span><br>
+            <strong>Start Date:</strong> <span id="pdfStartDate"></span><br>
+            <strong>End Date:</strong> <span id="pdfEndDate"></span>
+        </div>
+        <div style="text-align: right;">
+            <strong>Chit Date:</strong> Every <span id="pdfChitDay"></span> of month<br>
+            <strong>Group Progress:</strong> <span id="pdfProgress"></span><br>
+            <strong>Total Collection:</strong> <span id="pdfTotalColl"></span>
+        </div>
+    </div>
+
+    <table class="invoice-table">
+        <thead>
+            <tr>
+                <th style="width: 50px;">S.No</th>
+                <th>Member Name</th>
+                <th>Paid Today</th>
+                <th>Balance</th>
+                <th>Chit Picked?</th>
+            </tr>
+        </thead>
+        <tbody id="pdfTableBody"></tbody>
+    </table>
 </div>
 
 <div id="memberModal" class="modal-overlay"><div class="modal-content-custom">
     <div class="fw-bold mb-3" id="memberModalTitle">Member Settings</div>
     <input type="hidden" id="editMemberId">
     <input type="text" id="mName" class="form-input" placeholder="Full Name">
+    <select id="mGroup" class="form-input"><option value="">-- Primary Group --</option></select>
     <input type="text" id="mPhone" class="form-input" placeholder="Phone No">
-    <div class="small text-dim mb-2">Assign to Groups:</div>
-    <div id="groupCheckboxes" class="group-checkbox-area"></div>
-    <div id="deleteMemberArea" style="display:none;"><button class="btn btn-danger w-100 mb-3 py-2 fw-bold" onclick="deleteMemberFromModal()">Delete Member</button></div>
+    <div id="deleteMemberArea" style="display:none;"><button class="btn btn-danger w-100 mb-3 py-2 fw-bold rounded-3" onclick="deleteMemberFromModal()">Delete Member</button></div>
     <button class="btn-save" onclick="saveMember()">Save Member</button>
     <button class="btn-cancel" onclick="closeModal('memberModal')">Cancel</button>
 </div></div>
 
 <div id="groupModal" class="modal-overlay"><div class="modal-content-custom">
+    <div class="fw-bold mb-3" id="groupModalTitle">Group Settings</div>
     <input type="hidden" id="editGroupId">
     <input type="text" id="gName" class="form-input" placeholder="Group Name">
     <input type="number" id="gDuration" class="form-input" placeholder="Duration (Months)">
+    <input type="number" id="gChitDay" class="form-input" placeholder="Chit Day (e.g. 5, 10, 15)">
+    <div class="small text-dim mb-1">Chit Start Date</div>
     <input type="date" id="gStart" class="form-input">
     <button class="btn-save" onclick="saveGroup()">Save Group</button>
     <button class="btn-cancel" onclick="closeModal('groupModal')">Cancel</button>
 </div></div>
 
 <div id="paymentModal" class="modal-overlay"><div class="modal-content-custom">
+    <div class="fw-bold mb-3">Record Payment</div>
     <input type="date" id="pDate" class="form-input">
     <div class="search-container" style="position:relative;"><input type="text" id="pMemberSearch" class="form-input" placeholder="🔍 Search Member..." oninput="filterSearch('pMemberSearch', 'pMemberList', 'pMember')"><input type="hidden" id="pMember"><div id="pMemberList" class="suggestions-list"></div></div>
-    <select id="pGroup" class="form-input" onchange="checkChitStatus()"><option value="">-- Select Member First --</option></select>
+    <select id="pGroup" class="form-input" onchange="checkChitStatus()"><option value="">-- Select Group --</option></select>
     <div class="row g-2"><div class="col-6"><input type="number" id="pChit" class="form-input" placeholder="Chit Amt" oninput="calcBalance()"></div><div class="col-6"><input type="number" id="pPaid" class="form-input" placeholder="Paid Amt" oninput="calcBalance()"></div></div>
     <input type="number" id="pBal" class="form-input" placeholder="Balance" readonly>
+    <div class="form-input d-flex align-items-center gap-2 mb-2">
+        <input type="checkbox" id="pPicked" onchange="togglePickedValue()"> 
+        <label class="mb-0 small">Chit Picked?</label>
+    </div>
+    <div id="pickedValueArea" style="display:none;"><input type="number" id="pPickedVal" class="form-input" placeholder="Amount won"></div>
     <button class="btn-save" onclick="savePayment()">Sync Payment</button>
     <button class="btn-cancel" onclick="closeModal('paymentModal')">Cancel</button>
 </div></div>
@@ -146,7 +177,7 @@
     <div class="nav-item active" id="navHome" onclick="switchTab('home')">🏠<br>Home</div>
     <div class="nav-item" id="navGroups" onclick="switchTab('groups')">📁<br>Groups</div>
     <div class="nav-item" id="navList" onclick="switchTab('list')">📜<br>List</div>
-    <div class="nav-item" id="navBackup" onclick="switchTab('backup')">💾<br>Backup</div>
+    <div class="nav-item" onclick="exportFullBackup()">💾<br>Backup</div>
 </div>
 
 <script>
@@ -162,22 +193,17 @@
     const db = firebase.firestore();
     let ALL_MEMBERS = [];
 
-    // DATA MIGRATION ENGINE
-    async function migrateData() {
-        const ms = await getCollection('members');
-        for(let m of ms) {
-            if(m.groupId && !m.groupIds) {
-                await db.collection('members').doc(m.id).update({ 
-                    groupIds: [m.groupId], 
-                    groupId: firebase.firestore.FieldValue.delete() 
-                });
-            }
-        }
-        updateUI();
+    function formatDate(d) { if(!d) return "-"; const [y, m, day] = d.split("-"); return `${day}/${m}/${y}`; }
+    
+    function calculateEndDate(startStr, duration) {
+        if(!startStr || !duration) return "-";
+        let date = new Date(startStr);
+        date.setMonth(date.getMonth() + parseInt(duration));
+        return formatDate(date.toISOString().split('T')[0]);
     }
 
-    async function getCollection(col) { const snap = await db.collection(col).get(); return snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); }
-    function formatDate(d) { if(!d) return "-"; const [y, m, day] = d.split("-"); return `${day}/${m}/${y}`; }
+    function getElapsedMonths(s) { if(!s) return 0; const start = new Date(s); const now = new Date(); return Math.max(0, ((now.getFullYear() - start.getFullYear()) * 12) + (now.getMonth() - start.getMonth()) + 1); }
+    function togglePickedValue() { document.getElementById('pickedValueArea').style.display = document.getElementById('pPicked').checked ? 'block' : 'none'; }
     function openModal(id) { document.getElementById(id).style.display = 'block'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     function calcBalance() { const c = parseFloat(document.getElementById('pChit').value)||0; const p = parseFloat(document.getElementById('pPaid').value)||0; document.getElementById('pBal').value = c-p; }
@@ -187,53 +213,35 @@
         document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
         document.getElementById(t+'Tab').classList.add('active');
         document.getElementById('nav'+t.charAt(0).toUpperCase() + t.slice(1)).classList.add('active');
-        updateUI();
+        if(t === 'groups') renderGroupsTab();
+        if(t === 'list') renderListTab();
     }
 
-    async function openAddMember() {
-        document.getElementById('editMemberId').value = "";
-        const gs = await getCollection('groups');
-        document.getElementById('groupCheckboxes').innerHTML = gs.map(g => `<div class="d-flex gap-2 p-1"><input type="checkbox" class="group-cb" value="${g.id}"> ${g.name}</div>`).join('');
-        openModal('memberModal');
-    }
+    async function exportToInvoice(groupId) {
+        const gs = await getCollection('groups'); const g = gs.find(x => x.id === groupId);
+        const ms = await getCollection('members'); const ps = await getCollection('payments');
+        const gPs = ps.filter(p => p.groupId === groupId);
+        const gMs = ms.filter(m => m.groupId === groupId).sort((a,b) => a.name.localeCompare(b.name));
+        
+        document.getElementById('pdfGroupName').innerText = g.name;
+        document.getElementById('pdfStartDate').innerText = formatDate(g.startDate);
+        document.getElementById('pdfEndDate').innerText = calculateEndDate(g.startDate, g.duration);
+        document.getElementById('pdfChitDay').innerText = g.chitDay || "-";
+        document.getElementById('pdfTotalColl').innerText = '₹' + gPs.reduce((s,p) => s + p.paidAmt, 0).toLocaleString('en-IN');
+        document.getElementById('pdfProgress').innerText = `${Math.max(0, g.duration - getElapsedMonths(g.startDate))} Months Left`;
+        document.getElementById('pdfDate').innerText = 'Report Generated: ' + new Date().toLocaleDateString('en-IN');
 
-    async function saveMember() {
-        const n = document.getElementById('mName').value.trim();
-        const p = document.getElementById('mPhone').value.trim();
-        const eid = document.getElementById('editMemberId').value;
-        const gids = Array.from(document.querySelectorAll('.group-cb:checked')).map(cb => cb.value);
-        if(!n || gids.length === 0) return alert("Enter Name and select Group!");
-        if(eid) await db.collection('members').doc(eid).update({ name: n, phone: p, groupIds: gids });
-        else await db.collection('members').add({ name: n, phone: p, groupIds: gids });
-        closeModal('memberModal'); updateUI();
-    }
+        let rows = '';
+        gMs.forEach((m, i) => {
+            const mPs = gPs.filter(x => x.memberId === m.id);
+            const pick = mPs.find(p => p.chitPicked === 1);
+            rows += `<tr><td>${i+1}</td><td>${m.name}</td><td>₹${mPs.reduce((s,p)=>s+p.paidAmt,0).toLocaleString()}</td><td>₹${mPs.reduce((s,p)=>s+p.balAmt,0).toLocaleString()}</td><td>${pick ? 'YES (₹'+pick.pickedValue.toLocaleString()+')' : 'NO'}</td></tr>`;
+        });
+        document.getElementById('pdfTableBody').innerHTML = rows;
 
-    async function linkGroupForPayment() {
-        const mid = document.getElementById('pMember').value;
-        const ms = await getCollection('members');
-        const m = ms.find(x => x.id === mid);
-        const gs = await getCollection('groups');
-        const enrolled = gs.filter(g => m.groupIds && m.groupIds.includes(g.id));
-        document.getElementById('pGroup').innerHTML = enrolled.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
-    }
-
-    async function restoreFromJSON() {
-        const file = document.getElementById('restoreFile').files[0];
-        if(!file) return alert("Select file!");
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const data = JSON.parse(e.target.result);
-            if(data.m) for(let x of data.m) await db.collection('members').doc(x.id).set(x);
-            if(data.g) for(let x of data.g) await db.collection('groups').doc(x.id).set(x);
-            if(data.p) for(let x of data.p) await db.collection('payments').doc(x.id).set(x);
-            alert("Restored!"); updateUI();
-        };
-        reader.readAsText(file);
-    }
-
-    async function exportFullBackup() {
-        const d = { m: await getCollection('members'), g: await getCollection('groups'), p: await getCollection('payments') };
-        const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(d)], {type:"application/json"})); a.download = `AK_BACKUP.json`; a.click();
+        const el = document.getElementById('pdf-template');
+        el.style.display = 'block';
+        html2pdf().from(el).set({ margin: 10, filename: `AK_Report_${g.name}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).save().then(() => el.style.display='none');
     }
 
     function filterSearch(inputId, listId, hiddenId) {
@@ -244,40 +252,106 @@
         if(filtered.length > 0) {
             list.style.display = "block";
             filtered.forEach(m => {
-                const div = document.createElement("div"); div.className = "suggestion-item p-2"; div.innerText = m.name;
+                const div = document.createElement("div"); div.className = "suggestion-item"; div.innerText = m.name;
                 div.onclick = () => { document.getElementById(inputId).value = m.name; document.getElementById(hiddenId).value = m.id; list.style.display = "none";
                     if(hiddenId === "summaryView") loadMemberLedger(); if(hiddenId === "pMember") linkGroupForPayment(); };
                 list.appendChild(div);
             });
-        }
+        } else list.style.display = "none";
     }
 
-    async function updateUI() {
-        const m = await getCollection('members'); const g = await getCollection('groups');
-        ALL_MEMBERS = m;
-        document.getElementById('memberCount').innerText = m.length;
-        document.getElementById('groupCount').innerText = g.length;
-        if(document.getElementById('groupsTab').classList.contains('active')) renderGroupsTab();
-        if(document.getElementById('listTab').classList.contains('active')) renderListTab();
-    }
-
-    async function renderGroupsTab() {
-        const gs = await getCollection('groups'); const ms = await getCollection('members');
-        document.getElementById('groupListArea').innerHTML = gs.map(g => {
-            const gMs = ms.filter(m => m.groupIds && m.groupIds.includes(g.id));
-            return `<div class="p-3 mb-3 border border-secondary rounded">${g.name} (${gMs.length} Members)</div>`;
-        }).join('');
-    }
+    async function getCollection(col) { const snap = await db.collection(col).get(); return snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); }
 
     async function renderListTab() {
         const gs = await getCollection('groups'); const ms = await getCollection('members');
-        document.getElementById('simpleListArea').innerHTML = gs.map(g => {
-            const gMs = ms.filter(m => m.groupIds && m.groupIds.includes(g.id));
-            return `<div class="list-group-header p-2 mt-2 bg-secondary rounded">${g.name}</div>` + gMs.map((m,i)=>`<div class="p-2 border-bottom">${i+1}. ${m.name}</div>`).join('');
-        }).join('');
+        let h = '';
+        gs.sort((a,b) => a.name.localeCompare(b.name)).forEach(g => {
+            const gMs = ms.filter(m => m.groupId === g.id).sort((a,b) => a.name.localeCompare(b.name));
+            h += `<div class="list-group-header" onclick="document.getElementById('list-col-${g.id}').style.display = document.getElementById('list-col-${g.id}').style.display==='block'?'none':'block'"><span>${g.name} (Day ${g.chitDay || '-'})</span><span class="list-count-badge">Count: ${gMs.length}</span></div><div id="list-col-${g.id}" class="collapse-content">`;
+            gMs.forEach((m, idx) => { h += `<div class="list-member-item"><span class="list-sn">${idx + 1}.</span> ${m.name}</div>`; });
+            h += `</div>`;
+        });
+        document.getElementById('simpleListArea').innerHTML = h;
     }
 
-    setTimeout(migrateData, 1000);
+    async function saveGroup() {
+        const n = document.getElementById('gName').value.trim(); 
+        const d = parseInt(document.getElementById('gDuration').value); 
+        const s = document.getElementById('gStart').value; 
+        const c = document.getElementById('gChitDay').value;
+        const eid = document.getElementById('editGroupId').value;
+        if(n && d && s) { if(eid) await db.collection('groups').doc(eid).update({name:n, duration:d, startDate:s, chitDay:c}); else await db.collection('groups').add({name:n, duration:d, startDate:s, chitDay:c}); updateUI(); closeModal('groupModal'); }
+    }
+    function openAddGroup() { document.getElementById('groupModalTitle').innerText = "Add Group"; document.getElementById('editGroupId').value = ""; document.getElementById('gName').value = ""; document.getElementById('gDuration').value = ""; document.getElementById('gChitDay').value = ""; document.getElementById('gStart').value = ""; openModal('groupModal'); }
+    async function editGroup(id, n, d, s, c) { document.getElementById('groupModalTitle').innerText = "Edit Group"; document.getElementById('editGroupId').value = id; document.getElementById('gName').value = n; document.getElementById('gDuration').value = d; document.getElementById('gStart').value = s||""; document.getElementById('gChitDay').value = c||""; openModal('groupModal'); }
+    async function deleteGroup(id) { if(confirm("Del Group?")) { await db.collection('groups').doc(id).delete(); updateUI(); renderGroupsTab(); } }
+
+    async function saveMember() {
+        const n = document.getElementById('mName').value.trim(); const g = document.getElementById('mGroup').value; const eid = document.getElementById('editMemberId').value;
+        if(n && g) { if(eid) await db.collection('members').doc(eid).update({name:n, phone:document.getElementById('mPhone').value, groupId:g}); else await db.collection('members').add({name:n, phone:document.getElementById('mPhone').value, groupId:g}); updateUI(); closeModal('memberModal'); }
+    }
+    function openAddMember() { document.getElementById('memberModalTitle').innerText = "Add Member"; document.getElementById('editMemberId').value = ""; document.getElementById('mName').value = ""; document.getElementById('mPhone').value = ""; document.getElementById('deleteMemberArea').style.display='none'; openModal('memberModal'); }
+    async function editMember(id, n, p, g) { document.getElementById('memberModalTitle').innerText = "Edit Member"; document.getElementById('editMemberId').value = id; document.getElementById('mName').value = n; document.getElementById('mPhone').value = p; document.getElementById('mGroup').value = g; document.getElementById('deleteMemberArea').style.display='block'; openModal('memberModal'); }
+    async function deleteMemberFromModal() { const id = document.getElementById('editMemberId').value; if(confirm("Del Member?")) { await db.collection('members').doc(id).delete(); updateUI(); closeModal('memberModal'); } }
+
+    async function linkGroupForPayment() {
+        const mid = document.getElementById('pMember').value; const mDoc = await db.collection('members').doc(mid).get(); const m = mDoc.data(); const gs = await getCollection('groups');
+        document.getElementById('pGroup').innerHTML = gs.map(g => `<option value="${g.id}" ${g.id === m.groupId ? 'selected' : ''}>${g.name}</option>`).join('');
+        checkChitStatus();
+    }
+    async function checkChitStatus() {
+        const mid = document.getElementById('pMember').value; const gid = document.getElementById('pGroup').value; if(!mid || !gid) return;
+        const ps = await db.collection('payments').where('memberId', '==', mid).where('groupId', '==', gid).where('chitPicked', '==', 1).get();
+        const cb = document.getElementById('pPicked'); cb.checked = !ps.empty; cb.disabled = !ps.empty; togglePickedValue();
+    }
+    async function savePayment() {
+        const mid = document.getElementById('pMember').value; const gid = document.getElementById('pGroup').value; const paid = parseFloat(document.getElementById('pPaid').value);
+        if(mid && gid && !isNaN(paid)) { await db.collection('payments').add({ memberId: mid, groupId: gid, chitAmt: parseFloat(document.getElementById('pChit').value)||0, paidAmt: paid, balAmt: parseFloat(document.getElementById('pBal').value)||0, date: document.getElementById('pDate').value, chitPicked: document.getElementById('pPicked').checked?1:0, pickedValue: parseFloat(document.getElementById('pPickedVal').value)||0 }); updateUI(); closeModal('paymentModal'); loadMemberLedger(); }
+    }
+    async function deletePayment(id) { if(confirm("Del record?")) { await db.collection('payments').doc(id).delete(); loadMemberLedger(); updateUI(); } }
+
+    async function loadMemberLedger() {
+        const mid = document.getElementById('summaryView').value; const container = document.getElementById('ledgerData');
+        const allP = await getCollection('payments'); const ps = allP.filter(p => p.memberId === mid).sort((a,b) => new Date(b.date) - new Date(a.date));
+        const gs = await getCollection('groups'); const mDoc = await db.collection('members').doc(mid).get(); const m = mDoc.data();
+        const uGids = [...new Set(ps.map(p => p.groupId))]; if(m && m.groupId && !uGids.includes(m.groupId)) uGids.push(m.groupId);
+        let h = '';
+        uGids.forEach(gid => {
+            const g = gs.find(x => x.id === gid); const gPs = ps.filter(p => p.groupId === gid); const pick = gPs.find(p => p.chitPicked === 1);
+            h += `<div class="mb-4 p-3" style="background:rgba(255,255,255,0.03); border-radius:15px; border:1px solid #252f48;"><div class="d-flex justify-content-between align-items-center mb-2"><span class="fw-bold text-info">${g?g.name:'-'}</span><span><button class="btn-action" onclick="editMember('${mid}','${m.name}','${m.phone}','${gid}')">✏️</button><span class="badge ${pick?'bg-success':'bg-secondary'}">${pick?'✔':'⏳'}</span></span></div><div class="table-responsive"><table class="table-custom"><thead><tr><th>Date</th><th>Chit</th><th>Paid</th><th>Bal</th><th></th></tr></thead><tbody>`;
+            gPs.forEach(p => { h += `<tr><td>${formatDate(p.date)}</td><td>₹${p.chitAmt.toLocaleString()}</td><td>₹${p.paidAmt.toLocaleString()}</td><td class="text-warning">₹${p.balAmt.toLocaleString()}</td><td><button onclick="deletePayment('${p.id}')" style="background:none;border:none;color:#ff4757;">❌</button></td></tr>`; });
+            h += `</tbody></table></div></div>`;
+        });
+        container.innerHTML = h;
+    }
+
+    async function updateUI() {
+        const m = await getCollection('members'); const g = await getCollection('groups'); const p = await getCollection('payments');
+        ALL_MEMBERS = m.sort((a,b) => a.name.localeCompare(b.name));
+        document.getElementById('memberCount').innerText = m.length; document.getElementById('groupCount').innerText = g.length;
+        const today = new Date().toISOString().split('T')[0]; document.getElementById('todayColl').innerText = `₹${p.filter(x => x.date === today).reduce((s, x) => s + (x.paidAmt || 0), 0).toLocaleString()}`;
+        document.getElementById('mGroup').innerHTML = '<option value="">-- Group --</option>' + g.map(x => `<option value="${x.id}">${x.name}</option>`).join('');
+    }
+
+    async function renderGroupsTab() {
+        const gs = await getCollection('groups'); const ms = await getCollection('members'); const ps = await getCollection('payments');
+        let h = '';
+        gs.forEach(g => {
+            const gPs = ps.filter(p => p.groupId === g.id); const gMs = ms.filter(m => m.groupId === g.id).sort((a,b) => a.name.localeCompare(b.name));
+            const left = Math.max(0, g.duration - getElapsedMonths(g.startDate));
+            h += `<div class="p-3 mb-3" style="background:var(--card-bg); border-radius:15px; border:1px solid var(--border);"><div class="d-flex justify-content-between align-items-center pb-2" onclick="document.getElementById('col-${g.id}').style.display=document.getElementById('col-${g.id}').style.display==='block'?'none':'block'" style="cursor:pointer;"><div><div class="fw-bold text-warning">${g.name} ✏️</div><div class="text-dim small">Starts: ${formatDate(g.startDate)} | Day: ${g.chitDay || '-'}</div></div><div class="text-end"><div class="fw-bold text-info">${left} / ${g.duration}</div><div class="text-dim small">Left</div></div></div><div id="col-${g.id}" class="collapse-content border-top border-secondary mt-2"><div class="py-2 text-end"><button class="btn btn-sm btn-info me-1" onclick="exportToInvoice('${g.id}')">📄 PDF Report</button><button class="btn btn-sm btn-outline-secondary me-1" onclick="editGroup('${g.id}','${g.name}',${g.duration},'${g.startDate}','${g.chitDay}')">Edit</button><button class="btn btn-sm btn-outline-danger" onclick="deleteGroup('${g.id}')">Del</button></div><table class="table-custom"><thead><tr><th>Name</th><th>Chit</th><th>Bal</th><th>Won</th></tr></thead><tbody>`;
+            gMs.forEach(m => { const mPs = gPs.filter(x => x.memberId === m.id); const pick = mPs.find(p => p.chitPicked === 1); h += `<tr><td>${m.name}</td><td>₹${mPs.length?mPs[0].chitAmt.toLocaleString():0}</td><td>₹${mPs.reduce((s,p)=>s+p.balAmt,0).toLocaleString()}</td><td>${pick?'₹'+pick.pickedValue.toLocaleString():'-'}</td></tr>`; });
+            h += '</tbody></table></div></div>';
+        });
+        document.getElementById('groupListArea').innerHTML = h;
+    }
+
+    async function exportFullBackup() {
+        const d = { m: await getCollection('members'), g: await getCollection('groups'), p: await getCollection('payments') };
+        const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(d, null, 2)], {type:"application/json"})); a.download = `AK_BACKUP.json`; a.click();
+    }
+    document.getElementById('pDate').valueAsDate = new Date();
+    setTimeout(updateUI, 500);
 </script>
 </body>
 </html>
