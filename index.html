@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AK Chit Funds - Pro Admin</title>
+    <title>AK Chit Funds - Admin Portal</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
@@ -45,14 +45,18 @@
         .list-sn { width: 35px; color: var(--text-dim); font-size: 0.75rem; font-weight: bold; }
         .list-count-badge { font-size: 0.75rem; background: rgba(243, 156, 18, 0.15); color: #f39c12; padding: 2px 10px; border-radius: 20px; }
 
-        /* PDF TEMPLATE STYLING (A4 Optimized & Fixed Alignment) */
-        #pdf-template { display: none; background: white !important; color: black !important; padding: 40px; width: 850px; }
-        .invoice-header { border-bottom: 3px solid #f39c12; padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-start; }
-        .invoice-title { font-size: 32px; font-weight: bold; color: #f39c12; margin: 0; }
+        /* PDF TEMPLATE STYLING - FIXED ALIGNMENT */
+        #pdf-template { display: none; background: white !important; color: black !important; padding: 30px; width: 750px; margin: 0 auto; }
+        .invoice-header { border-bottom: 3px solid #f39c12; padding-bottom: 10px; margin-bottom: 20px; display: table; width: 100%; }
+        .header-left { display: table-cell; vertical-align: top; text-align: left; width: 60%; }
+        .header-right { display: table-cell; vertical-align: top; text-align: right; width: 40%; }
+        .invoice-title { font-size: 32px; font-weight: bold; color: #f39c12; margin: 0; line-height: 1.2; }
         .invoice-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .invoice-table th { background: #f0f0f0; border: 1px solid #777; padding: 10px; font-size: 13px; font-weight: bold; text-align: left; }
-        .invoice-table td { border: 1px solid #bbb; padding: 10px; font-size: 12px; }
-        .info-box { background: #fcfcfc; border: 1px solid #eee; padding: 15px; border-radius: 8px; font-size: 14px; display: flex; justify-content: space-between; width: 100%; }
+        .invoice-table th { background: #f0f0f0; border: 1px solid #777; padding: 8px; font-size: 11px; font-weight: bold; text-align: left; }
+        .invoice-table td { border: 1px solid #bbb; padding: 8px; font-size: 11px; }
+        .info-box { background: #fcfcfc; border: 1px solid #eee; padding: 15px; border-radius: 8px; font-size: 13px; display: table; width: 100%; box-sizing: border-box; }
+        .info-left { display: table-cell; width: 50%; text-align: left; }
+        .info-right { display: table-cell; width: 50%; text-align: right; }
         .total-due-row { background: #fff8e1; font-weight: bold; }
     </style>
 </head>
@@ -97,24 +101,24 @@
 
 <div id="pdf-template">
     <div class="invoice-header">
-        <div style="flex: 2;">
+        <div class="header-left">
             <div class="invoice-title">AK CHIT FUNDS</div>
-            <div style="margin-top:8px; font-size:16px;"><strong>📞 Phone:</strong> 77*******</div>
-            <div style="font-size:13px; color: #555;"><strong>📍 Location:</strong> Hyderabad, Telangana</div>
+            <div style="margin-top:5px; font-size:16px;"><strong>📞 Phone:</strong> 77*******</div>
+            <div style="font-size:12px; color: #555;"><strong>📍 Location:</strong> Hyderabad, Telangana</div>
         </div>
-        <div style="flex: 1.5; text-align: right;">
-            <div style="font-size: 20px; font-weight: bold; color: #222;">CHIT SETTLEMENT REPORT</div>
-            <div id="pdfDate" style="font-size: 12px; margin-top: 5px; color: #666;"></div>
+        <div class="header-right">
+            <div style="font-size: 18px; font-weight: bold; color: #333;">CHIT SETTLEMENT REPORT</div>
+            <div id="pdfDate" style="font-size: 11px; margin-top: 5px; color: #666;"></div>
         </div>
     </div>
 
     <div class="info-box mb-4">
-        <div style="text-align: left;">
+        <div class="info-left">
             <strong>Group Name:</strong> <span id="pdfGroupName"></span><br>
             <strong>Start Date:</strong> <span id="pdfStartDate"></span><br>
             <strong>End Date:</strong> <span id="pdfEndDate"></span>
         </div>
-        <div style="text-align: right;">
+        <div class="info-right">
             <strong>Total Duration:</strong> <span id="pdfDuration"></span> Months<br>
             <strong>Group Progress:</strong> <span id="pdfProgress"></span><br>
             <strong>Total Collection:</strong> <span id="pdfTotalColl"></span>
@@ -124,7 +128,7 @@
     <table class="invoice-table">
         <thead>
             <tr>
-                <th style="width: 50px;">S.No</th>
+                <th style="width: 40px;">S.No</th>
                 <th>Member Name</th>
                 <th>Till Today Paid</th>
                 <th>Balance</th>
@@ -134,8 +138,8 @@
         <tbody id="pdfTableBody"></tbody>
         <tfoot>
             <tr class="total-due-row">
-                <td colspan="3" style="text-align:right; padding: 12px;">Total Balance Due:</td>
-                <td id="pdfTotalDue" colspan="2" style="padding: 12px; color: #d35400;">₹0</td>
+                <td colspan="3" style="text-align:right; padding: 10px;">Total Balance Due:</td>
+                <td id="pdfTotalDue" colspan="2" style="padding: 10px; color: #d35400;">₹0</td>
             </tr>
         </tfoot>
     </table>
@@ -236,9 +240,9 @@
         document.getElementById('pdfStartDate').innerText = formatDate(g.startDate);
         document.getElementById('pdfEndDate').innerText = calculateEndDate(g.startDate, g.duration);
         document.getElementById('pdfDuration').innerText = g.duration;
-        document.getElementById('pdfTotalColl').innerText = '₹' + gPs.reduce((s,p) => s + p.paidAmt, 0).toLocaleString();
+        document.getElementById('pdfTotalColl').innerText = '₹' + gPs.reduce((s,p) => s + p.paidAmt, 0).toLocaleString('en-IN');
         document.getElementById('pdfProgress').innerText = `${Math.max(0, g.duration - getElapsedMonths(g.startDate))} Months Left`;
-        document.getElementById('pdfDate').innerText = 'Report Date: ' + new Date().toLocaleDateString('en-IN');
+        document.getElementById('pdfDate').innerText = 'Report Generated: ' + new Date().toLocaleDateString('en-IN');
 
         let rows = '';
         let totalDue = 0;
@@ -251,19 +255,19 @@
             rows += `<tr>
                 <td>${i+1}</td>
                 <td>${m.name}</td>
-                <td>₹${totalPaid.toLocaleString()}</td>
-                <td>₹${bal.toLocaleString()}</td>
-                <td>${pick ? 'YES (₹'+pick.pickedValue.toLocaleString()+')' : 'NO'}</td>
+                <td>₹${totalPaid.toLocaleString('en-IN')}</td>
+                <td>₹${bal.toLocaleString('en-IN')}</td>
+                <td>${pick ? 'YES (₹'+pick.pickedValue.toLocaleString('en-IN')+')' : 'NO'}</td>
             </tr>`;
         });
         document.getElementById('pdfTableBody').innerHTML = rows;
-        document.getElementById('pdfTotalDue').innerText = '₹' + totalDue.toLocaleString();
+        document.getElementById('pdfTotalDue').innerText = '₹' + totalDue.toLocaleString('en-IN');
 
         const el = document.getElementById('pdf-template');
         el.style.display = 'block';
         const opt = { 
             margin: 10, 
-            filename: `AK_Chit_Funds_${g.name}.pdf`, 
+            filename: `AK_Report_${g.name}.pdf`, 
             html2canvas: { scale: 2, useCORS: true, logging: false }, 
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
         };
@@ -346,7 +350,7 @@
             h += `<div class="mb-4 p-3" style="background:rgba(255,255,255,0.03); border-radius:15px; border:1px solid #252f48;">
                 <div class="d-flex justify-content-between align-items-center mb-2"><span class="fw-bold text-info">${g?g.name:'-'}</span><span><button class="btn-action btn-edit" onclick="editMember('${mid}','${m.name}','${m.phone}','${gid}')">✏️</button><span class="badge ${pick?'bg-success':'bg-secondary'}">${pick?'✔':'⏳'}</span></span></div>
                 <div class="table-responsive"><table class="table-custom"><thead><tr><th>Date</th><th>Chit</th><th>Paid</th><th>Bal</th><th></th></tr></thead><tbody>`;
-            gPs.forEach(p => { h += `<tr><td>${formatDate(p.date)}</td><td>₹${p.chitAmt}</td><td>₹${p.paidAmt}</td><td class="text-warning">₹${p.balAmt}</td><td><button onclick="deletePayment('${p.id}')" style="background:none;border:none;color:#ff4757;">❌</button></td></tr>`; });
+            gPs.forEach(p => { h += `<tr><td>${formatDate(p.date)}</td><td>₹${p.chitAmt.toLocaleString()}</td><td>₹${p.paidAmt.toLocaleString()}</td><td class="text-warning">₹${p.balAmt.toLocaleString()}</td><td><button onclick="deletePayment('${p.id}')" style="background:none;border:none;color:#ff4757;">❌</button></td></tr>`; });
             h += `</tbody></table></div></div>`;
         });
         container.innerHTML = h;
@@ -356,7 +360,7 @@
         const m = await getCollection('members'); const g = await getCollection('groups'); const p = await getCollection('payments');
         ALL_MEMBERS = m.sort((a,b) => a.name.localeCompare(b.name));
         document.getElementById('memberCount').innerText = m.length; document.getElementById('groupCount').innerText = g.length;
-        const today = new Date().toISOString().split('T')[0]; document.getElementById('todayColl').innerText = `₹${p.filter(x => x.date === today).reduce((s, x) => s + (x.paidAmt || 0), 0)}`;
+        const today = new Date().toISOString().split('T')[0]; document.getElementById('todayColl').innerText = `₹${p.filter(x => x.date === today).reduce((s, x) => s + (x.paidAmt || 0), 0).toLocaleString()}`;
         document.getElementById('mGroup').innerHTML = '<option value="">-- Group --</option>' + g.map(x => `<option value="${x.id}">${x.name}</option>`).join('');
     }
 
@@ -376,7 +380,7 @@
                     <table class="table-custom"><thead><tr><th>Name</th><th>Chit</th><th>Bal</th><th>Won</th></tr></thead><tbody>`;
             gMs.forEach(m => {
                 const mPs = gPs.filter(x => x.memberId === m.id); const pick = mPs.find(p => p.chitPicked === 1);
-                h += `<tr><td>${m.name}</td><td>₹${mPs.length?mPs[0].chitAmt:0}</td><td>₹${mPs.reduce((s,p)=>s+p.balAmt,0)}</td><td>${pick?'₹'+pick.pickedValue:'-'}</td></tr>`;
+                h += `<tr><td>${m.name}</td><td>₹${mPs.length?mPs[0].chitAmt.toLocaleString():0}</td><td>₹${mPs.reduce((s,p)=>s+p.balAmt,0).toLocaleString()}</td><td>${pick?'₹'+pick.pickedValue.toLocaleString():'-'}</td></tr>`;
             });
             h += '</tbody></table></div></div>';
         });
