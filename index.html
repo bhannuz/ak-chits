@@ -17,37 +17,31 @@
             --border: #252f48;
         }
 
-        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Inter', sans-serif; padding-bottom: 100px; }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Segoe UI', sans-serif; padding-bottom: 120px; }
         .app-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid var(--border); }
         .brand { color: #f39c12; font-weight: bold; font-size: 1.4rem; }
-
-        /* Stats Cards */
-        .stat-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 15px; padding: 15px; text-align: center; height: 100%; }
+        
+        /* Dashboard Stats */
+        .stat-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 15px; padding: 15px; text-align: center; }
         .stat-num { font-size: 1.4rem; font-weight: bold; display: block; }
         .stat-label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; }
 
-        /* Main Action Button */
+        /* Main Sections */
         .btn-payment-hero { background: var(--accent-gold); color: #000; border: none; border-radius: 20px; padding: 20px; width: 100%; font-weight: bold; margin: 25px 0; text-align: left; display: flex; align-items: center; gap: 15px; }
+        .summary-select { background: var(--card-bg); border: 1px solid var(--border); color: white; border-radius: 15px; padding: 15px; width: 100%; margin-bottom: 20px; }
+        
+        .ledger-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #1c2641; font-size: 0.85rem; }
+        .ledger-val { color: #f39c12; font-weight: bold; }
 
-        /* Summary Select */
-        .summary-select { background: var(--card-bg); border: 1px solid var(--border); color: white; border-radius: 15px; padding: 15px; width: 100%; margin-bottom: 30px; }
-
-        /* Bottom Action Buttons */
-        .bottom-actions { display: flex; gap: 10px; margin-top: 20px; }
-        .btn-action-outline { flex: 1; background: transparent; border: 1px solid var(--border); color: white; padding: 15px; border-radius: 15px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px; }
-
-        /* Premium Modals (Forms) */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; padding: 20px; }
-        .modal-content-custom { background: var(--card-bg); border-radius: 25px; padding: 25px; max-width: 450px; margin: auto; border: 1px solid var(--border); position: relative; top: 5%; }
-        .modal-title { font-weight: bold; font-size: 1.2rem; margin-bottom: 20px; }
-
+        /* Modals */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; padding: 20px; overflow-y: auto; }
+        .modal-content-custom { background: var(--card-bg); border-radius: 25px; padding: 25px; max-width: 450px; margin: 20px auto; border: 1px solid var(--border); }
+        
         .form-input { background: var(--input-bg); border: 1px solid var(--border); color: white; padding: 12px; border-radius: 12px; width: 100%; margin-bottom: 12px; }
-        .form-input::placeholder { color: #5c6b89; }
         .btn-save { background: var(--accent-gold); color: black; border: none; width: 100%; padding: 15px; border-radius: 15px; font-weight: bold; margin-bottom: 10px; }
         .btn-cancel { background: var(--input-bg); color: white; border: none; width: 100%; padding: 12px; border-radius: 15px; }
 
-        /* Bottom Nav */
-        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #070b14; display: flex; justify-content: space-around; padding: 15px; border-top: 1px solid var(--border); }
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: #070b14; display: flex; justify-content: space-around; padding: 15px; border-top: 1px solid var(--border); }
     </style>
 </head>
 <body>
@@ -55,44 +49,45 @@
 <div class="container py-2">
     <div class="app-header">
         <div class="brand">🏆 AK Chit Funds</div>
-        <div class="d-flex align-items:center gap-2">
+        <div class="d-flex align-items-center gap-2">
             <span class="badge text-warning border border-warning px-2">ADMIN</span>
-            <button class="btn btn-outline-danger btn-sm px-3" style="border-radius:10px;">LOGOUT</button>
         </div>
     </div>
 
     <div class="row g-2 mt-4 text-center">
         <div class="col-4"><div class="stat-card"><span class="stat-num" id="memberCount">0</span><span class="stat-label">Members</span></div></div>
         <div class="col-4"><div class="stat-card"><span class="stat-num" id="groupCount">0</span><span class="stat-label">Groups</span></div></div>
-        <div class="col-4"><div class="stat-card"><span class="stat-num text-success">₹0</span><span class="stat-label">Today</span></div></div>
+        <div class="col-4"><div class="stat-card"><span class="stat-num text-success" id="todayColl">₹0</span><span class="stat-label">Today</span></div></div>
     </div>
 
-    <button class="btn-payment-hero" onclick="openModal('paymentModal')">
+    <button class="btn-payment-hero shadow" onclick="openModal('paymentModal')">
         <div style="background:rgba(0,0,0,0.1); padding:10px; border-radius:12px;">💳</div>
         <div>
-            <div style="font-size:1.1rem;">New Payment</div>
-            <div style="font-size:0.8rem; font-weight:normal; opacity:0.8;">Record receipt</div>
+            <div style="font-size:1.1rem;">Record Payment</div>
+            <div style="font-size:0.8rem; font-weight:normal; opacity:0.8;">New Receipt Entry</div>
         </div>
     </button>
 
-    <div id="summaryDisplay">
-        <select class="summary-select" id="summaryView">
-            <option>-- Member Summary --</option>
+    <div id="summaryArea" class="p-3 mb-4" style="background:var(--card-bg); border-radius:20px; border:1px solid var(--border);">
+        <select class="summary-select border-0 p-0 mb-3" id="summaryView" onchange="loadMemberLedger()">
+            <option value="">-- Member Summary --</option>
         </select>
+        <div id="ledgerData">
+            <div class="text-center text-secondary py-2 small">Select a member to view balance & chit status.</div>
+        </div>
     </div>
 
-    <div class="bottom-actions">
-        <button class="btn-action-outline" onclick="openModal('memberModal')"><span>➕</span> Member</button>
-        <button class="btn-action-outline" onclick="openModal('groupModal')"><span>🏦</span> Group</button>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary w-100 py-3" style="border-radius:15px; color:white; border-color:var(--border);" onclick="openModal('memberModal')">➕ Member</button>
+        <button class="btn btn-outline-secondary w-100 py-3" style="border-radius:15px; color:white; border-color:var(--border);" onclick="openModal('groupModal')">🏦 Group Master</button>
     </div>
 </div>
 
 <div id="memberModal" class="modal-overlay">
-    <div class="modal-content-custom shadow-lg">
-        <div class="modal-title">Manage Member</div>
-        <select class="form-input"><option>-- Enroll New Member --</option></select>
+    <div class="modal-content-custom">
+        <div class="fw-bold mb-3">Manage Member</div>
         <input type="text" id="mName" class="form-input" placeholder="Full Name">
-        <select class="form-input" id="mGroup"><option>-- Select Group --</option></select>
+        <select id="mGroup" class="form-input"><option value="">-- Enroll in Group --</option></select>
         <input type="text" id="mPhone" class="form-input" placeholder="Phone No">
         <button class="btn-save" onclick="saveMember()">Save Member</button>
         <button class="btn-cancel" onclick="closeModal('memberModal')">Cancel</button>
@@ -100,10 +95,9 @@
 </div>
 
 <div id="groupModal" class="modal-overlay">
-    <div class="modal-content-custom shadow-lg">
-        <div class="modal-title">Manage Group</div>
-        <select class="form-input"><option>-- Create New Group --</option></select>
-        <input type="text" id="gName" class="form-input" placeholder="Group Name">
+    <div class="modal-content-custom">
+        <div class="fw-bold mb-3">Manage Group Master</div>
+        <input type="text" id="gName" class="form-input" placeholder="Group Name (e.g. Group A)">
         <input type="number" id="gDuration" class="form-input" placeholder="Duration (Months)">
         <button class="btn-save" onclick="saveGroup()">Save Group</button>
         <button class="btn-cancel" onclick="closeModal('groupModal')">Cancel</button>
@@ -111,32 +105,37 @@
 </div>
 
 <div id="paymentModal" class="modal-overlay">
-    <div class="modal-content-custom shadow-lg">
-        <div class="modal-title">Record Payment</div>
-        <input type="date" class="form-input" id="payDate">
-        <input type="text" class="form-input" placeholder="Search Member Name...">
-        <select class="form-input"><option>-- Select Group --</option></select>
+    <div class="modal-content-custom">
+        <div class="fw-bold mb-3">Record Payment</div>
+        <input type="date" id="pDate" class="form-input">
+        <select id="pMember" class="form-input" onchange="linkGroupForPayment()"><option value="">-- Search Member Name --</option></select>
+        <div id="pGroupDisplay" class="small text-warning mb-2 px-1"></div>
         <div class="row g-2">
-            <div class="col-6"><input type="number" class="form-input" placeholder="Chit Amt"></div>
-            <div class="col-6"><input type="number" class="form-input" placeholder="Paid Amt"></div>
+            <div class="col-6"><input type="number" id="pChit" class="form-input" placeholder="Chit Amt"></div>
+            <div class="col-6"><input type="number" id="pPaid" class="form-input" placeholder="Paid Amt"></div>
         </div>
-        <input type="number" class="form-input" placeholder="Balance">
+        <input type="number" id="pBal" class="form-input" placeholder="Balance">
         <div class="form-input d-flex align-items-center gap-2">
-            <input type="checkbox" id="mPicked"> <label for="mPicked" class="mb-0 small">Chit Picked?</label>
+            <input type="checkbox" id="pPicked"> <label for="pPicked" class="mb-0 small">Chit Picked?</label>
         </div>
-        <button class="btn-save">Save Record</button>
+        <button class="btn-save" onclick="savePayment()">Save Record</button>
         <button class="btn-cancel" onclick="closeModal('paymentModal')">Cancel</button>
     </div>
 </div>
 
-<div class="bottom-nav">
+<div class="nav-bar">
     <div class="text-warning small text-center">🏠<br>Home</div>
-    <div class="text-secondary small text-center">📁<br>Groups</div>
+    <div class="text-secondary small text-center" onclick="exportCSV()">📥<br>Backup</div>
 </div>
 
 <script>
+    // 1. Database Version 6 (Includes Payments)
     const db = new Dexie("AKChitFundsDB");
-    db.version(5).stores({ members: "++id, name, phone, groupId", groups: "++id, name, duration" });
+    db.version(6).stores({ 
+        members: "++id, name, phone, groupId", 
+        groups: "++id, name, duration",
+        payments: "++id, memberId, groupId, amount, date, chitPicked"
+    });
 
     function openModal(id) { document.getElementById(id).style.display = 'block'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
@@ -152,23 +151,93 @@
         const name = document.getElementById('mName').value;
         const phone = document.getElementById('mPhone').value;
         const groupId = document.getElementById('mGroup').value;
-        if(name) await db.members.add({ name, phone, groupId });
-        updateUI(); closeModal('memberModal');
+        if(name && groupId) {
+            await db.members.add({ name, phone, groupId: parseInt(groupId) });
+            updateUI(); closeModal('memberModal');
+        } else alert("Select Group & Name");
+    }
+
+    async function linkGroupForPayment() {
+        const mId = document.getElementById('pMember').value;
+        if(!mId) return;
+        const m = await db.members.get(parseInt(mId));
+        const g = await db.groups.get(parseInt(m.groupId));
+        document.getElementById('pGroupDisplay').innerText = `Group: ${g ? g.name : 'Unknown'}`;
+        
+        // Auto-disable if already picked
+        const pick = await db.payments.where({memberId: m.id, chitPicked: 1}).first();
+        const check = document.getElementById('pPicked');
+        check.checked = !!pick;
+        check.disabled = !!pick;
+    }
+
+    async function savePayment() {
+        const mId = document.getElementById('pMember').value;
+        const paid = document.getElementById('pPaid').value;
+        if(!mId || !paid) return alert("Fill Payment Info");
+        
+        const m = await db.members.get(parseInt(mId));
+        await db.payments.add({
+            memberId: m.id,
+            groupId: parseInt(m.groupId),
+            amount: parseInt(paid),
+            date: document.getElementById('pDate').value,
+            chitPicked: document.getElementById('pPicked').checked ? 1 : 0
+        });
+        updateUI(); closeModal('paymentModal');
+    }
+
+    async function loadMemberLedger() {
+        const mId = document.getElementById('summaryView').value;
+        if(!mId) return;
+        const m = await db.members.get(parseInt(mId));
+        const g = await db.groups.get(parseInt(m.groupId));
+        const pays = await db.payments.where('memberId').equals(m.id).toArray();
+        
+        let totalPaid = pays.reduce((sum, p) => sum + p.amount, 0);
+        let picked = pays.some(p => p.chitPicked === 1) ? "YES" : "NO";
+
+        document.getElementById('ledgerData').innerHTML = `
+            <div class="ledger-row"><span>Group:</span><span class="ledger-val">${g ? g.name : 'N/A'}</span></div>
+            <div class="ledger-row"><span>Total Paid:</span><span class="ledger-val">₹${totalPaid}</span></div>
+            <div class="ledger-row"><span>Chit Picked:</span><span class="ledger-val">${picked}</span></div>
+            <div class="ledger-row"><span>Records:</span><span class="ledger-val">${pays.length} Payments</span></div>
+        `;
     }
 
     async function updateUI() {
         const members = await db.members.toArray();
         const groups = await db.groups.toArray();
+        const payments = await db.payments.toArray();
+
         document.getElementById('memberCount').innerText = members.length;
         document.getElementById('groupCount').innerText = groups.length;
         
-        document.getElementById('mGroup').innerHTML = groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
-        document.getElementById('summaryView').innerHTML = '<option>-- Member Summary --</option>' + 
-            members.map(m => `<option>${m.name}</option>`).join('');
+        // Today's total
+        const today = new Date().toISOString().split('T')[0];
+        const todayTotal = payments.filter(p => p.date === today).reduce((s, p) => s + p.amount, 0);
+        document.getElementById('todayColl').innerText = `₹${todayTotal}`;
+
+        // Populate Member Lists
+        const mList = '<option value="">-- Select Member --</option>' + members.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+        document.getElementById('summaryView').innerHTML = mList;
+        document.getElementById('pMember').innerHTML = mList;
+        
+        // Populate Group List
+        document.getElementById('mGroup').innerHTML = '<option value="">-- Enroll in Group --</option>' + 
+            groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
     }
 
-    // Set today's date automatically
-    document.getElementById('payDate').valueAsDate = new Date();
+    async function exportCSV() {
+        const data = await db.payments.toArray();
+        const csv = "Date,MemberID,Amount,Picked\n" + data.map(p => `${p.date},${p.memberId},${p.amount},${p.chitPicked}`).join("\n");
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+        a.download = "AK_Chit_Records.csv";
+        a.click();
+    }
+
+    document.getElementById('pDate').valueAsDate = new Date();
     updateUI();
 </script>
 </body>
