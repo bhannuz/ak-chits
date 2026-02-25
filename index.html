@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AK Chit Funds - Pro Ledger</title>
+    <title>AK Chit Funds - Admin Ledger</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
@@ -27,11 +27,10 @@
         .nav-item.active { color: #f39c12; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        .table-custom { color: white; font-size: 0.7rem; width: 100%; }
+        .table-custom { color: white; font-size: 0.65rem; width: 100%; }
         .table-custom th { color: var(--text-dim); border-bottom: 1px solid var(--border); padding: 5px; }
-        .table-custom td { padding: 8px 5px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .btn-action { background: transparent; border: none; cursor: pointer; padding: 2px 5px; font-size: 0.9rem; }
-        .btn-del { color: #ff4757; }
+        .table-custom td { padding: 8px 3px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .btn-action { background: transparent; border: none; cursor: pointer; padding: 2px 5px; font-size: 0.8rem; }
         .btn-edit { color: #3498db; }
         .suggestions-list { position: absolute; top: 100%; left: 0; right: 0; background: var(--input-bg); border: 1px solid var(--border); border-radius: 0 0 12px 12px; z-index: 3000; max-height: 200px; overflow-y: auto; display: none; margin-top: -12px; }
         .suggestion-item { padding: 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; }
@@ -113,8 +112,8 @@
         <label class="mb-0 small">Chit Picked?</label>
     </div>
     <div id="pickedValueArea" style="display:none;">
-        <div class="small text-dim mb-1">Picked Chit Value (Member Received)</div>
-        <input type="number" id="pPickedVal" class="form-input" placeholder="Enter amount received">
+        <div class="small text-dim mb-1">Picked Value (Member Received)</div>
+        <input type="number" id="pPickedVal" class="form-input" placeholder="Amount won">
     </div>
     <button class="btn-save" onclick="savePayment()">Sync Payment</button>
     <button class="btn-cancel" onclick="closeModal('paymentModal')">Cancel</button>
@@ -288,7 +287,7 @@
                         <span class="badge ${pickRec?'bg-success':'bg-secondary'}">${pickRec?'✔ Picked':'⏳ Pending'}</span>
                     </span>
                 </div>
-                ${pickRec ? `<div class="small text-success mb-2">Won Chit: ₹${pickRec.pickedValue}</div>` : ''}
+                ${pickRec ? `<div class="small text-success mb-2">Picked Value: ₹${pickRec.pickedValue} on ${formatDate(pickRec.date)}</div>` : ''}
                 <div class="table-responsive"><table class="table-custom"><thead><tr><th>Date</th><th>Chit</th><th>Paid</th><th>Bal</th><th></th></tr></thead><tbody>`;
             gPs.forEach(p => { h += `<tr><td>${formatDate(p.date)}</td><td>₹${p.chitAmt}</td><td>₹${p.paidAmt}</td><td class="text-warning">₹${p.balAmt}</td><td><button class="btn-delete" onclick="deletePayment('${p.id}')">❌</button></td></tr>`; });
             h += `</tbody></table></div><div class="mt-2 text-end fw-bold text-warning border-top border-secondary pt-2">Paid: ₹${totalPaid} | Bal: ₹${totalBal}</div></div>`;
@@ -327,12 +326,13 @@
                         <button class="btn btn-sm btn-outline-info me-2" onclick="editGroup('${g.id}','${g.name}',${g.duration},'${g.startDate}')">Edit Group</button>
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteGroup('${g.id}')">Delete Group</button>
                     </div>
-                    <table class="table-custom"><thead><tr><th>Name</th><th>Balance</th><th class="text-end">Status</th></tr></thead><tbody>`;
+                    <table class="table-custom"><thead><tr><th>Name</th><th>Chit</th><th>Bal</th><th>Pick Val</th><th>Date</th></tr></thead><tbody>`;
             gMs.forEach(m => {
                 const mPs = gPs.filter(x => x.memberId === m.id);
                 const mBal = mPs.reduce((s, p) => s + p.balAmt, 0); 
-                const pk = mPs.find(p => p.chitPicked === 1);
-                h += `<tr><td>${m.name}</td><td>₹${mBal}</td><td class="text-end fw-bold text-success">${pk ? '✔ WON' : '-'}</td></tr>`;
+                const pickRec = mPs.find(p => p.chitPicked === 1);
+                const lastChitAmt = mPs.length > 0 ? mPs[0].chitAmt : 0;
+                h += `<tr><td>${m.name}</td><td>₹${lastChitAmt}</td><td>₹${mBal}</td><td class="text-success">${pickRec ? '₹'+pickRec.pickedValue : '-'}</td><td>${pickRec ? formatDate(pickRec.date) : '-'}</td></tr>`;
             });
             h += '</tbody></table></div></div>';
         });
