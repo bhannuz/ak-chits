@@ -31,6 +31,7 @@
         .table-custom { color: white; font-size: 0.75rem; width: 100%; }
         .table-custom th { color: var(--text-dim); border-bottom: 1px solid var(--border); padding: 8px; }
         .table-custom td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .btn-delete { background: rgba(255, 71, 87, 0.1); border: 1px solid #ff4757; color: #ff4757; font-size: 0.7rem; padding: 4px 8px; border-radius: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -44,16 +45,23 @@
             <div class="col-4"><div class="stat-card"><span class="stat-num" id="groupCount">0</span><span class="stat-label">Groups</span></div></div>
             <div class="col-4"><div class="stat-card"><span class="stat-num text-success" id="todayColl">₹0</span><span class="stat-label">Today</span></div></div>
         </div>
+
         <button class="btn btn-warning w-100 py-3 mt-4 fw-bold shadow" onclick="openModal('paymentModal')" style="border-radius:20px;">💳 Record Payment</button>
+        
         <div class="p-3 my-4" style="background:var(--card-bg); border-radius:20px; border:1px solid var(--border);">
-            <select class="form-input border-0 p-0 mb-3" id="summaryView" onchange="loadMemberLedger()" style="background:transparent;"><option value="">-- Member Summary --</option></select>
-            <div id="ledgerData" class="table-responsive"></div>
+            <select class="form-input border-0 p-0 mb-3 fw-bold text-warning" id="summaryView" onchange="loadMemberLedger()" style="background:transparent; font-size:1.1rem;">
+                <option value="">-- Select Member Summary --</option>
+            </select>
+            <div id="ledgerData" class="table-responsive">
+                <div class="text-center text-secondary py-2 small">Select a member to view their records.</div>
+            </div>
         </div>
+
         <div class="d-flex gap-2">
             <button class="btn btn-outline-secondary w-100 py-3" style="border-radius:15px; color:white; border-color:var(--border);" onclick="openModal('memberModal')">➕ Member</button>
             <button class="btn btn-outline-secondary w-100 py-3" style="border-radius:15px; color:white; border-color:var(--border);" onclick="openModal('groupModal')">🏦 Group Master</button>
         </div>
-        <button class="btn btn-link text-danger w-100 mt-4 small" onclick="emergencyReset()">Database Not Saving? Click to Reset</button>
+        <button class="btn btn-link text-danger w-100 mt-4 small text-decoration-none" onclick="emergencyReset()">Database Not Saving? Click to Reset</button>
     </div>
 
     <div id="groupsTab" class="tab-content">
@@ -65,7 +73,7 @@
 <div id="memberModal" class="modal-overlay"><div class="modal-content-custom">
     <div class="fw-bold mb-3">Add New Member</div>
     <input type="text" id="mName" class="form-input" placeholder="Full Name">
-    <select id="mGroup" class="form-input"><option value="">-- Select Group --</option></select>
+    <select id="mGroup" class="form-input"><option value="">-- Select Primary Group --</option></select>
     <input type="text" id="mPhone" class="form-input" placeholder="Phone Number">
     <button class="btn-save" onclick="saveMember()">Save Member</button>
     <button class="btn-cancel" onclick="closeModal('memberModal')">Cancel</button>
@@ -88,8 +96,10 @@
         <div class="col-6"><input type="number" id="pChit" class="form-input" placeholder="Chit Amt" oninput="calcBalance()"></div>
         <div class="col-6"><input type="number" id="pPaid" class="form-input" placeholder="Paid Amt" oninput="calcBalance()"></div>
     </div>
-    <input type="number" id="pBal" class="form-input" placeholder="Balance" readonly>
-    <div class="form-input d-flex align-items-center gap-2"><input type="checkbox" id="pPicked"> <label class="mb-0 small text-white">Chit Picked?</label></div>
+    <input type="number" id="pBal" class="form-input" placeholder="Balance Amount" readonly>
+    <div class="form-input d-flex align-items-center gap-2">
+        <input type="checkbox" id="pPicked"> <label for="pPicked" class="mb-0 small text-white">Chit Picked?</label>
+    </div>
     <button class="btn-save" onclick="savePayment()">Save Record</button>
     <button class="btn-cancel" onclick="closeModal('paymentModal')">Cancel</button>
 </div></div>
@@ -97,23 +107,24 @@
 <div class="nav-bar">
     <div class="nav-item active" id="navHome" onclick="switchTab('home')">🏠<br>Home</div>
     <div class="nav-item" id="navGroups" onclick="switchTab('groups')">📁<br>Groups</div>
-    <div class="nav-item" onclick="exportFullBackup()">💾<br>Backup</div>
-    <div class="nav-item"><label for="restoreFile" style="cursor:pointer;">📂<br>Restore</label><input type="file" id="restoreFile" style="display:none;" onchange="importFullBackup(event)"></div>
+    <div class="nav-item" onclick="exportFullBackup()">💾<br>Backup Data</div>
+    <div class="nav-item"><label for="restoreFile" style="cursor:pointer; margin:0;">📂<br>Restore</label><input type="file" id="restoreFile" style="display:none;" onchange="importFullBackup(event)"></div>
 </div>
 
 <script>
-    // 1. Database Initialization
+    // 1. Initialize Database
     const db = new Dexie("AKChitFundsDB");
-    db.version(1).stores({ 
+    db.version(8).stores({ 
         members: "++id, &name, phone, groupId", 
-        groups: "++id, &name, duration", 
+        groups: "++id, name, duration", 
         payments: "++id, memberId, groupId, chitAmt, paidAmt, balAmt, date, chitPicked" 
     });
 
-    // 2. Safety & UI Functions
-    window.addEventListener('beforeunload', (e) => { e.preventDefault(); e.returnValue = 'Save your data?'; });
+    // 2. UI Helpers
+    window.addEventListener('beforeunload', (e) => { e.preventDefault(); e.returnValue = ''; });
     function openModal(id) { document.getElementById(id).style.display = 'block'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    
     function calcBalance() {
         const c = parseFloat(document.getElementById('pChit').value) || 0;
         const p = parseFloat(document.getElementById('pPaid').value) || 0;
@@ -123,11 +134,17 @@
     function switchTab(tab) {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-        if(tab === 'home') { document.getElementById('homeTab').classList.add('active'); document.getElementById('navHome').classList.add('active'); }
-        else { document.getElementById('groupsTab').classList.add('active'); document.getElementById('navGroups').classList.add('active'); renderGroupsTab(); }
+        if(tab === 'home') { 
+            document.getElementById('homeTab').classList.add('active'); 
+            document.getElementById('navHome').classList.add('active'); 
+        } else { 
+            document.getElementById('groupsTab').classList.add('active'); 
+            document.getElementById('navGroups').classList.add('active'); 
+            renderGroupsTab(); 
+        }
     }
 
-    // 3. Robust Saving Functions
+    // 3. Save Functions
     async function saveGroup() {
         const name = document.getElementById('gName').value.trim();
         const duration = parseInt(document.getElementById('gDuration').value);
@@ -136,9 +153,10 @@
                 await db.groups.add({ name, duration });
                 document.getElementById('gName').value = '';
                 document.getElementById('gDuration').value = '';
-                updateUI(); closeModal('groupModal');
-            } catch(e) { alert("Group name already exists or Database Error."); }
-        } else alert("Enter Group Name and Duration.");
+                updateUI(); 
+                closeModal('groupModal');
+            } catch(e) { alert("Error saving group. Name might already exist."); }
+        } else { alert("Enter Group Name and valid Duration in months."); }
     }
 
     async function saveMember() {
@@ -150,95 +168,218 @@
                 await db.members.add({ name, phone, groupId: gId });
                 document.getElementById('mName').value = '';
                 document.getElementById('mPhone').value = '';
-                updateUI(); closeModal('memberModal');
-            } catch(e) { alert("Member name already exists."); }
-        } else alert("Enter Name and Select Group.");
+                updateUI(); 
+                closeModal('memberModal');
+            } catch(e) { alert("Member name already exists in the database."); }
+        } else { alert("Enter Full Name and assign a Primary Group."); }
     }
 
     async function savePayment() {
         const mId = parseInt(document.getElementById('pMember').value);
         const gId = parseInt(document.getElementById('pGroup').value);
         const pAmt = parseFloat(document.getElementById('pPaid').value);
+        
         if(!isNaN(mId) && !isNaN(gId) && !isNaN(pAmt)) {
             await db.payments.add({
-                memberId: mId, groupId: gId,
+                memberId: mId, 
+                groupId: gId,
                 chitAmt: parseFloat(document.getElementById('pChit').value) || 0,
-                paidAmt: pAmt, balAmt: parseFloat(document.getElementById('pBal').value) || 0,
+                paidAmt: pAmt, 
+                balAmt: parseFloat(document.getElementById('pBal').value) || 0,
                 date: document.getElementById('pDate').value,
                 chitPicked: document.getElementById('pPicked').checked ? 1 : 0
             });
-            updateUI(); closeModal('paymentModal');
-        } else alert("Fill Member, Group and Paid Amount.");
+            updateUI(); 
+            closeModal('paymentModal');
+            loadMemberLedger(); // Refresh summary if open
+        } else { alert("Please select Member, Group, and enter Paid Amount."); }
     }
 
-    // 4. Reset & Maintenance
-    async function emergencyReset() {
-        if(confirm("This will clear all data and fix saving errors. Proceed?")) {
-            await db.delete();
-            location.reload();
+    // 4. FIX: Robust Member Summary Ledger
+    async function loadMemberLedger() {
+        const midVal = document.getElementById('summaryView').value;
+        const container = document.getElementById('ledgerData');
+        
+        if(!midVal) {
+            container.innerHTML = '<div class="text-center text-secondary py-2 small">Select a member to view their records.</div>';
+            return;
+        }
+
+        const memberId = parseInt(midVal);
+        const member = await db.members.get(memberId);
+        if(!member) return;
+
+        const allGroups = await db.groups.toArray();
+        const pays = await db.payments.where('memberId').equals(memberId).toArray();
+        
+        // If Member has no payments yet
+        if(pays.length === 0) {
+            const primaryG = allGroups.find(g => g.id === member.groupId);
+            container.innerHTML = `
+                <div class="text-center py-3">
+                    <div class="text-warning fw-bold mb-1">${member.name}</div>
+                    <div class="text-dim small mb-2">Group: ${primaryG ? primaryG.name : 'Unassigned'}</div>
+                    <div class="badge bg-secondary">No Payments Recorded Yet</div>
+                </div>`;
+            return;
+        }
+
+        // If Member has payments, show the table
+        let html = `
+            <div class="text-warning fw-bold mb-2 border-bottom border-secondary pb-1">${member.name}'s Ledger</div>
+            <table class="table-custom mt-2">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Group</th>
+                        <th>Paid</th>
+                        <th>Bal</th>
+                        <th>Del</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        
+        pays.forEach(p => {
+            const g = allGroups.find(x => x.id === p.groupId);
+            html += `
+                <tr>
+                    <td>${new Date(p.date).toLocaleDateString('en-GB')}</td>
+                    <td class="text-info">${g ? g.name : '-'}</td>
+                    <td class="text-success">₹${p.paidAmt}</td>
+                    <td class="text-warning">₹${p.balAmt}</td>
+                    <td><button class="btn-delete" onclick="deletePayment(${p.id})">X</button></td>
+                </tr>
+            `;
+        });
+        
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
+    async function deletePayment(id) {
+        if(confirm("Are you sure you want to delete this payment record?")) {
+            await db.payments.delete(id);
+            updateUI();
+            loadMemberLedger(); // Immediately refresh the table
         }
     }
 
-    // (UI Update, Member Ledger, and Group Tab logic truncated for brevity - they remain same as previous robust version)
-    async function updateUI() {
-        const m = await db.members.toArray();
-        const g = await db.groups.toArray();
-        const p = await db.payments.toArray();
-        document.getElementById('memberCount').innerText = m.length;
-        document.getElementById('groupCount').innerText = g.length;
-        const today = new Date().toISOString().split('T')[0];
-        const tColl = p.filter(x => x.date === today).reduce((s, x) => s + (x.paidAmt || 0), 0);
-        document.getElementById('todayColl').innerText = `₹${tColl}`;
-        const mList = '<option value="">-- Select Member --</option>' + m.map(x => `<option value="${x.id}">${x.name}</option>`).join('');
-        document.getElementById('summaryView').innerHTML = mList;
-        document.getElementById('pMember').innerHTML = mList;
-        document.getElementById('mGroup').innerHTML = '<option value="">-- Enroll in Group --</option>' + g.map(x => `<option value="${x.id}">${x.name}</option>`).join('');
-    }
-
+    // 5. Link Payment Dropdowns
     async function linkGroupForPayment() {
         const mid = parseInt(document.getElementById('pMember').value);
         if(isNaN(mid)) return;
         const m = await db.members.get(mid);
-        const g = await db.groups.get(m.groupId);
-        document.getElementById('pGroup').innerHTML = `<option value="${g.id}">${g.name}</option>`;
+        const allG = await db.groups.toArray();
+        
+        // Populate all groups so they can pay into any group
+        document.getElementById('pGroup').innerHTML = allG.map(g => 
+            `<option value="${g.id}" ${g.id === m.groupId ? 'selected' : ''}>${g.name}</option>`
+        ).join('');
+
+        // Check chit picked status for primary group
+        const pick = await db.payments.where({memberId: m.id, groupId: m.groupId, chitPicked: 1}).first();
+        document.getElementById('pPicked').checked = !!pick;
+        document.getElementById('pPicked').disabled = !!pick;
     }
 
+    // 6. Groups Matrix Tab
     async function renderGroupsTab() {
-        const gs = await db.groups.toArray(); const ms = await db.members.toArray(); const ps = await db.payments.toArray();
+        const gs = await db.groups.toArray(); 
+        const ms = await db.members.toArray(); 
+        const ps = await db.payments.toArray();
         let html = '';
+        
         for(let g of gs) {
-            const gPs = ps.filter(p => p.groupId === g.id); const uIds = [...new Set(gPs.map(p => p.memberId))];
-            html += `<div class="p-3 mb-3" style="background:var(--card-bg); border-radius:15px; border:1px solid var(--border);">
-                <div class="fw-bold text-warning mb-2">${g.name} (${g.duration} Mo)</div>
-                <table class="table-custom"><thead><tr><th>Member</th><th>Total</th><th>Picked</th></tr></thead><tbody>`;
+            const gPs = ps.filter(p => p.groupId === g.id); 
+            const uIds = [...new Set(gPs.map(p => p.memberId))];
+            
+            html += `
+            <div class="p-3 mb-3" style="background:var(--card-bg); border-radius:15px; border:1px solid var(--border);">
+                <div class="d-flex justify-content-between mb-2 border-bottom border-secondary pb-1">
+                    <span class="fw-bold text-warning">${g.name}</span>
+                    <span class="text-dim small">${g.duration} Months</span>
+                </div>
+                <table class="table-custom">
+                    <thead><tr><th>Member</th><th>Total Paid</th><th>Picked</th></tr></thead>
+                    <tbody>`;
+            
             uIds.forEach(id => {
-                const m = ms.find(x => x.id === id); const mPs = gPs.filter(x => x.memberId === id);
-                const total = mPs.reduce((s, p) => s + (p.paidAmt || 0), 0); const pick = mPs.find(p => p.chitPicked === 1);
-                html += `<tr><td>${m?m.name:'-'}</td><td>₹${total}</td><td>${pick?'✔ ('+pick.date+')':'-'}</td></tr>`;
+                const m = ms.find(x => x.id === id); 
+                const mPs = gPs.filter(x => x.memberId === id);
+                const total = mPs.reduce((s, p) => s + (p.paidAmt || 0), 0); 
+                const pick = mPs.find(p => p.chitPicked === 1);
+                
+                html += `<tr>
+                    <td>${m ? m.name : 'Unknown'}</td>
+                    <td class="text-success">₹${total}</td>
+                    <td>${pick ? '✔ ' + new Date(pick.date).toLocaleDateString('en-GB') : '-'}</td>
+                </tr>`;
             });
             html += '</tbody></table></div>';
         }
-        document.getElementById('groupListArea').innerHTML = html || '<div class="text-center py-5">No Data</div>';
+        document.getElementById('groupListArea').innerHTML = html || '<div class="text-center py-5 text-dim">No group records yet.</div>';
     }
 
+    // 7. Core UI Updater
+    async function updateUI() {
+        const m = await db.members.toArray();
+        const g = await db.groups.toArray();
+        const p = await db.payments.toArray();
+        
+        // Update Dashboard Stats
+        document.getElementById('memberCount').innerText = m.length;
+        document.getElementById('groupCount').innerText = g.length;
+        
+        const todayStr = new Date().toISOString().split('T')[0];
+        const tColl = p.filter(x => x.date === todayStr).reduce((s, x) => s + (x.paidAmt || 0), 0);
+        document.getElementById('todayColl').innerText = `₹${tColl}`;
+        
+        // Update Dropdowns
+        const mList = '<option value="">-- Select Member Summary --</option>' + m.map(x => `<option value="${x.id}">${x.name}</option>`).join('');
+        const gList = '<option value="">-- Assign Group --</option>' + g.map(x => `<option value="${x.id}">${x.name}</option>`).join('');
+        
+        document.getElementById('summaryView').innerHTML = mList;
+        
+        document.getElementById('pMember').innerHTML = '<option value="">-- Select Member --</option>' + m.map(x => `<option value="${x.id}">${x.name}</option>`).join('');
+        document.getElementById('mGroup').innerHTML = gList;
+    }
+
+    // 8. Emergency Reset
+    async function emergencyReset() {
+        if(confirm("DANGER: This will delete ALL local data to fix saving bugs. Have you downloaded a backup first?")) {
+            await db.delete();
+            alert("Database Reset. Page will reload.");
+            location.reload();
+        }
+    }
+
+    // 9. JSON Backup & Restore
     async function exportFullBackup() {
         const d = { members: await db.members.toArray(), groups: await db.groups.toArray(), payments: await db.payments.toArray() };
         const b = new Blob([JSON.stringify(d, null, 2)], { type: "application/json" });
-        const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = `AK_CHIT_DATA_${new Date().toLocaleDateString()}.json`; a.click();
+        const a = document.createElement("a"); 
+        a.href = URL.createObjectURL(b); 
+        a.download = `AK_CHIT_DATA_${new Date().toLocaleDateString('en-GB')}.json`; 
+        a.click();
     }
 
     async function importFullBackup(e) {
         const f = e.target.files[0]; if(!f) return;
-        const r = new FileReader(); r.onload = async (ev) => {
+        const r = new FileReader(); 
+        r.onload = async (ev) => {
             const d = JSON.parse(ev.target.result);
-            if(confirm("Restore data?")) {
+            if(confirm("Restore data? This will overwrite your current screen.")) {
                 await db.members.clear(); await db.groups.clear(); await db.payments.clear();
                 await db.members.bulkAdd(d.members); await db.groups.bulkAdd(d.groups); await db.payments.bulkAdd(d.payments);
+                alert("Backup Restored!");
                 location.reload();
             }
-        }; r.readAsText(f);
+        }; 
+        r.readAsText(f);
     }
 
+    // Init
     document.getElementById('pDate').valueAsDate = new Date();
     updateUI();
 </script>
