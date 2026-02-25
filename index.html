@@ -52,7 +52,7 @@
 
         <div class="p-3 my-4" style="background:var(--card-bg); border-radius:20px; border:1px solid var(--border);">
             <select class="form-input border-0 p-0 mb-3" id="summaryView" onchange="loadMemberLedger()" style="background:transparent; border-bottom: 1px solid #333;"><option value="">-- Loading Cloud Data --</option></select>
-            <div id="ledgerData" class="table-responsive"></div>
+            <div id="ledgerData"></div>
         </div>
 
         <div class="d-flex gap-2">
@@ -88,7 +88,7 @@
     <div class="fw-bold mb-3">Record Payment</div>
     <input type="date" id="pDate" class="form-input">
     <select id="pMember" class="form-input" onchange="linkGroupForPayment()"><option value="">-- Select Member --</option></select>
-    <select id="pGroup" class="form-input"><option value="">-- Select Group --</option></select>
+    <select id="pGroup" class="form-input" onchange="checkChitStatus()"><option value="">-- Select Group --</option></select>
     <div class="row g-2">
         <div class="col-6"><input type="number" id="pChit" class="form-input" placeholder="Chit Amt" oninput="calcBalance()"></div>
         <div class="col-6"><input type="number" id="pPaid" class="form-input" placeholder="Paid Amt" oninput="calcBalance()"></div>
@@ -107,28 +107,25 @@
 
 <script>
     // ==========================================
-    // YOUR LIVE FIREBASE CONFIGURATION
+    // PASTE YOUR FIREBASE CONFIGURATION HERE
     // ==========================================
     const firebaseConfig = {
-        apiKey: "AIzaSyB9_sBL83skvIaOVAE8msHwIWq8QQwhxFU",
-        authDomain: "ak-chit-funds.firebaseapp.com",
-        projectId: "ak-chit-funds",
-        storageBucket: "ak-chit-funds.firebasestorage.app",
-        messagingSenderId: "297195194526",
-        appId: "1:297195194526:web:b71c7c09dcf8610211938f"
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
     };
     
-    // Initialize Firebase Cloud
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // Helper function to get all documents from a collection
     async function getCollection(colName) {
         const snapshot = await db.collection(colName).get();
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     }
 
-    // Modal & UI Helpers
     function openModal(id) { document.getElementById(id).style.display = 'block'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     function calcBalance() {
@@ -144,7 +141,6 @@
         else { document.getElementById('groupsTab').classList.add('active'); document.getElementById('navGroups').classList.add('active'); renderGroupsTab(); }
     }
 
-    // --- CLOUD SAVING FUNCTIONS ---
     async function saveGroup() {
         const name = document.getElementById('gName').value.trim();
         const dur = parseInt(document.getElementById('gDuration').value);
@@ -154,13 +150,22 @@
         } else alert("Invalid Group Data");
     }
 
+    // UPDATED: Prevent duplicate members
     async function saveMember() {
         const name = document.getElementById('mName').value.trim();
         const gId = document.getElementById('mGroup').value; 
-        if(name && gId) {
-            await db.collection('members').add({ name, phone: document.getElementById('mPhone').value, groupId: gId });
-            updateUI(); closeModal('memberModal');
-        } else alert("Enter Name and Group");
+        
+        if(!name || !gId) return alert("Enter Name and Group");
+
+        // Check if name already exists in Cloud
+        const existing = await db.collection('members').where('name', '==', name).get();
+        if(!existing.empty) {
+            alert("Member '" + name + "' already exists! To add them to another group, select their name in the 'Record Payment' screen and change the Group dropdown.");
+            return;
+        }
+
+        await db.collection('members').add({ name, phone: document.getElementById('mPhone').value, groupId: gId });
+        updateUI(); closeModal('memberModal');
     }
 
     async function linkGroupForPayment() {
@@ -169,7 +174,28 @@
         const mDoc = await db.collection('members').doc(mid).get();
         const m = mDoc.data();
         const allG = await getCollection('groups');
+        
+        // Load all groups so member can join a new one
         document.getElementById('pGroup').innerHTML = allG.map(g => `<option value="${g.id}" ${g.id === m.groupId ? 'selected' : ''}>${g.name}</option>`).join('');
+        
+        checkChitStatus();
+    }
+
+    // NEW: Dynamically check chit status when changing groups in payment modal
+    async function checkChitStatus() {
+        const mid = document.getElementById('pMember').value;
+        const gid = document.getElementById('pGroup').value;
+        if(!mid || !gid) return;
+
+        const pays = await db.collection('payments')
+            .where('memberId', '==', mid).where('groupId', '==', gid).where('chitPicked', '==', 1).get();
+        
+        const checkbox = document.getElementById('pPicked');
+        if(!pays.empty) {
+            checkbox.checked = true; checkbox.disabled = true;
+        } else {
+            checkbox.checked = false; checkbox.disabled = false;
+        }
     }
 
     async function savePayment() {
@@ -190,13 +216,10 @@
     }
 
     async function deletePayment(id) {
-        if(confirm("Delete this record from the Cloud?")) { 
-            await db.collection('payments').doc(id).delete(); 
-            loadMemberLedger(); updateUI(); 
-        }
+        if(confirm("Delete this record from the Cloud?")) { await db.collection('payments').doc(id).delete(); loadMemberLedger(); updateUI(); }
     }
 
-    // --- DISPLAY CLOUD DATA ---
+    // UPDATED: Generates specific ledgers for every group a member belongs to
     async function loadMemberLedger() {
         const mid = document.getElementById('summaryView').value;
         const container = document.getElementById('ledgerData');
@@ -205,16 +228,55 @@
         const allPays = await getCollection('payments');
         const pays = allPays.filter(p => p.memberId === mid).sort((a,b) => new Date(b.date) - new Date(a.date));
         const groups = await getCollection('groups');
-        
-        if(pays.length === 0) { container.innerHTML = '<div class="text-center text-dim py-3 small">No payments yet.</div>'; return; }
+        const mDoc = await db.collection('members').doc(mid).get();
+        const member = mDoc.data();
 
-        let html = '<table class="table-custom mt-2"><thead><tr><th>Date</th><th>Group</th><th>Paid</th><th>Bal</th><th>Picked</th><th>Action</th></tr></thead><tbody>';
-        pays.forEach(p => {
-            const g = groups.find(x => x.id === p.groupId);
-            const pickedStatus = p.chitPicked === 1 ? '<span class="text-success fw-bold">✔</span>' : '-';
-            html += `<tr><td>${p.date}</td><td>${g?g.name:'-'}</td><td>₹${p.paidAmt}</td><td>₹${p.balAmt}</td><td class="text-center">${pickedStatus}</td><td><button class="btn-delete" onclick="deletePayment('${p.id}')">Del</button></td></tr>`;
+        // Find all unique groups this member has recorded a payment for
+        const uniqueGroupIds = [...new Set(pays.map(p => p.groupId))];
+        
+        // If they have no payments but exist in a primary group, add it to show empty status
+        if(member.groupId && !uniqueGroupIds.includes(member.groupId)) { uniqueGroupIds.push(member.groupId); }
+
+        if(uniqueGroupIds.length === 0) { container.innerHTML = '<div class="text-center text-dim py-3 small">No groups assigned yet.</div>'; return; }
+
+        let html = '';
+
+        uniqueGroupIds.forEach(gid => {
+            const g = groups.find(x => x.id === gid);
+            const groupPays = pays.filter(p => p.groupId === gid);
+            const totalPaid = groupPays.reduce((sum, p) => sum + p.paidAmt, 0);
+            const hasPicked = groupPays.some(p => p.chitPicked === 1);
+
+            html += `
+            <div class="mb-4 p-3" style="background:rgba(255,255,255,0.03); border-radius:15px; border:1px solid #252f48;">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-bold text-info">${g ? g.name : 'Unknown Group'}</span>
+                    <span class="badge ${hasPicked ? 'bg-success' : 'bg-secondary'}" style="font-size:10px;">${hasPicked ? '✔ Picked' : '⏳ Pending'}</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table-custom mt-2 mb-0">
+                        <thead><tr><th>Date</th><th>Paid</th><th>Bal</th><th>Action</th></tr></thead>
+                        <tbody>`;
+            
+            if (groupPays.length === 0) {
+                html += `<tr><td colspan="4" class="text-center text-dim py-2 border-0">No payments yet</td></tr>`;
+            } else {
+                groupPays.forEach(p => {
+                    html += `<tr><td>${p.date}</td><td>₹${p.paidAmt}</td><td class="text-warning">₹${p.balAmt}</td><td><button class="btn-delete" onclick="deletePayment('${p.id}')">Del</button></td></tr>`;
+                });
+            }
+            
+            html += `   </tbody>
+                    </table>
+                </div>
+                <div class="d-flex justify-content-between mt-2 pt-2 border-top border-secondary">
+                    <span class="small text-dim">Total Contribution:</span>
+                    <span class="fw-bold text-warning">₹${totalPaid}</span>
+                </div>
+            </div>`;
         });
-        container.innerHTML = html + '</tbody></table>';
+
+        container.innerHTML = html;
     }
 
     async function updateUI() {
@@ -270,7 +332,6 @@
     }
 
     document.getElementById('pDate').valueAsDate = new Date();
-    // Run initial sync after a short delay to allow Firebase to boot
     setTimeout(updateUI, 500); 
 </script>
 </body>
