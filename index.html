@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AK Chit Funds - Admin Ledger</title>
+    <title>AK Chit Funds - Pro Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
@@ -88,7 +88,7 @@
     <input type="text" id="gName" class="form-input" placeholder="Group Name">
     <div class="small text-dim mb-1">Duration (Months)</div>
     <input type="number" id="gDuration" class="form-input" placeholder="21">
-    <div class="small text-dim mb-1">Start Date</div>
+    <div class="small text-dim mb-1">Chit Start Date</div>
     <input type="date" id="gStart" class="form-input">
     <button class="btn-save" onclick="saveGroup()">Save Group</button>
     <button class="btn-cancel" onclick="closeModal('groupModal')">Cancel</button>
@@ -313,13 +313,22 @@
             const uids = [...new Set(gPs.map(p => p.memberId))];
             const gTotalColl = gPs.reduce((s, p) => s + p.paidAmt, 0);
             const gMs = ms.filter(m => m.groupId === g.id || uids.includes(m.id)).sort((a,b) => a.name.localeCompare(b.name));
+            
+            // Pending Month Logic: Duration - Months Passed
             const elapsed = getElapsedMonths(g.startDate);
-            const pendingForGroupHeader = Math.max(0, g.duration - elapsed);
+            const monthsLeft = Math.max(0, g.duration - elapsed);
 
             h += `<div class="p-3 mb-3" style="background:var(--card-bg); border-radius:15px; border:1px solid var(--border);">
                 <div class="d-flex justify-content-between align-items-center pb-2" onclick="toggleCollapse('${g.id}')" style="cursor:pointer;">
-                    <div><div class="fw-bold text-warning">${g.name} ✏️</div><div class="text-dim small">Collected: ₹${gTotalColl}</div></div>
-                    <div class="text-end"><div class="fw-bold text-info">${pendingForGroupHeader} / ${g.duration}</div><div class="text-dim small">Months Left</div></div>
+                    <div>
+                        <div class="fw-bold text-warning">${g.name} ✏️</div>
+                        <div class="text-dim small">Start Date: ${formatDate(g.startDate)}</div>
+                        <div class="text-dim small">Collected: ₹${gTotalColl}</div>
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-bold text-info">${monthsLeft} / ${g.duration}</div>
+                        <div class="text-dim small">Months Left</div>
+                    </div>
                 </div>
                 <div id="collapse-${g.id}" class="collapse-content border-top border-secondary mt-2">
                     <div class="py-2 text-end">
