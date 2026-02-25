@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AK Chit Funds - Offline</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f4f4f9; }
+        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        input, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+        button { background: #2196F3; color: white; border: none; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    </style>
+</head>
+<body>
+
+    <h2>AK Chit Funds Portal</h2>
+    
+    <div class="card">
+        <h3>Add New Member</h3>
+        <input type="text" id="name" placeholder="Member Name">
+        <input type="text" id="phone" placeholder="Phone Number">
+        <button onclick="saveMember()">Save Locally (Offline)</button>
+    </div>
+
+    <div class="card">
+        <h3>Members List</h3>
+        <table id="memberTable">
+            <thead>
+                <tr><th>Name</th><th>Phone</th></tr>
+            </thead>
+            <tbody id="memberData"></tbody>
+        </table>
+    </div>
+
+    <script>
+        // --- 1. DATABASE LOGIC (Dexie) ---
+        const db = new Dexie("AKChitFundsDB");
+        db.version(1).stores({
+            members: "++id, name, phone"
+        });
+
+        async function saveMember() {
+            const name = document.getElementById('name').value;
+            const phone = document.getElementById('phone').value;
+            
+            await db.members.add({ name, phone });
+            document.getElementById('name').value = '';
+            document.getElementById('phone').value = '';
+            renderMembers();
+        }
+
+        async function renderMembers() {
+            const members = await db.members.toArray();
+            const tableBody = document.getElementById('memberData');
+            tableBody.innerHTML = members.map(m => 
+                `<tr><td>${m.name}</td><td>${m.phone}</td></tr>`
+            ).join('');
+        }
+
+        // --- 2. PWA SERVICE WORKER REGISTRATION ---
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("sw.js")
+                    .then(reg => console.log("Offline Mode Active"))
+                    .catch(err => console.log("Offline Setup Failed", err));
+            });
+        }
+
+        // Initial Load
+        renderMembers();
+    </script>
+</body>
+</html>
