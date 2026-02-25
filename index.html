@@ -7,193 +7,131 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <style>
-        :root {
-            --bg-dark: #050a18;
-            --card-bg: #11192e;
-            --accent-gold: #f39c12;
-            --text-main: #ffffff;
-            --text-dim: #8e9aaf;
-        }
-
-        body { 
-            background-color: var(--bg-dark); 
-            color: var(--text-main);
-            font-family: 'Segoe UI', sans-serif;
-            padding-bottom: 90px;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            border-bottom: 1px solid #1c2641;
-        }
-        .logo { color: var(--accent-gold); font-weight: bold; font-size: 1.2rem; }
-
-        /* Dashboard Stats boxes from your screenshot */
-        .stat-box {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 15px;
-            text-align: center;
-            border: 1px solid #1c2641;
-        }
+        :root { --bg-dark: #050a18; --card-bg: #11192e; --accent-gold: #f39c12; --text-main: #ffffff; --text-dim: #8e9aaf; --border-color: #1c2641; }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Segoe UI', sans-serif; padding-bottom: 120px; }
+        .app-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; }
+        .brand-logo { color: var(--accent-gold); font-weight: bold; font-size: 1.3rem; }
+        .stat-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 15px; text-align: center; }
         .stat-num { font-size: 1.4rem; font-weight: bold; display: block; }
         .stat-label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; }
 
-        /* The Big Orange "New Payment" style button */
-        .btn-payment {
-            background: linear-gradient(90deg, #f39c12, #e67e22);
-            color: #000;
-            border: none;
-            border-radius: 15px;
-            padding: 20px;
-            width: 100%;
-            font-weight: bold;
-            margin: 20px 0;
-            text-align: left;
-        }
+        /* Group Header with Months Progress */
+        .group-header-card { background: #1c2641; padding: 12px 18px; border-radius: 12px; margin-top: 20px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--accent-gold); }
+        .month-tracker { font-size: 0.85rem; color: var(--accent-gold); font-weight: bold; }
+        
+        .member-row { background: var(--card-bg); border: 1px solid var(--border-color); margin: 5px 0; padding: 10px 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+        .pending-badge { background: rgba(255, 23, 68, 0.2); color: #ff1744; padding: 2px 8px; border-radius: 5px; font-size: 0.75rem; }
 
-        .form-dark {
-            background: var(--card-bg);
-            border: 1px solid #1c2641;
-            color: white;
-            border-radius: 10px;
-        }
-        .form-dark:focus { background: #161f36; color: white; border-color: var(--accent-gold); box-shadow: none; }
-
-        /* Bottom Nav */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            background: #0a1021;
-            display: flex;
-            justify-content: space-around;
-            padding: 12px;
-            border-top: 1px solid #1c2641;
-            z-index: 1000;
-        }
-        .nav-item { text-align: center; color: var(--text-dim); font-size: 0.7rem; text-decoration: none; cursor: pointer; }
-        .nav-item.active { color: var(--accent-gold); }
+        .btn-action-outline { flex: 1; background: transparent; border: 1px solid var(--border-color); color: white; padding: 15px; border-radius: 15px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .entry-section { display: none; background: var(--card-bg); border-radius: 20px; padding: 20px; margin: 20px 0; border: 1px solid var(--accent-gold); }
+        .form-dark { background: #0a1021; border: 1px solid var(--border-color); color: white; padding: 12px; margin-bottom: 10px; border-radius: 10px; }
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: #0a1021; display: flex; justify-content: space-around; padding: 15px; border-top: 1px solid var(--border-color); }
     </style>
 </head>
 <body>
 
-<div class="container py-3">
-    <div class="header mb-4">
-        <div class="logo">🏆 AK Chit Funds</div>
-        <div>
-            <span class="badge bg-dark text-warning border border-warning">ADMIN</span>
-            <button class="btn btn-outline-danger btn-sm ms-2" style="font-size: 10px;">LOGOUT</button>
-        </div>
+<div class="container py-2">
+    <div class="app-header"><div class="brand-logo">🏆 AK Chit Funds</div><span class="badge bg-dark text-warning border border-warning">ADMIN</span></div>
+
+    <div class="row g-2 text-center mb-3">
+        <div class="col-4"><div class="stat-card"><span class="stat-num" id="memberCount">0</span><span class="stat-label">Members</span></div></div>
+        <div class="col-4"><div class="stat-card"><span class="stat-num" id="groupCount">0</span><span class="stat-label">Groups</span></div></div>
+        <div class="col-4"><div class="stat-card"><span class="stat-num text-success">₹0</span><span class="stat-label">Today</span></div></div>
     </div>
 
-    <div class="row g-2 mb-4 text-center">
-        <div class="col-4">
-            <div class="stat-box">
-                <span class="stat-num" id="memberCount">0</span>
-                <span class="stat-label">Members</span>
+    <div id="groupExplorer">
+        <h6 class="text-dim mt-4 mb-2 small px-2">ACTIVE GROUPS & MEMBERS</h6>
+        <div id="groupListContainer">
             </div>
-        </div>
-        <div class="col-4">
-            <div class="stat-box">
-                <span class="stat-num" id="groupCount">0</span>
-                <span class="stat-label">Groups</span>
-            </div>
-        </div>
-        <div class="col-4">
-            <div class="stat-box">
-                <span class="stat-num text-success">₹0</span>
-                <span class="stat-label">Today</span>
-            </div>
-        </div>
     </div>
 
-    <button class="btn-payment" onclick="document.getElementById('addMemberSection').scrollIntoView()">
-        <span style="font-size: 1.2rem;">💳 New Payment</span><br>
-        <span style="font-size: 0.7rem; opacity: 0.8;">Record receipt for a member</span>
-    </button>
-
-    <div id="addGroupSection" class="p-3 mb-4" style="background: #11192e; border-radius: 15px; border: 1px dashed #f39c12;">
-        <h6 class="text-warning mb-3">Group Master</h6>
-        <div class="input-group">
-            <input type="text" id="groupName" class="form-control form-dark" placeholder="e.g. Group A - 1L">
-            <button class="btn btn-warning fw-bold" onclick="saveGroup()">Create</button>
-        </div>
+    <div class="action-container d-flex gap-2 mt-4">
+        <button class="btn-action-outline" onclick="toggleSection('memberForm')">➕ Member</button>
+        <button class="btn-action-outline" onclick="toggleSection('groupForm')">🏦 Group</button>
     </div>
 
-    <div id="addMemberSection" class="p-3 mb-5" style="background: #11192e; border-radius: 15px;">
-        <h6 class="text-warning mb-3">Add Member</h6>
-        <input type="text" id="mName" class="form-control form-dark mb-2" placeholder="Full Name">
-        <input type="text" id="mPhone" class="form-control form-dark mb-2" placeholder="Phone Number">
-        <select id="mGroup" class="form-select form-dark mb-3">
-            <option value="">-- Assign Group --</option>
-        </select>
-        <button class="btn btn-warning w-100 fw-bold" onclick="saveMember()">Add to Database</button>
+    <div id="memberForm" class="entry-section">
+        <h6 class="text-warning mb-3">Add Member to Group</h6>
+        <input type="text" id="mName" class="form-control form-dark" placeholder="Member Name">
+        <select id="mGroup" class="form-select form-dark mb-2"><option value="">-- Select Group --</option></select>
+        <input type="number" id="mMonthsPaid" class="form-control form-dark" placeholder="Months Already Paid">
+        <button class="btn btn-warning w-100 fw-bold" onclick="saveMember()">Save Member</button>
+    </div>
+
+    <div id="groupForm" class="entry-section">
+        <h6 class="text-warning mb-3">Create Group Master</h6>
+        <input type="text" id="gName" class="form-control form-dark mb-2" placeholder="Group Name">
+        <input type="number" id="gTotalMonths" class="form-control form-dark mb-3" placeholder="Total Duration (e.g. 20 Months)">
+        <button class="btn btn-warning w-100 fw-bold" onclick="saveGroup()">Create Group</button>
     </div>
 </div>
 
-<div class="bottom-nav">
-    <div class="nav-item active">🏠<br>Home</div>
-    <div class="nav-item" onclick="alert('Group list coming soon!')">📁<br>Groups</div>
-    <div class="nav-item" onclick="exportToCSV()">📥<br>Backup</div>
+<div class="nav-bar">
+    <div class="text-warning small text-center" onclick="location.reload()">🏠<br>Home</div>
+    <div class="text-secondary small text-center" onclick="exportToCSV()">📥<br>Backup</div>
 </div>
 
 <script>
-    // 1. Initialize DB with Versioning for Groups
     const db = new Dexie("AKChitFundsDB");
-    db.version(1).stores({ 
-        members: "++id, name, phone, groupId",
-        groups: "++id, name" 
+    db.version(4).stores({ 
+        members: "++id, name, groupId, monthsPaid", 
+        groups: "++id, name, totalMonths" 
     });
 
-    // 2. Save Functions
+    function toggleSection(id) {
+        const el = document.getElementById(id);
+        const isVisible = el.style.display === 'block';
+        document.querySelectorAll('.entry-section').forEach(s => s.style.display = 'none');
+        el.style.display = isVisible ? 'none' : 'block';
+    }
+
     async function saveGroup() {
-        const name = document.getElementById('groupName').value;
-        if (!name) return alert("Enter group name");
-        await db.groups.add({ name });
-        document.getElementById('groupName').value = '';
-        updateUI();
+        const name = document.getElementById('gName').value;
+        const totalMonths = document.getElementById('gTotalMonths').value || 20;
+        if(name) await db.groups.add({ name, totalMonths });
+        updateUI(); toggleSection('groupForm');
     }
 
     async function saveMember() {
         const name = document.getElementById('mName').value;
-        const phone = document.getElementById('mPhone').value;
         const groupId = document.getElementById('mGroup').value;
-        if (!name || !phone) return alert("Fill Name and Phone");
-
-        await db.members.add({ name, phone, groupId });
-        document.getElementById('mName').value = '';
-        document.getElementById('mPhone').value = '';
-        updateUI();
+        const monthsPaid = parseInt(document.getElementById('mMonthsPaid').value) || 0;
+        if(name && groupId) await db.members.add({ name, groupId: parseInt(groupId), monthsPaid });
+        updateUI(); toggleSection('memberForm');
     }
 
-    // 3. UI Update Logic
     async function updateUI() {
-        const mCount = await db.members.count();
-        const gCount = await db.groups.count();
-        document.getElementById('memberCount').innerText = mCount;
-        document.getElementById('groupCount').innerText = gCount;
-
-        // Populate Member Dropdown with groups
         const groups = await db.groups.toArray();
-        const select = document.getElementById('mGroup');
-        select.innerHTML = '<option value="">-- Assign Group --</option>' + 
-            groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
-    }
-
-    // 4. Excel Backup
-    async function exportToCSV() {
         const members = await db.members.toArray();
-        let csv = "Name,Phone,GroupID\n" + members.map(m => `${m.name},${m.phone},${m.groupId}`).join("\n");
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = "AK_Chit_Backup.csv";
-        a.click();
+        
+        document.getElementById('memberCount').innerText = members.length;
+        document.getElementById('groupCount').innerText = groups.length;
+
+        // Populate Dropdown
+        document.getElementById('mGroup').innerHTML = '<option value="">-- Select Group --</option>' + 
+            groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+
+        // Render Group Explorer
+        let html = '';
+        for (let g of groups) {
+            const groupMembers = members.filter(m => m.groupId === g.id);
+            html += `
+                <div class="group-header-card shadow-sm">
+                    <span class="fw-bold">${g.name}</span>
+                    <span class="month-tracker">${g.totalMonths} Mo Total</span>
+                </div>
+            `;
+            groupMembers.forEach(m => {
+                const pending = g.totalMonths - m.monthsPaid;
+                html += `
+                    <div class="member-row">
+                        <span>👤 ${m.name}</span>
+                        <span class="pending-badge">${pending} Months Pending</span>
+                    </div>
+                `;
+            });
+        }
+        document.getElementById('groupListContainer').innerHTML = html || '<div class="text-center py-5 text-secondary">No groups created yet.</div>';
     }
 
     updateUI();
