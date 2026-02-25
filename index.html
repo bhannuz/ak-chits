@@ -19,6 +19,11 @@
         .stat-num { font-size: 1.4rem; font-weight: bold; display: block; }
         .stat-label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; }
         
+        /* ALERTS */
+        .due-alert-box { background: rgba(243, 156, 18, 0.1); border: 1px solid rgba(243, 156, 18, 0.3); border-radius: 15px; padding: 15px; margin-top: 20px; display: none; }
+        .due-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .due-item:last-child { border-bottom: none; }
+
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; padding: 20px; overflow-y: auto; }
         .modal-content-custom { background: var(--card-bg); border-radius: 25px; padding: 25px; max-width: 450px; margin: 20px auto; border: 1px solid var(--border); }
         .form-input { background: var(--input-bg); border: 1px solid var(--border); color: white; padding: 12px; border-radius: 12px; width: 100%; margin-bottom: 12px; }
@@ -45,19 +50,14 @@
         .list-sn { width: 35px; color: var(--text-dim); font-size: 0.75rem; font-weight: bold; }
         .list-count-badge { font-size: 0.75rem; background: rgba(243, 156, 18, 0.15); color: #f39c12; padding: 2px 10px; border-radius: 20px; }
 
-        /* PDF TEMPLATE STYLING - FIXED ALIGNMENT */
-        #pdf-template { display: none; background: white !important; color: black !important; padding: 30px; width: 750px; margin: 0 auto; }
-        .invoice-header { border-bottom: 3px solid #f39c12; padding-bottom: 10px; margin-bottom: 20px; display: table; width: 100%; }
-        .header-left { display: table-cell; vertical-align: top; text-align: left; width: 60%; }
-        .header-right { display: table-cell; vertical-align: top; text-align: right; width: 40%; }
-        .invoice-title { font-size: 32px; font-weight: bold; color: #f39c12; margin: 0; line-height: 1.2; }
+        /* PDF TEMPLATE STYLING */
+        #pdf-template { display: none; background: white !important; color: black !important; padding: 40px; width: 850px; }
+        .invoice-header { border-bottom: 3px solid #f39c12; padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-start; }
+        .invoice-title { font-size: 32px; font-weight: bold; color: #f39c12; margin: 0; }
         .invoice-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .invoice-table th { background: #f0f0f0; border: 1px solid #777; padding: 8px; font-size: 11px; font-weight: bold; text-align: left; }
-        .invoice-table td { border: 1px solid #bbb; padding: 8px; font-size: 11px; }
-        .info-box { background: #fcfcfc; border: 1px solid #eee; padding: 15px; border-radius: 8px; font-size: 13px; display: table; width: 100%; box-sizing: border-box; }
-        .info-left { display: table-cell; width: 50%; text-align: left; }
-        .info-right { display: table-cell; width: 50%; text-align: right; }
-        .total-due-row { background: #fff8e1; font-weight: bold; }
+        .invoice-table th { background: #f0f0f0; border: 1px solid #777; padding: 10px; font-size: 13px; font-weight: bold; text-align: left; }
+        .invoice-table td { border: 1px solid #bbb; padding: 10px; font-size: 12px; }
+        .info-box { background: #fcfcfc; border: 1px solid #eee; padding: 15px; border-radius: 8px; font-size: 14px; display: flex; justify-content: space-between; width: 100%; }
     </style>
 </head>
 <body>
@@ -69,6 +69,11 @@
     </div>
 
     <div id="homeTab" class="tab-content active">
+        <div id="dueAlerts" class="due-alert-box">
+            <div class="small fw-bold text-warning mb-2">🔔 PAYMENTS DUE TODAY</div>
+            <div id="dueList"></div>
+        </div>
+
         <div class="row g-2 mt-4 text-center">
             <div class="col-4"><div class="stat-card"><span class="stat-num" id="memberCount">-</span><span class="stat-label">Members</span></div></div>
             <div class="col-4"><div class="stat-card"><span class="stat-num" id="groupCount">-</span><span class="stat-label">Groups</span></div></div>
@@ -101,52 +106,35 @@
 
 <div id="pdf-template">
     <div class="invoice-header">
-        <div class="header-left">
+        <div style="flex: 2;">
             <div class="invoice-title">AK CHIT FUNDS</div>
-            <div style="margin-top:5px; font-size:16px;"><strong>📞 Phone:</strong> 77*******</div>
-            <div style="font-size:12px; color: #555;"><strong>📍 Location:</strong> Hyderabad, Telangana</div>
+            <div style="margin-top:8px; font-size:16px;"><strong>📞 Phone:</strong> 77*******</div>
+            <div style="font-size:13px; color: #555;"><strong>📍 Location:</strong> Hyderabad, Telangana</div>
         </div>
-        <div class="header-right">
-            <div style="font-size: 18px; font-weight: bold; color: #333;">CHIT SETTLEMENT REPORT</div>
-            <div id="pdfDate" style="font-size: 11px; margin-top: 5px; color: #666;"></div>
+        <div style="flex: 1.5; text-align: right;">
+            <div style="font-size: 20px; font-weight: bold; color: #222;">CHIT SETTLEMENT REPORT</div>
+            <div id="pdfDate" style="font-size: 12px; margin-top: 5px; color: #666;"></div>
         </div>
     </div>
 
     <div class="info-box mb-4">
-        <div class="info-left">
+        <div style="text-align: left; width:50%;">
             <strong>Group Name:</strong> <span id="pdfGroupName"></span><br>
             <strong>Start Date:</strong> <span id="pdfStartDate"></span><br>
             <strong>End Date:</strong> <span id="pdfEndDate"></span>
         </div>
-        <div class="info-right">
-            <strong>Total Duration:</strong> <span id="pdfDuration"></span> Months<br>
+        <div style="text-align: right; width:50%;">
+            <strong>Chit Date:</strong> Every <span id="pdfChitDay"></span> of month<br>
             <strong>Group Progress:</strong> <span id="pdfProgress"></span><br>
             <strong>Total Collection:</strong> <span id="pdfTotalColl"></span>
         </div>
     </div>
 
     <table class="invoice-table">
-        <thead>
-            <tr>
-                <th style="width: 40px;">S.No</th>
-                <th>Member Name</th>
-                <th>Till Today Paid</th>
-                <th>Balance</th>
-                <th>Chit Picked?</th>
-            </tr>
-        </thead>
+        <thead><tr><th style="width:50px;">S.No</th><th>Member Name</th><th>Till Today Paid</th><th>Balance</th><th>Chit Picked?</th></tr></thead>
         <tbody id="pdfTableBody"></tbody>
-        <tfoot>
-            <tr class="total-due-row">
-                <td colspan="3" style="text-align:right; padding: 10px;">Total Balance Due:</td>
-                <td id="pdfTotalDue" colspan="2" style="padding: 10px; color: #d35400;">₹0</td>
-            </tr>
-        </tfoot>
+        <tfoot><tr><td colspan="3" style="text-align:right; font-weight:bold; padding:12px;">Total Balance Due:</td><td id="pdfTotalDue" colspan="2" style="font-weight:bold; color:#d35400; padding:12px;">₹0</td></tr></tfoot>
     </table>
-
-    <div style="margin-top: 50px; font-size: 10px; color: #888; border-top: 1px solid #eee; padding-top: 15px; text-align: center; font-style: italic;">
-        * This is an official computer-generated statement from AK CHIT FUNDS. No signature required.
-    </div>
 </div>
 
 <div id="memberModal" class="modal-overlay"><div class="modal-content-custom">
@@ -165,6 +153,8 @@
     <input type="hidden" id="editGroupId">
     <input type="text" id="gName" class="form-input" placeholder="Group Name">
     <input type="number" id="gDuration" class="form-input" placeholder="Duration (Months)">
+    <input type="number" id="gChitDay" class="form-input" placeholder="Chit Day (e.g. 5, 10, 15)">
+    <div class="small text-dim mb-1">Chit Start Date</div>
     <input type="date" id="gStart" class="form-input">
     <button class="btn-save" onclick="saveGroup()">Save Group</button>
     <button class="btn-cancel" onclick="closeModal('groupModal')">Cancel</button>
@@ -177,10 +167,7 @@
     <select id="pGroup" class="form-input" onchange="checkChitStatus()"><option value="">-- Select Group --</option></select>
     <div class="row g-2"><div class="col-6"><input type="number" id="pChit" class="form-input" placeholder="Chit Amt" oninput="calcBalance()"></div><div class="col-6"><input type="number" id="pPaid" class="form-input" placeholder="Paid Amt" oninput="calcBalance()"></div></div>
     <input type="number" id="pBal" class="form-input" placeholder="Balance" readonly>
-    <div class="form-input d-flex align-items-center gap-2 mb-2">
-        <input type="checkbox" id="pPicked" onchange="togglePickedValue()"> 
-        <label class="mb-0 small">Chit Picked?</label>
-    </div>
+    <div class="form-input d-flex align-items-center gap-2 mb-2"><input type="checkbox" id="pPicked" onchange="togglePickedValue()"><label class="mb-0 small">Chit Picked?</label></div>
     <div id="pickedValueArea" style="display:none;"><input type="number" id="pPickedVal" class="form-input" placeholder="Amount won"></div>
     <button class="btn-save" onclick="savePayment()">Sync Payment</button>
     <button class="btn-cancel" onclick="closeModal('paymentModal')">Cancel</button>
@@ -207,14 +194,7 @@
     let ALL_MEMBERS = [];
 
     function formatDate(d) { if(!d) return "-"; const [y, m, day] = d.split("-"); return `${day}/${m}/${y}`; }
-    
-    function calculateEndDate(startStr, duration) {
-        if(!startStr || !duration) return "-";
-        let date = new Date(startStr);
-        date.setMonth(date.getMonth() + parseInt(duration));
-        return formatDate(date.toISOString().split('T')[0]);
-    }
-
+    function calculateEndDate(s, dur) { if(!s || !dur) return "-"; let d = new Date(s); d.setMonth(d.getMonth() + parseInt(dur)); return formatDate(d.toISOString().split('T')[0]); }
     function getElapsedMonths(s) { if(!s) return 0; const start = new Date(s); const now = new Date(); return Math.max(0, ((now.getFullYear() - start.getFullYear()) * 12) + (now.getMonth() - start.getMonth()) + 1); }
     function togglePickedValue() { document.getElementById('pickedValueArea').style.display = document.getElementById('pPicked').checked ? 'block' : 'none'; }
     function openModal(id) { document.getElementById(id).style.display = 'block'; }
@@ -228,6 +208,19 @@
         document.getElementById('nav'+t.charAt(0).toUpperCase() + t.slice(1)).classList.add('active');
         if(t === 'groups') renderGroupsTab();
         if(t === 'list') renderListTab();
+        if(t === 'home') checkReminders();
+    }
+
+    async function checkReminders() {
+        const gs = await getCollection('groups');
+        const today = new Date().getDate();
+        const box = document.getElementById('dueAlerts');
+        const list = document.getElementById('dueList');
+        const dueGroups = gs.filter(g => parseInt(g.chitDay) === today);
+        if(dueGroups.length > 0) {
+            box.style.display = 'block';
+            list.innerHTML = dueGroups.map(g => `<div class="due-item"><span>💰 <strong>${g.name}</strong> Collection</span><span class="badge bg-warning text-dark">Day ${g.chitDay}</span></div>`).join('');
+        } else box.style.display = 'none';
     }
 
     async function exportToInvoice(groupId) {
@@ -235,46 +228,21 @@
         const ms = await getCollection('members'); const ps = await getCollection('payments');
         const gPs = ps.filter(p => p.groupId === groupId);
         const gMs = ms.filter(m => m.groupId === groupId).sort((a,b) => a.name.localeCompare(b.name));
-        
-        document.getElementById('pdfGroupName').innerText = g.name;
-        document.getElementById('pdfStartDate').innerText = formatDate(g.startDate);
+        document.getElementById('pdfGroupName').innerText = g.name; document.getElementById('pdfStartDate').innerText = formatDate(g.startDate);
         document.getElementById('pdfEndDate').innerText = calculateEndDate(g.startDate, g.duration);
-        document.getElementById('pdfDuration').innerText = g.duration;
+        document.getElementById('pdfChitDay').innerText = g.chitDay || "-";
         document.getElementById('pdfTotalColl').innerText = '₹' + gPs.reduce((s,p) => s + p.paidAmt, 0).toLocaleString('en-IN');
         document.getElementById('pdfProgress').innerText = `${Math.max(0, g.duration - getElapsedMonths(g.startDate))} Months Left`;
         document.getElementById('pdfDate').innerText = 'Report Generated: ' + new Date().toLocaleDateString('en-IN');
-
-        let rows = '';
-        let totalDue = 0;
+        let r = ''; let totalDue = 0;
         gMs.forEach((m, i) => {
-            const mPs = gPs.filter(x => x.memberId === m.id);
-            const totalPaid = mPs.reduce((s,p) => s + p.paidAmt, 0);
-            const bal = mPs.reduce((s,p) => s + p.balAmt, 0);
-            totalDue += bal;
+            const mPs = gPs.filter(x => x.memberId === m.id); const bal = mPs.reduce((s,p)=>s+p.balAmt,0); totalDue += bal;
             const pick = mPs.find(p => p.chitPicked === 1);
-            rows += `<tr>
-                <td>${i+1}</td>
-                <td>${m.name}</td>
-                <td>₹${totalPaid.toLocaleString('en-IN')}</td>
-                <td>₹${bal.toLocaleString('en-IN')}</td>
-                <td>${pick ? 'YES (₹'+pick.pickedValue.toLocaleString('en-IN')+')' : 'NO'}</td>
-            </tr>`;
+            r += `<tr><td>${i+1}</td><td>${m.name}</td><td>₹${mPs.reduce((s,p)=>s+p.paidAmt,0).toLocaleString('en-IN')}</td><td>₹${bal.toLocaleString('en-IN')}</td><td>${pick ? 'YES (₹'+pick.pickedValue.toLocaleString('en-IN')+')' : 'NO'}</td></tr>`;
         });
-        document.getElementById('pdfTableBody').innerHTML = rows;
-        document.getElementById('pdfTotalDue').innerText = '₹' + totalDue.toLocaleString('en-IN');
-
-        const el = document.getElementById('pdf-template');
-        el.style.display = 'block';
-        const opt = { 
-            margin: 10, 
-            filename: `AK_Report_${g.name}.pdf`, 
-            html2canvas: { scale: 2, useCORS: true, logging: false }, 
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
-        };
-        
-        html2pdf().from(el).set(opt).save().then(() => {
-            el.style.display='none';
-        });
+        document.getElementById('pdfTableBody').innerHTML = r; document.getElementById('pdfTotalDue').innerText = '₹' + totalDue.toLocaleString('en-IN');
+        const el = document.getElementById('pdf-template'); el.style.display = 'block';
+        html2pdf().from(el).set({ margin: 10, filename: `AK_Chit_Report_${g.name}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).save().then(() => el.style.display='none');
     }
 
     function filterSearch(inputId, listId, hiddenId) {
@@ -300,7 +268,7 @@
         let h = '';
         gs.sort((a,b) => a.name.localeCompare(b.name)).forEach(g => {
             const gMs = ms.filter(m => m.groupId === g.id).sort((a,b) => a.name.localeCompare(b.name));
-            h += `<div class="list-group-header" onclick="document.getElementById('list-col-${g.id}').style.display = document.getElementById('list-col-${g.id}').style.display==='block'?'none':'block'"><span>${g.name}</span><span class="list-count-badge">Count: ${gMs.length}</span></div><div id="list-col-${g.id}" class="collapse-content">`;
+            h += `<div class="list-group-header" onclick="document.getElementById('list-col-${g.id}').style.display = document.getElementById('list-col-${g.id}').style.display==='block'?'none':'block'"><span>${g.name} (Day ${g.chitDay || '-'})</span><span class="list-count-badge">Count: ${gMs.length}</span></div><div id="list-col-${g.id}" class="collapse-content">`;
             gMs.forEach((m, idx) => { h += `<div class="list-member-item"><span class="list-sn">${idx + 1}.</span> ${m.name}</div>`; });
             h += `</div>`;
         });
@@ -308,11 +276,11 @@
     }
 
     async function saveGroup() {
-        const n = document.getElementById('gName').value.trim(); const d = parseInt(document.getElementById('gDuration').value); const s = document.getElementById('gStart').value; const eid = document.getElementById('editGroupId').value;
-        if(n && d && s) { if(eid) await db.collection('groups').doc(eid).update({name:n, duration:d, startDate:s}); else await db.collection('groups').add({name:n, duration:d, startDate:s}); updateUI(); closeModal('groupModal'); }
+        const n = document.getElementById('gName').value.trim(); const d = parseInt(document.getElementById('gDuration').value); const s = document.getElementById('gStart').value; const c = document.getElementById('gChitDay').value; const eid = document.getElementById('editGroupId').value;
+        if(n && d && s) { if(eid) await db.collection('groups').doc(eid).update({name:n, duration:d, startDate:s, chitDay:c}); else await db.collection('groups').add({name:n, duration:d, startDate:s, chitDay:c}); updateUI(); closeModal('groupModal'); }
     }
-    function openAddGroup() { document.getElementById('groupModalTitle').innerText = "Add Group"; document.getElementById('editGroupId').value = ""; document.getElementById('gName').value = ""; document.getElementById('gDuration').value = ""; document.getElementById('gStart').value = ""; openModal('groupModal'); }
-    async function editGroup(id, n, d, s) { document.getElementById('groupModalTitle').innerText = "Edit Group"; document.getElementById('editGroupId').value = id; document.getElementById('gName').value = n; document.getElementById('gDuration').value = d; document.getElementById('gStart').value = s||""; openModal('groupModal'); }
+    function openAddGroup() { document.getElementById('groupModalTitle').innerText = "Add Group"; document.getElementById('editGroupId').value = ""; document.getElementById('gName').value = ""; document.getElementById('gDuration').value = ""; document.getElementById('gChitDay').value = ""; document.getElementById('gStart').value = ""; openModal('groupModal'); }
+    async function editGroup(id, n, d, s, c) { document.getElementById('groupModalTitle').innerText = "Edit Group"; document.getElementById('editGroupId').value = id; document.getElementById('gName').value = n; document.getElementById('gDuration').value = d; document.getElementById('gStart').value = s||""; document.getElementById('gChitDay').value = c||""; openModal('groupModal'); }
     async function deleteGroup(id) { if(confirm("Del Group?")) { await db.collection('groups').doc(id).delete(); updateUI(); renderGroupsTab(); } }
 
     async function saveMember() {
@@ -347,9 +315,7 @@
         let h = '';
         uGids.forEach(gid => {
             const g = gs.find(x => x.id === gid); const gPs = ps.filter(p => p.groupId === gid); const pick = gPs.find(p => p.chitPicked === 1);
-            h += `<div class="mb-4 p-3" style="background:rgba(255,255,255,0.03); border-radius:15px; border:1px solid #252f48;">
-                <div class="d-flex justify-content-between align-items-center mb-2"><span class="fw-bold text-info">${g?g.name:'-'}</span><span><button class="btn-action btn-edit" onclick="editMember('${mid}','${m.name}','${m.phone}','${gid}')">✏️</button><span class="badge ${pick?'bg-success':'bg-secondary'}">${pick?'✔':'⏳'}</span></span></div>
-                <div class="table-responsive"><table class="table-custom"><thead><tr><th>Date</th><th>Chit</th><th>Paid</th><th>Bal</th><th></th></tr></thead><tbody>`;
+            h += `<div class="mb-4 p-3" style="background:rgba(255,255,255,0.03); border-radius:15px; border:1px solid #252f48;"><div class="d-flex justify-content-between align-items-center mb-2"><span class="fw-bold text-info">${g?g.name:'-'}</span><span><button class="btn-action" onclick="editMember('${mid}','${m.name}','${m.phone}','${gid}')">✏️</button><span class="badge ${pick?'bg-success':'bg-secondary'}">${pick?'✔':'⏳'}</span></span></div><div class="table-responsive"><table class="table-custom"><thead><tr><th>Date</th><th>Chit</th><th>Paid</th><th>Bal</th><th></th></tr></thead><tbody>`;
             gPs.forEach(p => { h += `<tr><td>${formatDate(p.date)}</td><td>₹${p.chitAmt.toLocaleString()}</td><td>₹${p.paidAmt.toLocaleString()}</td><td class="text-warning">₹${p.balAmt.toLocaleString()}</td><td><button onclick="deletePayment('${p.id}')" style="background:none;border:none;color:#ff4757;">❌</button></td></tr>`; });
             h += `</tbody></table></div></div>`;
         });
@@ -362,6 +328,7 @@
         document.getElementById('memberCount').innerText = m.length; document.getElementById('groupCount').innerText = g.length;
         const today = new Date().toISOString().split('T')[0]; document.getElementById('todayColl').innerText = `₹${p.filter(x => x.date === today).reduce((s, x) => s + (x.paidAmt || 0), 0).toLocaleString()}`;
         document.getElementById('mGroup').innerHTML = '<option value="">-- Group --</option>' + g.map(x => `<option value="${x.id}">${x.name}</option>`).join('');
+        checkReminders();
     }
 
     async function renderGroupsTab() {
@@ -370,18 +337,8 @@
         gs.forEach(g => {
             const gPs = ps.filter(p => p.groupId === g.id); const gMs = ms.filter(m => m.groupId === g.id).sort((a,b) => a.name.localeCompare(b.name));
             const left = Math.max(0, g.duration - getElapsedMonths(g.startDate));
-            h += `<div class="p-3 mb-3" style="background:var(--card-bg); border-radius:15px; border:1px solid var(--border);">
-                <div class="d-flex justify-content-between align-items-center pb-2" onclick="document.getElementById('col-${g.id}').style.display=document.getElementById('col-${g.id}').style.display==='block'?'none':'block'" style="cursor:pointer;">
-                    <div><div class="fw-bold text-warning">${g.name} ✏️</div><div class="text-dim small">Start: ${formatDate(g.startDate)}</div></div>
-                    <div class="text-end"><div class="fw-bold text-info">${left} / ${g.duration}</div><div class="text-dim small">Left</div></div>
-                </div>
-                <div id="col-${g.id}" class="collapse-content border-top border-secondary mt-2">
-                    <div class="py-2 text-end"><button class="btn btn-sm btn-info me-1" onclick="exportToInvoice('${g.id}')">📄 PDF Report</button><button class="btn btn-sm btn-outline-secondary me-1" onclick="editGroup('${g.id}','${g.name}',${g.duration},'${g.startDate}')">Edit</button><button class="btn btn-sm btn-outline-danger" onclick="deleteGroup('${g.id}')">Del</button></div>
-                    <table class="table-custom"><thead><tr><th>Name</th><th>Chit</th><th>Bal</th><th>Won</th></tr></thead><tbody>`;
-            gMs.forEach(m => {
-                const mPs = gPs.filter(x => x.memberId === m.id); const pick = mPs.find(p => p.chitPicked === 1);
-                h += `<tr><td>${m.name}</td><td>₹${mPs.length?mPs[0].chitAmt.toLocaleString():0}</td><td>₹${mPs.reduce((s,p)=>s+p.balAmt,0).toLocaleString()}</td><td>${pick?'₹'+pick.pickedValue.toLocaleString():'-'}</td></tr>`;
-            });
+            h += `<div class="p-3 mb-3" style="background:var(--card-bg); border-radius:15px; border:1px solid var(--border);"><div class="d-flex justify-content-between align-items-center pb-2" onclick="document.getElementById('col-${g.id}').style.display=document.getElementById('col-${g.id}').style.display==='block'?'none':'block'" style="cursor:pointer;"><div><div class="fw-bold text-warning">${g.name} ✏️</div><div class="text-dim small">Starts: ${formatDate(g.startDate)} | Day: ${g.chitDay || '-'}</div></div><div class="text-end"><div class="fw-bold text-info">${left} / ${g.duration}</div><div class="text-dim small">Left</div></div></div><div id="col-${g.id}" class="collapse-content border-top border-secondary mt-2"><div class="py-2 text-end"><button class="btn btn-sm btn-info me-1" onclick="exportToInvoice('${g.id}')">📄 PDF Report</button><button class="btn btn-sm btn-outline-secondary me-1" onclick="editGroup('${g.id}','${g.name}',${g.duration},'${g.startDate}','${g.chitDay}')">Edit</button><button class="btn btn-sm btn-outline-danger" onclick="deleteGroup('${g.id}')">Del</button></div><table class="table-custom"><thead><tr><th>Name</th><th>Chit</th><th>Bal</th><th>Won</th></tr></thead><tbody>`;
+            gMs.forEach(m => { const mPs = gPs.filter(x => x.memberId === m.id); const pick = mPs.find(p => p.chitPicked === 1); h += `<tr><td>${m.name}</td><td>₹${mPs.length?mPs[0].chitAmt.toLocaleString():0}</td><td>₹${mPs.reduce((s,p)=>s+p.balAmt,0).toLocaleString()}</td><td>${pick?'₹'+pick.pickedValue.toLocaleString():'-'}</td></tr>`; });
             h += '</tbody></table></div></div>';
         });
         document.getElementById('groupListArea').innerHTML = h;
