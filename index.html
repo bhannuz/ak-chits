@@ -247,7 +247,12 @@
     function filterSearch(inputId, listId, hiddenId) {
         const query = document.getElementById(inputId).value.toLowerCase();
         const list = document.getElementById(listId);
-        list.innerHTML = ""; if(!query) { list.style.display = "none"; return; }
+        list.innerHTML = ""; 
+        if(!query) { 
+            list.style.display = "none"; 
+            if(hiddenId === "summaryView") document.getElementById('ledgerData').innerHTML = ""; // Clear if empty
+            return; 
+        }
         const filtered = ALL_MEMBERS.filter(m => m.name.toLowerCase().includes(query));
         if(filtered.length > 0) {
             list.style.display = "block";
@@ -257,7 +262,9 @@
                     if(hiddenId === "summaryView") loadMemberLedger(); if(hiddenId === "pMember") linkGroupForPayment(); };
                 list.appendChild(div);
             });
-        } else list.style.display = "none";
+        } else {
+            list.style.display = "none";
+        }
     }
 
     async function getCollection(col) { const snap = await db.collection(col).get(); return snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); }
@@ -295,7 +302,9 @@
     async function deleteMemberFromModal() { const id = document.getElementById('editMemberId').value; if(confirm("Del Member?")) { await db.collection('members').doc(id).delete(); updateUI(); closeModal('memberModal'); } }
 
     async function linkGroupForPayment() {
-        const mid = document.getElementById('pMember').value; const mDoc = await db.collection('members').doc(mid).get(); const m = mDoc.data(); const gs = await getCollection('groups');
+        const mid = document.getElementById('pMember').value; 
+        if(!mid) return;
+        const mDoc = await db.collection('members').doc(mid).get(); const m = mDoc.data(); const gs = await getCollection('groups');
         document.getElementById('pGroup').innerHTML = gs.map(g => `<option value="${g.id}" ${g.id === m.groupId ? 'selected' : ''}>${g.name}</option>`).join('');
         checkChitStatus();
     }
@@ -311,7 +320,10 @@
     async function deletePayment(id) { if(confirm("Del record?")) { await db.collection('payments').doc(id).delete(); loadMemberLedger(); updateUI(); } }
 
     async function loadMemberLedger() {
-        const mid = document.getElementById('summaryView').value; const container = document.getElementById('ledgerData');
+        const mid = document.getElementById('summaryView').value; 
+        const container = document.getElementById('ledgerData');
+        if(!mid) { container.innerHTML = ""; return; } // Validate selection
+
         const allP = await getCollection('payments'); const ps = allP.filter(p => p.memberId === mid).sort((a,b) => new Date(b.date) - new Date(a.date));
         const gs = await getCollection('groups'); const mDoc = await db.collection('members').doc(mid).get(); const m = mDoc.data();
         const uGids = [...new Set(ps.map(p => p.groupId))]; if(m && m.groupId && !uGids.includes(m.groupId)) uGids.push(m.groupId);
