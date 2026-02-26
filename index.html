@@ -446,35 +446,24 @@ async function loadMemberLedger(){
     const memberGroups=gs.filter(g=>m.groupIds&&m.groupIds.includes(g.id));
     const today=new Date().toISOString().split('T')[0];
 
-    const groupStatsHtml=memberGroups.map(g=>{
-        const totalMonths=parseInt(g.duration||g.gDuration)||21;
-        let elapsed=0;
-        if(g.startDate||g.gStart){elapsed=Math.max(0,Math.min(totalMonths,Math.floor((new Date()-new Date(g.startDate||g.gStart))/(1000*60*60*24*30.44))));}
-        const left=Math.max(0,totalMonths-elapsed);
-        const gStartDisplay=fmtDate(g.startDate||g.gStart||'');
-        const gDueDayOrd=g.dueDay?`${g.dueDay}${['st','nd','rd'][((g.dueDay%100-11)%10)-1]||'th'}`:'—';
-        return`<div style="background:#1c253b;border-radius:12px;padding:10px 14px;margin-bottom:8px;border:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
-            <div>
-                <div style="font-size:0.82rem;font-weight:800;color:#f39c12;margin-bottom:4px;">📂 ${g.name}</div>
-                <div style="display:flex;gap:5px;flex-wrap:wrap;">
-                    <span style="font-size:0.58rem;background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);border-radius:5px;padding:1px 6px;color:#a5b4fc;">🗓 ${gStartDisplay}</span>
-                    ${g.dueDay?`<span style="font-size:0.58rem;background:rgba(243,156,18,.12);border:1px solid rgba(243,156,18,.3);border-radius:5px;padding:1px 6px;color:#f39c12;">📅 Due ${gDueDayOrd}</span>`:''}
-                </div>
-            </div>
-            <div style="text-align:right;flex-shrink:0;">
-                <div style="font-size:1rem;font-weight:800;color:#a5b4fc;">${left}<span style="font-size:0.65rem;color:var(--text-dim);">/${totalMonths}</span></div>
-                <div style="font-size:0.58rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.4px;">months pending</div>
-            </div>
-        </div>`;
-    }).join('');
-
-    // Build payment tables for ALL groups the member belongs to (even if no payments yet)
+    // Build payment tables for ALL groups — info card merged above each table
     const payTablesHtml=memberGroups.map((grp,gi)=>{
         const pays=mPays.filter(p=>p.groupId===grp.id).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
         const allDueDates=getGroupDueDates(grp);
         const tPaid=pays.reduce((s,p)=>s+(parseFloat(p.paid)||0),0);
         const tBal=pays.reduce((s,p)=>s+(parseFloat(p.balance)||0),0);
         const tableId=`ledgerTable_${gi}`;
+        const totalMonths=parseInt(grp.duration||grp.gDuration)||21;
+        // Include current month in elapsed count
+        let elapsed=0;
+        if(grp.startDate||grp.gStart){
+            const s=new Date(grp.startDate||grp.gStart);
+            const n=new Date();
+            elapsed=Math.max(0,Math.min(totalMonths,(n.getFullYear()-s.getFullYear())*12+(n.getMonth()-s.getMonth())+1));
+        }
+        const left=Math.max(0,totalMonths-elapsed);
+        const gStartDisplay=fmtDate(grp.startDate||grp.gStart||'');
+        const gDueDayOrd=grp.dueDay?`${grp.dueDay}${['st','nd','rd'][((grp.dueDay%100-11)%10)-1]||'th'}`:'—';
 
         const rows=pays.map((p,idx)=>{
             const cp=p.chitPicked==='Yes';
@@ -492,26 +481,43 @@ async function loadMemberLedger(){
             </tr>`;
         }).join('');
 
-        return`<div style="margin-bottom:10px;background:var(--card-bg);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
-            <div onclick="toggleLedgerTable('${tableId}',this)" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;cursor:pointer;user-select:none;">
-                <span style="font-size:0.72rem;font-weight:700;color:#f39c12;text-transform:uppercase;letter-spacing:.8px;">📂 ${grp.name}</span>
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <span style="font-size:0.65rem;color:#34d399;">${fmtAmt(tPaid)} paid</span>
-                    <span style="font-size:0.8rem;color:var(--text-dim);transition:transform .25s;" class="ledger-chevron">▶</span>
+        return`<div style="margin-bottom:12px;">
+            <!-- Group info card above payment history -->
+            <div style="background:#1c253b;border-radius:12px 12px 0 0;padding:10px 14px;border:1px solid var(--border);border-bottom:none;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+                <div>
+                    <div style="font-size:0.8rem;font-weight:800;color:#f39c12;margin-bottom:4px;">📂 ${grp.name}</div>
+                    <div style="display:flex;gap:5px;flex-wrap:wrap;">
+                        <span style="font-size:0.58rem;background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);border-radius:5px;padding:1px 6px;color:#a5b4fc;">🗓 Chit Start ${gStartDisplay}</span>
+                        ${grp.dueDay?`<span style="font-size:0.58rem;background:rgba(243,156,18,.12);border:1px solid rgba(243,156,18,.3);border-radius:5px;padding:1px 6px;color:#f39c12;">📅 Due ${gDueDayOrd}</span>`:''}
+                    </div>
+                </div>
+                <div style="text-align:right;flex-shrink:0;">
+                    <div style="font-size:1rem;font-weight:800;color:#a5b4fc;">${left}<span style="font-size:0.62rem;color:var(--text-dim);">/${totalMonths}</span></div>
+                    <div style="font-size:0.55rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.3px;">months pending</div>
                 </div>
             </div>
-            <div id="${tableId}" style="display:none;">
-                <div style="overflow-x:auto;"><table class="table-custom">
-                    <thead><tr><th>#</th><th>Month</th><th>Date</th><th>Chit Val</th><th>Paid</th><th>Balance</th><th>Mode</th><th>Chit?</th></tr></thead>
-                    <tbody>${rows||`<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:16px;">No payments yet for this group</td></tr>`}
-                    ${pays.length?`<tr style="font-weight:800;background:rgba(255,255,255,.04);">
-                        <td colspan="4" style="color:var(--text-dim);">Total</td>
-                        <td style="color:#34d399;">${fmtAmt(tPaid)}</td>
-                        <td style="color:#f59e0b;">${fmtAmt(tBal)}</td>
-                        <td colspan="2"></td>
-                    </tr>`:''}
-                    </tbody>
-                </table></div>
+            <!-- Collapsible payment table -->
+            <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:0 0 12px 12px;overflow:hidden;">
+                <div onclick="toggleLedgerTable('${tableId}',this)" style="display:flex;justify-content:space-between;align-items:center;padding:9px 14px;cursor:pointer;user-select:none;border-bottom:1px solid var(--border);">
+                    <span style="font-size:0.65rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.6px;">Payment History</span>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:0.65rem;color:#34d399;">${fmtAmt(tPaid)} paid</span>
+                        <span style="font-size:0.8rem;color:var(--text-dim);transition:transform .25s;" class="ledger-chevron">▶</span>
+                    </div>
+                </div>
+                <div id="${tableId}" style="display:none;">
+                    <div style="overflow-x:auto;"><table class="table-custom">
+                        <thead><tr><th>#</th><th>Month</th><th>Date</th><th>Chit Val</th><th>Paid</th><th>Balance</th><th>Mode</th><th>Chit?</th></tr></thead>
+                        <tbody>${rows||`<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:16px;">No payments yet for this group</td></tr>`}
+                        ${pays.length?`<tr style="font-weight:800;background:rgba(255,255,255,.04);">
+                            <td colspan="4" style="color:var(--text-dim);">Total</td>
+                            <td style="color:#34d399;">${fmtAmt(tPaid)}</td>
+                            <td style="color:#f59e0b;">${fmtAmt(tBal)}</td>
+                            <td colspan="2"></td>
+                        </tr>`:''}
+                        </tbody>
+                    </table></div>
+                </div>
             </div>
         </div>`;
     }).join('');
@@ -528,8 +534,6 @@ async function loadMemberLedger(){
                 <button class="btn-pdf" onclick="generateMemberPDF('${mid}')">📄 PDF</button>
             </div>
         </div>
-        ${groupStatsHtml}
-        <div style="margin-top:12px;font-size:0.65rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">Payment History — tap group to expand</div>
         ${payTablesHtml||'<div style="text-align:center;color:var(--text-dim);padding:20px;">No payments yet</div>'}
     `;
 }
@@ -747,7 +751,7 @@ async function renderGroupsTab(){
         const picked=gPays.filter(p=>p.chitPicked==='Yes').length;
         const totalMonths=parseInt(g.duration||g.gDuration)||21;
         let elapsed=0;
-        if(g.startDate||g.gStart){elapsed=Math.max(0,Math.min(totalMonths,Math.floor((new Date()-new Date(g.startDate||g.gStart))/(1000*60*60*24*30.44))));}
+        if(g.startDate||g.gStart){const _s=new Date(g.startDate||g.gStart),_n=new Date();elapsed=Math.max(0,Math.min(totalMonths,(_n.getFullYear()-_s.getFullYear())*12+(_n.getMonth()-_s.getMonth())+1));}
         const left=Math.max(0,totalMonths-elapsed);const pct=Math.min(100,Math.round(elapsed/totalMonths*100));
 
         const memberRows=gMs.map((m,i)=>{
@@ -924,7 +928,7 @@ async function generateMemberPDF(mid){
         const pays=(grouped[g.id]||[]).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
         const totalMonths=parseInt(g.duration||g.gDuration)||21;
         let elapsed=0;
-        if(g.startDate||g.gStart){elapsed=Math.max(0,Math.min(totalMonths,Math.floor((new Date()-new Date(g.startDate||g.gStart))/(1000*60*60*24*30.44))));}
+        if(g.startDate||g.gStart){const _s=new Date(g.startDate||g.gStart),_n=new Date();elapsed=Math.max(0,Math.min(totalMonths,(_n.getFullYear()-_s.getFullYear())*12+(_n.getMonth()-_s.getMonth())+1));}
         const left=Math.max(0,totalMonths-elapsed);
         const pct=Math.min(100,Math.round(elapsed/totalMonths*100));
         const gPaid=pays.reduce((s,p)=>s+(parseFloat(p.paid)||0),0);
@@ -1025,7 +1029,7 @@ async function generateGroupPDF(gid){
     const totalPicked=gPays.filter(p=>p.chitPicked==='Yes').length;
     const totalMonths=parseInt(g.duration||g.gDuration)||21;
     let elapsed=0;
-    if(g.startDate||g.gStart){elapsed=Math.max(0,Math.min(totalMonths,Math.floor((new Date()-new Date(g.startDate||g.gStart))/(1000*60*60*24*30.44))));}
+    if(g.startDate||g.gStart){const _s=new Date(g.startDate||g.gStart),_n=new Date();elapsed=Math.max(0,Math.min(totalMonths,(_n.getFullYear()-_s.getFullYear())*12+(_n.getMonth()-_s.getMonth())+1));}
     const left=Math.max(0,totalMonths-elapsed);const pct=Math.min(100,Math.round(elapsed/totalMonths*100));
     const allDueDates=getGroupDueDates(g);
     const dueDates=allDueDates.filter(dd=>dd<=todayStr);
