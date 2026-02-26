@@ -211,8 +211,6 @@
         <input type="text" id="gName" class="form-input" placeholder="e.g. Group A">
         <label class="form-label-small">Duration (Months)</label>
         <input type="number" id="gDuration" class="form-input" placeholder="e.g. 21">
-        <label class="form-label-small">Monthly Chit Amount (₹)</label>
-        <input type="number" id="gChitAmount" class="form-input" placeholder="e.g. 5000">
         <label class="form-label-small">Start Date</label>
         <input type="date" id="gStart" class="form-input">
         <button class="btn-save" onclick="saveGroup()">✓ Save Group</button>
@@ -237,17 +235,11 @@
         </div>
         <label class="form-label-small">Group</label>
         <select id="pGroup" class="form-input" onchange="onGroupChange()"><option value="">-- Select Member First --</option></select>
-        <!-- Monthly Chit Info Banner -->
-        <div id="chitInfoBanner" style="display:none;background:rgba(243,156,18,0.1);border:1px solid rgba(243,156,18,0.3);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:0.8rem;">
-            <span style="color:#f39c12;font-weight:700;">📅 Monthly Chit: </span>
-            <span id="chitAmtDisplay" style="color:white;font-weight:800;"></span>
-            <span id="alreadyPaidBanner" style="display:none;margin-left:10px;color:#fbbf24;font-size:0.72rem;"></span>
-        </div>
         <div class="row g-2">
-            <div class="col-6"><label class="form-label-small">Chit Amount (fixed)</label><input type="number" id="pChit" class="form-input" placeholder="₹" readonly style="opacity:.85;cursor:not-allowed;" oninput="calcBalance()"></div>
+            <div class="col-6"><label class="form-label-small">Chit Amount</label><input type="number" id="pChit" class="form-input" placeholder="₹" oninput="calcBalance()"></div>
             <div class="col-6"><label class="form-label-small">Amount Paid Now</label><input type="number" id="pPaid" class="form-input" placeholder="₹" oninput="calcBalance()"></div>
         </div>
-        <label class="form-label-small">Remaining Balance (auto)</label>
+        <label class="form-label-small">Balance (auto)</label>
         <input type="number" id="pBal" class="form-input" placeholder="Balance" readonly style="opacity:.7;">
         <label class="form-label-small">Paid By</label>
         <select id="pPaidBy" class="form-input">
@@ -307,14 +299,12 @@ function ini(n){return(n||'?').split(' ').map(x=>x[0]||'').join('').toUpperCase(
 function openModal(id){document.getElementById(id).style.display='block';}
 function closeModal(id){document.getElementById(id).style.display='none';}
 
-// Calc balance: chit minus total already paid this month minus current entry
+// Calc balance: chit minus amount paid now
 function calcBalance(){
     const chit=parseFloat(document.getElementById('pChit').value)||0;
     const paid=parseFloat(document.getElementById('pPaid').value)||0;
-    // Get already-paid amount for this month (stored in data attribute)
-    const alreadyPaid=parseFloat(document.getElementById('pChit').dataset.alreadyPaid||0);
-    const remaining=Math.max(0,chit-alreadyPaid-paid);
-    document.getElementById('pBal').value=remaining;
+    const bal=Math.max(0,chit-paid);
+    document.getElementById('pBal').value=bal||'';
 }
 
 function toggleChitPickedName(){document.getElementById('chitPickedNameDiv').style.display=document.getElementById('pChitPicked').value==='Yes'?'block':'none';}
@@ -455,16 +445,15 @@ async function loadMemberLedger(){
         // FIX 1: Only show due dates up to TODAY (no future dates)
         const allDueDates=grp?getGroupDueDates(grp):[];
         const dueDates=allDueDates.filter(dd=>dd<=today);
-        const chitAmt=parseFloat(grp&&(grp.chitAmount||grp.gChitAmount)||0);
 
         // Build month slots — group payments by slot
         const monthSlots=dueDates.map((dd,i)=>{
             const nextDue=dueDates[i+1]||allDueDates[i+1]||'9999-99-99';
             const slotPays=pays.filter(p=>p.date>=dd&&p.date<nextDue);
             const slotPaid=slotPays.reduce((s,p)=>s+(parseFloat(p.paid)||0),0);
-            // FIX 2: Chit value from group config, not per-payment
-            const effectiveChit=chitAmt||( slotPays.length>0?(parseFloat(slotPays[0].chit)||0):0 );
-            const slotBal=Math.max(0,effectiveChit-slotPaid);
+            // Use the max chit value entered across payments in this slot (admin sets it per payment)
+            const effectiveChit=slotPays.length>0?Math.max(...slotPays.map(p=>parseFloat(p.chit)||0)):0;
+            const slotBal=slotPays.reduce((s,p)=>s+(parseFloat(p.balance)||0),0);
             const isPartial=slotPays.length>0 && slotBal>0;
             const isPaid=slotPays.length>0 && slotBal<=0;
             const isPending=slotPays.length===0;
@@ -614,8 +603,7 @@ function deleteMemberFromModal(){
 // ══════════════════════════════════════════
 function openAddGroup(){
     document.getElementById('editGroupId').value='';
-    document.getElementById('gName').value='';document.getElementById('gDuration').value='';
-    document.getElementById('gChitAmount').value='';document.getElementById('gStart').value='';
+    document.getElementById('gName').value='';document.getElementById('gDuration').value='';document.getElementById('gStart').value='';
     document.getElementById('groupModalTitle').textContent='🏦 New Group';
     document.getElementById('deleteGroupArea').style.display='none';
     openModal('groupModal');
@@ -626,7 +614,6 @@ async function openEditGroup(gid){
     document.getElementById('editGroupId').value=g.id;
     document.getElementById('gName').value=g.name||'';
     document.getElementById('gDuration').value=g.duration||g.gDuration||'';
-    document.getElementById('gChitAmount').value=g.chitAmount||g.gChitAmount||'';
     document.getElementById('gStart').value=g.startDate||g.gStart||'';
     document.getElementById('groupModalTitle').textContent='✏️ Edit Group';
     document.getElementById('deleteGroupArea').style.display='block';
@@ -636,12 +623,11 @@ async function openEditGroup(gid){
 async function saveGroup(){
     const name=document.getElementById('gName').value.trim();
     const duration=document.getElementById('gDuration').value;
-    const chitAmount=document.getElementById('gChitAmount').value;
     const startDate=document.getElementById('gStart').value;
     const eid=document.getElementById('editGroupId').value;
     if(!name)return showToast('❌ Enter group name',false);
-    if(eid)await db.collection('groups').doc(eid).update({name,duration,chitAmount,startDate});
-    else await db.collection('groups').add({name,duration,chitAmount,startDate});
+    if(eid)await db.collection('groups').doc(eid).update({name,duration,startDate});
+    else await db.collection('groups').add({name,duration,startDate});
     closeModal('groupModal');showToast(`✅ Group "${name}" saved!`);updateUI();
 }
 
@@ -666,54 +652,10 @@ async function linkGroupForPayment(){
 }
 
 async function onGroupChange(){
-    const gid=document.getElementById('pGroup').value;
-    const mid=document.getElementById('pMember').value;
-    if(!gid||!mid){
-        document.getElementById('chitInfoBanner').style.display='none';
-        document.getElementById('pChit').value='';
-        document.getElementById('pChit').dataset.alreadyPaid='0';
-        return;
-    }
-    const gs=await getCollection('groups');
-    const ps=await getCollection('payments');
-    const g=gs.find(x=>x.id===gid);
-    if(!g)return;
-
-    const chitAmt=parseFloat(g.chitAmount||g.gChitAmount)||0;
-    const payDate=document.getElementById('pDate').value||new Date().toISOString().split('T')[0];
-
-    // Find which month slot we're paying for
-    const dueDates=getGroupDueDates(g);
-    const slotIdx=getMonthSlot(dueDates,payDate);
-    let alreadyPaid=0;
-
-    if(slotIdx>=0){
-        const dd=dueDates[slotIdx];
-        const nextDue=dueDates[slotIdx+1]||'9999-99-99';
-        const slotPays=ps.filter(p=>p.memberId===mid&&p.groupId===gid&&p.date>=dd&&p.date<nextDue);
-        alreadyPaid=slotPays.reduce((s,p)=>s+(parseFloat(p.paid)||0),0);
-    }
-
-    document.getElementById('pChit').value=chitAmt||'';
-    document.getElementById('pChit').dataset.alreadyPaid=alreadyPaid;
-
-    const banner=document.getElementById('chitInfoBanner');
-    const amtDisplay=document.getElementById('chitAmtDisplay');
-    const alreadyBanner=document.getElementById('alreadyPaidBanner');
-
-    if(chitAmt>0){
-        banner.style.display='block';
-        amtDisplay.textContent=fmtAmt(chitAmt);
-        if(alreadyPaid>0){
-            alreadyBanner.style.display='inline';
-            alreadyBanner.textContent=`Already paid this month: ${fmtAmt(alreadyPaid)} · Remaining: ${fmtAmt(Math.max(0,chitAmt-alreadyPaid))}`;
-        } else {
-            alreadyBanner.style.display='none';
-        }
-    } else {
-        banner.style.display='none';
-    }
-    calcBalance();
+    // Group changed — just reset chit/paid/balance fields so admin enters fresh values
+    document.getElementById('pChit').value='';
+    document.getElementById('pPaid').value='';
+    document.getElementById('pBal').value='';
 }
 
 async function savePayment(){
@@ -727,9 +669,8 @@ async function savePayment(){
     if(!date)return showToast('❌ Enter date',false);
     if(!paid)return showToast('❌ Enter amount paid',false);
 
-    // Calculate balance: remaining after this payment (considering already-paid in slot)
-    const alreadyPaid=parseFloat(document.getElementById('pChit').dataset.alreadyPaid||0);
-    const balance=Math.max(0,chit-alreadyPaid-paid);
+    // Balance = chit amount minus this payment
+    const balance=Math.max(0,chit-paid);
 
     await db.collection('payments').add({memberId:mid,groupId:gid,date,chit,paid,balance,paidBy,chitPicked,chitPickedBy});
     closeModal('paymentModal');showToast('✅ Payment saved!');updateUI();
@@ -877,12 +818,16 @@ async function executeRestore(){
     reader.onload=async(e)=>{
         try{
             const data=JSON.parse(e.target.result);
+            // Delete existing data first
+            const delCol=async(col)=>{const s=await db.collection(col).get();const batch=db.batch();s.docs.forEach(d=>batch.delete(d.ref));if(s.docs.length)await batch.commit();};
+            await delCol('members');await delCol('groups');await delCol('payments');
+            // Restore from backup
             let count=0;
-            if(data.m)for(let x of data.m){await db.collection('members').doc(x.id).set(x);count++;}
-            if(data.g)for(let x of data.g){await db.collection('groups').doc(x.id).set(x);count++;}
-            if(data.p)for(let x of data.p){await db.collection('payments').doc(x.id).set(x);count++;}
+            if(data.m)for(let x of data.m){const {id,...rest}=x;await db.collection('members').doc(id).set(rest);count++;}
+            if(data.g)for(let x of data.g){const {id,...rest}=x;await db.collection('groups').doc(id).set(rest);count++;}
+            if(data.p)for(let x of data.p){const {id,...rest}=x;await db.collection('payments').doc(id).set(rest);count++;}
             showToast(`✅ Restored ${count} records!`);updateUI();
-        }catch(err){showToast('❌ Invalid backup file',false);}
+        }catch(err){console.error(err);showToast('❌ Invalid backup file',false);}
     };
     reader.readAsText(file);
 }
@@ -914,7 +859,6 @@ async function generateMemberPDF(mid){
         const pct=Math.min(100,Math.round(elapsed/totalMonths*100));
         const gPaid=pays.reduce((s,p)=>s+(parseFloat(p.paid)||0),0);
         const gBal=pays.reduce((s,p)=>s+(parseFloat(p.balance)||0),0);
-        const chitAmt=parseFloat(g.chitAmount||g.gChitAmount)||0;
         const allDueDates=getGroupDueDates(g);
         const dueDates=allDueDates.filter(dd=>dd<=todayStr); // no future dates in PDF either
 
@@ -922,8 +866,8 @@ async function generateMemberPDF(mid){
             const nextDue=allDueDates[i+1]||'9999-99-99';
             const slotPays=pays.filter(p=>p.date>=dd&&p.date<nextDue);
             const slotPaid=slotPays.reduce((s,p)=>s+(parseFloat(p.paid)||0),0);
-            const effectiveChit=chitAmt||(slotPays.length>0?(parseFloat(slotPays[0].chit)||0):0);
-            const slotBal=Math.max(0,effectiveChit-slotPaid);
+            const effectiveChit=slotPays.length>0?Math.max(...slotPays.map(p=>parseFloat(p.chit)||0)):0;
+            const slotBal=slotPays.reduce((s,p)=>s+(parseFloat(p.balance)||0),0);
             return{dd,i,slotPays,slotPaid,slotBal,effectiveChit,isPaid:slotPays.length>0&&slotBal<=0,isPartial:slotPays.length>0&&slotBal>0,isPending:slotPays.length===0};
         });
 
@@ -1016,7 +960,6 @@ async function generateGroupPDF(gid){
     const left=Math.max(0,totalMonths-elapsed);const pct=Math.min(100,Math.round(elapsed/totalMonths*100));
     const allDueDates=getGroupDueDates(g);
     const dueDates=allDueDates.filter(dd=>dd<=todayStr);
-    const chitAmt=parseFloat(g.chitAmount||g.gChitAmount)||0;
 
     const summaryRows=gMs.map((m,i)=>{
         const mp=gPays.filter(p=>p.memberId===m.id);
@@ -1044,8 +987,8 @@ async function generateGroupPDF(gid){
             const nextDue=allDueDates[i+1]||'9999-99-99';
             const slotPays=mp.filter(p=>p.date>=dd&&p.date<nextDue);
             const slotPaid=slotPays.reduce((s,p)=>s+(parseFloat(p.paid)||0),0);
-            const effectiveChit=chitAmt||(slotPays.length>0?(parseFloat(slotPays[0].chit)||0):0);
-            const slotBal=Math.max(0,effectiveChit-slotPaid);
+            const effectiveChit=slotPays.length>0?Math.max(...slotPays.map(p=>parseFloat(p.chit)||0)):0;
+            const slotBal=slotPays.reduce((s,p)=>s+(parseFloat(p.balance)||0),0);
             return{dd,i,slotPays,slotPaid,slotBal,effectiveChit,isPaid:slotPays.length>0&&slotBal<=0,isPartial:slotPays.length>0&&slotBal>0,isPending:slotPays.length===0};
         });
 
