@@ -91,7 +91,7 @@
         .chevron-icon.closed { transform: rotate(-90deg); }
 
         /* ══ PDF STYLES ══ */
-        #pdf-template { display:none; }
+        #pdf-template { position:fixed; top:0; left:0; width:100%; z-index:-9999; visibility:hidden; pointer-events:none; }
         .pdf-page { background:white; color:#111; padding:20px 30px; font-family:'Segoe UI',Arial,sans-serif; width:750px; }
         .pdf-header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:4px solid #f39c12; padding-bottom:14px; margin-bottom:20px; }
         .pdf-brand { font-size:26px; font-weight:900; color:#f39c12; }
@@ -457,34 +457,35 @@ async function loadMemberLedger(){
         const pct=Math.min(100,Math.round(elapsed/totalMonths*100));
         const gStartDisplay=fmtDate(g.startDate||g.gStart||'');
         const gDueDayOrd=g.dueDay?`${g.dueDay}${['st','nd','rd'][((g.dueDay%100-11)%10)-1]||'th'}`:'—';
-        return`<div style="background:#1c253b;border-radius:14px;padding:14px;margin-bottom:10px;border:1px solid var(--border);">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:4px;">
+        return`<div style="background:#1c253b;border-radius:14px;padding:12px 14px;margin-bottom:10px;border:1px solid var(--border);">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:6px;">
                 <div style="font-size:0.85rem;font-weight:800;color:#f39c12;">📂 ${g.name}</div>
                 <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                    <span style="font-size:0.62rem;background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);border-radius:6px;padding:2px 7px;color:#a5b4fc;">🗓 Start: ${gStartDisplay}</span>
-                    ${g.dueDay?`<span style="font-size:0.62rem;background:rgba(243,156,18,.12);border:1px solid rgba(243,156,18,.3);border-radius:6px;padding:2px 7px;color:#f39c12;">📅 Due: ${gDueDayOrd} of month</span>`:''}
+                    <span style="font-size:0.6rem;background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);border-radius:6px;padding:2px 7px;color:#a5b4fc;">🗓 ${gStartDisplay}</span>
+                    ${g.dueDay?`<span style="font-size:0.6rem;background:rgba(243,156,18,.12);border:1px solid rgba(243,156,18,.3);border-radius:6px;padding:2px 7px;color:#f39c12;">📅 Due ${gDueDayOrd}</span>`:''}
                 </div>
             </div>
-            <div class="row g-2 mb-2">
-                <div class="col-6"><div class="mini-stat" style="border-top:2px solid #34d399;">
-                    <div class="mini-stat-lbl">Total Paid</div>
-                    <div class="mini-stat-val" style="color:#34d399;">${fmtAmt(gPaid)}</div>
-                </div></div>
-                <div class="col-6"><div class="mini-stat" style="border-top:2px solid #f59e0b;">
-                    <div class="mini-stat-lbl">Total Balance</div>
-                    <div class="mini-stat-val" style="color:#f59e0b;">${fmtAmt(gBal)}</div>
-                </div></div>
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="flex:1;">
+                    <div class="prog-bar-outer" style="margin-bottom:4px;"><div class="prog-bar-inner" style="width:${pct}%"></div></div>
+                    <div style="font-size:0.65rem;color:var(--text-dim);">⏳ ${left}/${totalMonths} months pending</div>
+                </div>
+                <div style="text-align:right;flex-shrink:0;">
+                    <div style="font-size:0.7rem;color:#34d399;font-weight:700;">${fmtAmt(gPaid)}</div>
+                    <div style="font-size:0.6rem;color:var(--text-dim);">paid</div>
+                </div>
             </div>
-            <div class="prog-bar-outer"><div class="prog-bar-inner" style="width:${pct}%"></div></div>
-            <div class="prog-label"><span>Month ${elapsed}/${totalMonths}</span><span class="months-badge" style="font-size:0.6rem;padding:2px 8px;">⏳ ${left}/${totalMonths} pending</span></div>
         </div>`;
+    }).join('');
     }).join('');
 
     // Build payment tables for ALL groups the member belongs to (even if no payments yet)
-    const payTablesHtml=memberGroups.map(grp=>{
+    const payTablesHtml=memberGroups.map((grp,gi)=>{
         const pays=mPays.filter(p=>p.groupId===grp.id).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-        // All due dates for this group
         const allDueDates=getGroupDueDates(grp);
+        const tPaid=pays.reduce((s,p)=>s+(parseFloat(p.paid)||0),0);
+        const tBal=pays.reduce((s,p)=>s+(parseFloat(p.balance)||0),0);
+        const tableId=`ledgerTable_${gi}`;
 
         const rows=pays.map((p,idx)=>{
             const cp=p.chitPicked==='Yes';
@@ -502,38 +503,44 @@ async function loadMemberLedger(){
             </tr>`;
         }).join('');
 
-        const tPaid=pays.reduce((s,p)=>s+(parseFloat(p.paid)||0),0);
-        const tBal=pays.reduce((s,p)=>s+(parseFloat(p.balance)||0),0);
-        return`<div style="margin-bottom:14px;">
-            <div style="font-size:0.7rem;font-weight:700;color:#f39c12;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">📂 ${grp.name}</div>
-            <div style="overflow-x:auto;"><table class="table-custom">
-                <thead><tr><th>#</th><th>Month</th><th>Date</th><th>Chit Val</th><th>Paid</th><th>Balance</th><th>Mode</th><th>Chit?</th></tr></thead>
-                <tbody>${rows||`<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:16px;">No payments yet for this group</td></tr>`}
-                ${pays.length?`<tr style="font-weight:800;background:rgba(255,255,255,.04);">
-                    <td colspan="4" style="color:var(--text-dim);">Total</td>
-                    <td style="color:#34d399;">${fmtAmt(tPaid)}</td>
-                    <td style="color:#f59e0b;">${fmtAmt(tBal)}</td>
-                    <td colspan="2"></td>
-                </tr>`:''}
-                </tbody>
-            </table></div>
+        return`<div style="margin-bottom:10px;background:var(--card-bg);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+            <div onclick="toggleLedgerTable('${tableId}',this)" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;cursor:pointer;user-select:none;">
+                <span style="font-size:0.72rem;font-weight:700;color:#f39c12;text-transform:uppercase;letter-spacing:.8px;">📂 ${grp.name}</span>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:0.65rem;color:#34d399;">${fmtAmt(tPaid)} paid</span>
+                    <span style="font-size:0.8rem;color:var(--text-dim);transition:transform .25s;" class="ledger-chevron">▶</span>
+                </div>
+            </div>
+            <div id="${tableId}" style="display:none;">
+                <div style="overflow-x:auto;"><table class="table-custom">
+                    <thead><tr><th>#</th><th>Month</th><th>Date</th><th>Chit Val</th><th>Paid</th><th>Balance</th><th>Mode</th><th>Chit?</th></tr></thead>
+                    <tbody>${rows||`<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:16px;">No payments yet for this group</td></tr>`}
+                    ${pays.length?`<tr style="font-weight:800;background:rgba(255,255,255,.04);">
+                        <td colspan="4" style="color:var(--text-dim);">Total</td>
+                        <td style="color:#34d399;">${fmtAmt(tPaid)}</td>
+                        <td style="color:#f59e0b;">${fmtAmt(tBal)}</td>
+                        <td colspan="2"></td>
+                    </tr>`:''}
+                    </tbody>
+                </table></div>
+            </div>
         </div>`;
     }).join('');
 
     document.getElementById('ledgerData').innerHTML=`
-        <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;padding-top:4px;">
-            <div style="width:48px;height:48px;border-radius:13px;background:rgba(243,156,18,.15);border:2px solid rgba(243,156,18,.4);color:#f39c12;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800;flex-shrink:0;">${ini(m.name)}</div>
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;padding-top:4px;">
+            <div style="width:44px;height:44px;border-radius:12px;background:rgba(243,156,18,.15);border:2px solid rgba(243,156,18,.4);color:#f39c12;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;flex-shrink:0;">${ini(m.name)}</div>
             <div style="flex:1;">
                 <div style="font-size:1rem;font-weight:800;">${m.name}</div>
-                <div style="font-size:0.72rem;color:var(--text-dim);">${m.phone||'No phone'} · ${mPays.length} payments</div>
-                <div style="font-size:0.68rem;color:var(--text-dim);margin-top:1px;">${memberGroups.map(g=>g.name).join(', ')||'No group'}</div>
+                <div style="font-size:0.68rem;color:var(--text-dim);">${mPays.length} payments · ${memberGroups.length} group${memberGroups.length!==1?'s':''}</div>
             </div>
             <div style="display:flex;gap:6px;">
-                <button class="btn-edit-sm" onclick="openEditMember('${mid}')">✏️ Edit</button>
+                <button class="btn-edit-sm" onclick="openEditMember('${mid}')">✏️</button>
                 <button class="btn-pdf" onclick="generateMemberPDF('${mid}')">📄 PDF</button>
             </div>
         </div>
         ${groupStatsHtml}
+        <div style="margin-top:12px;font-size:0.65rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">Payment History — tap group to expand</div>
         ${payTablesHtml||'<div style="text-align:center;color:var(--text-dim);padding:20px;">No payments yet</div>'}
     `;
 }
@@ -826,9 +833,17 @@ function toggleGroupCard(bodyId, header){
     }
 }
 
-// ══════════════════════════════════════════
-// LIST TAB — COLLAPSIBLE GROUPS
-// ══════════════════════════════════════════
+// Toggle ledger payment table (collapsed by default)
+function toggleLedgerTable(id, header){
+    const el=document.getElementById(id);
+    if(!el)return;
+    const chevron=header.querySelector('.ledger-chevron');
+    const isOpen=el.style.display!=='none';
+    el.style.display=isOpen?'none':'block';
+    if(chevron)chevron.style.transform=isOpen?'rotate(0deg)':'rotate(90deg)';
+}
+
+
 async function renderListTab(){
     const gs=await getCollection('groups');const ms=await getCollection('members');
     document.getElementById('simpleListArea').innerHTML=gs.map((g,gi)=>{
@@ -988,8 +1003,7 @@ async function generateMemberPDF(mid){
         <div class="pdf-footer"><span>AK Chit Funds · Admin Portal</span><span>Member: ${m.name} · ${today}</span><span>CONFIDENTIAL</span></div>`;
 
     const el=document.getElementById('pdf-template');
-    // Must be visible before html2canvas captures it
-    el.style.cssText='position:fixed;top:0;left:0;z-index:-9999;background:white;';
+    el.style.visibility='visible';
     const pdfEl=document.getElementById('pdfContent');
     const opt={
         margin:0,
@@ -1000,7 +1014,7 @@ async function generateMemberPDF(mid){
     };
     setTimeout(()=>{
         html2pdf().set(opt).from(pdfEl).save().then(()=>{
-            el.style.cssText='display:none;';
+            el.style.visibility='hidden';
             showToast('✅ PDF Downloaded!',true);
         });
     },300);
@@ -1109,7 +1123,7 @@ async function generateGroupPDF(gid){
         <div class="pdf-footer"><span>AK Chit Funds · Admin Portal</span><span>Group: ${g.name} · ${today}</span><span>CONFIDENTIAL</span></div>`;
 
     const el=document.getElementById('pdf-template');
-    el.style.cssText='position:fixed;top:0;left:0;z-index:-9999;background:white;';
+    el.style.visibility='visible';
     const pdfEl=document.getElementById('pdfContent');
     const opt={
         margin:0,
@@ -1120,7 +1134,7 @@ async function generateGroupPDF(gid){
     };
     setTimeout(()=>{
         html2pdf().set(opt).from(pdfEl).save().then(()=>{
-            el.style.cssText='display:none;';
+            el.style.visibility='hidden';
             showToast('✅ Group PDF Downloaded!',true);
         });
     },300);
