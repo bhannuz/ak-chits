@@ -214,6 +214,8 @@
         <input type="text" id="gName" class="form-input" placeholder="e.g. Group A">
         <label class="form-label-small">Duration (Months)</label>
         <input type="number" id="gDuration" class="form-input" placeholder="e.g. 21">
+        <label class="form-label-small">Monthly Due Day (1–31)</label>
+        <input type="number" id="gDueDay" class="form-input" placeholder="e.g. 5 means 5th of every month" min="1" max="31">
         <label class="form-label-small">Start Date</label>
         <input type="date" id="gStart" class="form-input">
         <button class="btn-save" onclick="saveGroup()">✓ Save Group</button>
@@ -337,26 +339,42 @@ function showConfirm(icon,title,msg,onOk){
 // ══════════════════════════════════════════
 // DUE DATE HELPERS
 // ══════════════════════════════════════════
+// Generates array of due date strings: the dueDay-th of each month,
+// starting from the month of startDate, for totalMonths months.
+// If dueDay not set, falls back to startDate day.
 function getGroupDueDates(group){
     const start=group.startDate||group.gStart;
     if(!start) return[];
     const totalMonths=parseInt(group.duration||group.gDuration)||21;
-    const dates=[];
+    const dueDay=parseInt(group.dueDay)||new Date(start).getDate();
     const s=new Date(start);
+    const startYear=s.getFullYear();
+    const startMonth=s.getMonth(); // 0-based
+    const dates=[];
     for(let i=0;i<totalMonths;i++){
-        const d=new Date(s.getFullYear(),s.getMonth()+i,s.getDate());
+        const yr=startYear+Math.floor((startMonth+i)/12);
+        const mo=(startMonth+i)%12;
+        // Clamp day to last day of month (e.g. day 31 in Feb → 28/29)
+        const maxDay=new Date(yr,mo+1,0).getDate();
+        const day=Math.min(dueDay,maxDay);
+        const d=new Date(yr,mo,day);
         dates.push(d.toISOString().split('T')[0]);
     }
     return dates;
 }
 
 // Get the month slot index (0-based) for a given payment date
+// A payment belongs to month i if: dueDate[i] <= payDate < dueDate[i+1]
+// For payments before the first due date, assign to month 1
 function getMonthSlot(dueDates, payDate){
+    if(!dueDates.length) return -1;
+    // Before first due date — still belongs to month 1
+    if(payDate<dueDates[0]) return 0;
     for(let i=0;i<dueDates.length;i++){
         const nextDue=dueDates[i+1]||'9999-99-99';
         if(payDate>=dueDates[i]&&payDate<nextDue) return i;
     }
-    return -1;
+    return dueDates.length-1; // after last due date → last month
 }
 
 // ══════════════════════════════════════════
@@ -431,7 +449,7 @@ async function loadMemberLedger(){
         const left=Math.max(0,totalMonths-elapsed);
         const pct=Math.min(100,Math.round(elapsed/totalMonths*100));
         return`<div style="background:#1c253b;border-radius:14px;padding:14px;margin-bottom:10px;border:1px solid var(--border);">
-            <div style="font-size:0.8rem;font-weight:800;color:#f39c12;margin-bottom:10px;">📂 ${g.name}</div>
+            <div style="font-size:0.8rem;font-weight:800;color:#f39c12;margin-bottom:10px;">📂 ${g.name}${g.dueDay?` <span style="font-size:0.65rem;color:#a5b4fc;font-weight:600;">· Due: ${g.dueDay}${['st','nd','rd'][((g.dueDay%100-11)%10)-1]||'th'} of month</span>`:''}</div>
             <div class="row g-2 mb-2">
                 <div class="col-6"><div class="mini-stat" style="border-top:2px solid #34d399;">
                     <div class="mini-stat-lbl">Total Paid</div>
@@ -453,24 +471,19 @@ async function loadMemberLedger(){
     const payTablesHtml=Object.entries(grouped).map(([gid,pays])=>{
         const grp=gs.find(g=>g.id===gid);
         pays.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-        // All due dates (for month numbering lookup)
+        // All due dates for this group (for month number lookup)
         const allDueDates=grp?getGroupDueDates(grp):[];
+        // Only include due dates up to today (no future months shown)
+        const pastDueDates=allDueDates.filter(dd=>dd<=today);
 
         // Flat sorted payment list — one row per payment
         pays.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
 
-        // Determine which month number each payment belongs to
-        function getMonthNum(payDate){
-            for(let i=0;i<allDueDates.length;i++){
-                const nextDue=allDueDates[i+1]||'9999-99-99';
-                if(payDate>=allDueDates[i]&&payDate<nextDue) return i+1;
-            }
-            return '—';
-        }
-
         const rows=pays.map((p,idx)=>{
             const cp=p.chitPicked==='Yes';
-            const monthNum=getMonthNum(p.date);
+            // Find month number: slot index + 1
+            const slotIdx=getMonthSlot(allDueDates,p.date);
+            const monthNum=slotIdx>=0?slotIdx+1:'—';
             return`<tr class="${cp?'chit-picked':''}">
                 <td style="color:var(--text-dim);font-weight:700;">${idx+1}</td>
                 <td style="color:#a5b4fc;font-weight:700;">${monthNum!=='—'?`Month ${monthNum}`:'—'}</td>
@@ -577,7 +590,10 @@ function deleteMemberFromModal(){
 // ══════════════════════════════════════════
 function openAddGroup(){
     document.getElementById('editGroupId').value='';
-    document.getElementById('gName').value='';document.getElementById('gDuration').value='';document.getElementById('gStart').value='';
+    document.getElementById('gName').value='';
+    document.getElementById('gDuration').value='';
+    document.getElementById('gDueDay').value='';
+    document.getElementById('gStart').value='';
     document.getElementById('groupModalTitle').textContent='🏦 New Group';
     document.getElementById('deleteGroupArea').style.display='none';
     openModal('groupModal');
@@ -588,6 +604,7 @@ async function openEditGroup(gid){
     document.getElementById('editGroupId').value=g.id;
     document.getElementById('gName').value=g.name||'';
     document.getElementById('gDuration').value=g.duration||g.gDuration||'';
+    document.getElementById('gDueDay').value=g.dueDay||'';
     document.getElementById('gStart').value=g.startDate||g.gStart||'';
     document.getElementById('groupModalTitle').textContent='✏️ Edit Group';
     document.getElementById('deleteGroupArea').style.display='block';
@@ -597,11 +614,15 @@ async function openEditGroup(gid){
 async function saveGroup(){
     const name=document.getElementById('gName').value.trim();
     const duration=document.getElementById('gDuration').value;
+    const dueDay=parseInt(document.getElementById('gDueDay').value)||null;
     const startDate=document.getElementById('gStart').value;
     const eid=document.getElementById('editGroupId').value;
     if(!name)return showToast('❌ Enter group name',false);
-    if(eid)await db.collection('groups').doc(eid).update({name,duration,startDate});
-    else await db.collection('groups').add({name,duration,startDate});
+    if(dueDay&&(dueDay<1||dueDay>31))return showToast('❌ Due Day must be 1–31',false);
+    const data={name,duration,startDate};
+    if(dueDay) data.dueDay=dueDay;
+    if(eid)await db.collection('groups').doc(eid).update(data);
+    else await db.collection('groups').add(data);
     closeModal('groupModal');showToast(`✅ Group "${name}" saved!`);updateUI();
 }
 
