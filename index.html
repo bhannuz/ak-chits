@@ -139,7 +139,10 @@
             <div class="col-4"><div class="stat-card"><span class="stat-num" id="groupCount">-</span><span class="stat-label">Groups</span></div></div>
             <div class="col-4"><div class="stat-card"><span class="stat-num text-success" id="todayColl">₹0</span><span class="stat-label">Today</span></div></div>
         </div>
-        <button class="btn btn-warning w-100 py-3 mt-3 fw-bold shadow" onclick="openModal('paymentModal')" style="border-radius:20px;">💳 Record Payment</button>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+            <button class="btn btn-warning w-100 py-3 fw-bold shadow" onclick="openPaymentModal()" style="border-radius:20px;">💳 Record Payment</button>
+            <button onclick="resetPaymentForm();openModal('paymentModal');" title="Refresh Form" style="background:var(--card-bg);border:1px solid var(--border);color:#f39c12;border-radius:20px;padding:0 18px;font-size:1.2rem;cursor:pointer;flex-shrink:0;">🔄</button>
+        </div>
 
         <!-- MEMBER SEARCH -->
         <div class="p-3 my-3" style="background:var(--card-bg);border-radius:20px;border:1px solid var(--border);">
@@ -229,7 +232,10 @@
 <!-- PAYMENT MODAL -->
 <div id="paymentModal" class="modal-overlay">
     <div class="modal-content-custom">
-        <div class="modal-title">💳 Record Payment</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div class="modal-title" style="margin-bottom:0;">💳 Record Payment</div>
+            <button onclick="resetPaymentForm()" title="Clear all fields" style="background:rgba(243,156,18,.12);border:1px solid rgba(243,156,18,.3);color:#f39c12;border-radius:10px;padding:6px 12px;font-size:0.75rem;font-weight:700;cursor:pointer;">🔄 Refresh</button>
+        </div>
         <label class="form-label-small">Payment Date</label>
         <input type="date" id="pDate" class="form-input">
         <label class="form-label-small">Member</label>
@@ -470,7 +476,7 @@ async function loadMemberLedger(){
                 </div></div>
             </div>
             <div class="prog-bar-outer"><div class="prog-bar-inner" style="width:${pct}%"></div></div>
-            <div class="prog-label"><span>Month ${elapsed}/${totalMonths}</span><span class="months-badge" style="font-size:0.6rem;padding:2px 8px;">⏳ ${left} left</span></div>
+            <div class="prog-label"><span>Month ${elapsed}/${totalMonths}</span><span class="months-badge" style="font-size:0.6rem;padding:2px 8px;">⏳ ${left}/${totalMonths} pending</span></div>
         </div>`;
     }).join('');
 
@@ -580,9 +586,22 @@ async function saveMember(){
 function deleteMemberFromModal(){
     const eid=document.getElementById('editMemberId').value;if(!eid)return;
     const name=document.getElementById('mName').value;
-    showConfirm('🗑','Delete Member?',`This will permanently delete "${name}" and cannot be undone.`,async()=>{
+    showConfirm('🗑','Delete Member?',`This will permanently delete "${name}" and ALL their payment records.`,async()=>{
+        // Delete all payments by this member
+        const pays=await db.collection('payments').where('memberId','==',eid).get();
+        const batch=db.batch();
+        pays.docs.forEach(d=>batch.delete(d.ref));
+        await batch.commit();
+        // Delete the member document
         await db.collection('members').doc(eid).delete();
-        closeModal('memberModal');showToast('🗑 Member deleted');updateUI();
+        closeModal('memberModal');
+        // Clear ledger if this member was displayed
+        if(document.getElementById('summaryView').value===eid){
+            document.getElementById('summaryView').value='';
+            document.getElementById('summarySearch').value='';
+            document.getElementById('ledgerData').innerHTML='';
+        }
+        showToast('🗑 Member & all payments deleted');updateUI();
     });
 }
 
@@ -639,6 +658,29 @@ function deleteGroupFromModal(){
 // ══════════════════════════════════════════
 // PAYMENT — with partial support & fixed chit
 // ══════════════════════════════════════════
+function resetPaymentForm(){
+    document.getElementById('pDate').value=new Date().toISOString().split('T')[0];
+    document.getElementById('pMemberSearch').value='';
+    document.getElementById('pMember').value='';
+    document.getElementById('pMemberList').style.display='none';
+    document.getElementById('pGroup').innerHTML='<option value="">-- Select Member First --</option>';
+    document.getElementById('pChit').value='';
+    document.getElementById('pPaid').value='';
+    document.getElementById('pBal').value='';
+    document.getElementById('pPaidBy').value='';
+    document.getElementById('pChitPicked').value='No';
+    document.getElementById('pChitPickedBy').value='';
+    document.getElementById('chitPickedNameDiv').style.display='none';
+    // Re-enable chit picked options
+    const sel=document.getElementById('pChitPicked');
+    [...sel.options].forEach(o=>o.disabled=false);
+    sel.title='';
+}
+
+function openPaymentModal(){
+    resetPaymentForm();
+    openModal('paymentModal');
+}
 async function linkGroupForPayment(){
     const mid=document.getElementById('pMember').value;
     const ms=await getCollection('members');const m=ms.find(x=>x.id===mid);if(!m)return;
@@ -648,10 +690,27 @@ async function linkGroupForPayment(){
 }
 
 async function onGroupChange(){
-    // Group changed — just reset chit/paid/balance fields so admin enters fresh values
     document.getElementById('pChit').value='';
     document.getElementById('pPaid').value='';
     document.getElementById('pBal').value='';
+    // Fix 2: Check if this member already picked chit in selected group
+    const mid=document.getElementById('pMember').value;
+    const gid=document.getElementById('pGroup').value;
+    if(mid&&gid){
+        const ps=await getCollection('payments');
+        const alreadyPicked=ps.some(p=>p.memberId===mid&&p.groupId===gid&&p.chitPicked==='Yes');
+        const sel=document.getElementById('pChitPicked');
+        if(alreadyPicked){
+            // Force to No and disable Yes option
+            sel.value='No';
+            [...sel.options].forEach(o=>{if(o.value==='Yes')o.disabled=true;});
+            sel.title='This member already picked the chit in this group';
+            document.getElementById('chitPickedNameDiv').style.display='none';
+        } else {
+            [...sel.options].forEach(o=>o.disabled=false);
+            sel.title='';
+        }
+    }
 }
 
 async function savePayment(){
@@ -665,9 +724,14 @@ async function savePayment(){
     if(!date)return showToast('❌ Enter date',false);
     if(!paid)return showToast('❌ Enter amount paid',false);
 
-    // Balance = chit amount minus this payment
-    const balance=Math.max(0,chit-paid);
+    // Fix 2: Guard — prevent saving if member already picked chit in this group
+    if(chitPicked==='Yes'){
+        const ps=await getCollection('payments');
+        const alreadyPicked=ps.some(p=>p.memberId===mid&&p.groupId===gid&&p.chitPicked==='Yes');
+        if(alreadyPicked)return showToast('❌ This member already picked the chit in this group',false);
+    }
 
+    const balance=Math.max(0,chit-paid);
     await db.collection('payments').add({memberId:mid,groupId:gid,date,chit,paid,balance,paidBy,chitPicked,chitPickedBy});
     closeModal('paymentModal');showToast('✅ Payment saved!');updateUI();
     if(document.getElementById('summaryView').value===mid)loadMemberLedger();
@@ -727,11 +791,11 @@ async function renderGroupsTab(){
                 <div class="row g-2 mt-2">
                     <div class="col-3"><div class="mini-stat" style="border-top:2px solid #34d399;"><div class="mini-stat-lbl">Collected</div><div class="mini-stat-val" style="color:#34d399;">${fmtAmt(tPaid)}</div></div></div>
                     <div class="col-3"><div class="mini-stat" style="border-top:2px solid #f59e0b;"><div class="mini-stat-lbl">Balance</div><div class="mini-stat-val" style="color:#f59e0b;">${fmtAmt(tBal)}</div></div></div>
-                    <div class="col-3"><div class="mini-stat" style="border-top:2px solid #a5b4fc;"><div class="mini-stat-lbl">Mths Left</div><div class="mini-stat-val" style="color:#a5b4fc;">${left}</div></div></div>
+                    <div class="col-3"><div class="mini-stat" style="border-top:2px solid #a5b4fc;"><div class="mini-stat-lbl">Pending</div><div class="mini-stat-val" style="color:#a5b4fc;">${left}/${totalMonths}</div></div></div>
                     <div class="col-3"><div class="mini-stat" style="border-top:2px solid #34d399;"><div class="mini-stat-lbl">Picked</div><div class="mini-stat-val" style="color:#34d399;">${picked}</div></div></div>
                 </div>
                 <div class="prog-bar-outer mt-2"><div class="prog-bar-inner" style="width:${pct}%"></div></div>
-                <div class="prog-label" style="margin-top:3px;"><span>Month ${elapsed}/${totalMonths}</span><span>${pct}% complete</span></div>
+                <div class="prog-label" style="margin-top:3px;"><span>Month ${elapsed}/${totalMonths}</span><span>${left}/${totalMonths} months pending</span></div>
             </div>
             <div class="group-body" id="${bodyId}" style="max-height:2000px;opacity:1;margin-top:12px;">
                 ${gMs.length?`<div style="overflow-x:auto;"><table class="table-custom">
@@ -887,7 +951,7 @@ async function generateMemberPDF(mid){
             <div style="display:flex;gap:12px;font-size:10px;color:#888;margin-bottom:4px;flex-wrap:wrap;">
                 <span>🗓 Start: <strong>${gStartDisp}</strong></span>
                 <span>📅 Due: <strong>${gDueDayDisp}</strong></span>
-                <span>Month ${elapsed}/${totalMonths} · ${left} months left</span>
+                <span>Month ${elapsed}/${totalMonths} · <strong>${left}/${totalMonths} months pending</strong></span>
             </div>
             <div class="pdf-progress-outer"><div class="pdf-progress-inner" style="width:${pct}%"></div></div>
             <div style="font-size:10px;color:#888;text-align:right;margin-bottom:10px;">Collected: ₹${gPaid.toLocaleString('en-IN')} · Balance: ₹${gBal.toLocaleString('en-IN')}</div>
@@ -1023,7 +1087,7 @@ async function generateGroupPDF(gid){
                     <div class="pdf-member-name">📂 ${g.name}</div>
                     <div class="pdf-member-sub">Duration: ${totalMonths} months · Start Date: <strong>${fmtDate(g.startDate||g.gStart||'')}</strong></div>
                     <div class="pdf-member-sub">Monthly Due: <strong>${g.dueDay?`${g.dueDay}${['st','nd','rd'][((g.dueDay%100-11)%10)-1]||'th'} of every month`:'—'}</strong></div>
-                    <div class="pdf-member-sub">Month ${elapsed}/${totalMonths} · <strong>${left} months remaining</strong></div>
+                    <div class="pdf-member-sub">Month ${elapsed}/${totalMonths} · <strong>${left}/${totalMonths} months pending</strong></div>
                     <div style="margin-top:8px;"><div class="pdf-progress-outer"><div class="pdf-progress-inner" style="width:${pct}%"></div></div>
                     <div style="font-size:9px;color:#888;text-align:right;margin-top:2px;">${pct}% complete</div></div>
                 </div>
