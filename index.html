@@ -143,10 +143,13 @@
 
         <!-- MEMBER SEARCH -->
         <div class="p-3 my-3" style="background:var(--card-bg);border-radius:20px;border:1px solid var(--border);">
-            <div style="position:relative;">
-                <input type="text" id="summarySearch" class="form-input" placeholder="🔍 Search Member for Summary / PDF..." oninput="filterSearch('summarySearch','summaryList','summaryView')">
-                <input type="hidden" id="summaryView">
-                <div id="summaryList" class="suggestions-list"></div>
+            <div style="display:flex;gap:8px;align-items:flex-start;">
+                <div style="position:relative;flex:1;">
+                    <input type="text" id="summarySearch" class="form-input" style="margin-bottom:0;" placeholder="🔍 Search Member for Summary / PDF..." oninput="filterSearch('summarySearch','summaryList','summaryView')">
+                    <input type="hidden" id="summaryView">
+                    <div id="summaryList" class="suggestions-list"></div>
+                </div>
+                <button onclick="clearMemberSearch()" title="Clear / Refresh" style="background:var(--input-bg);border:1px solid var(--border);color:#f39c12;border-radius:12px;padding:12px 14px;font-size:1rem;cursor:pointer;flex-shrink:0;line-height:1;">🔄</button>
             </div>
             <div id="ledgerData"></div>
         </div>
@@ -309,6 +312,14 @@ function calcBalance(){
 
 function toggleChitPickedName(){document.getElementById('chitPickedNameDiv').style.display=document.getElementById('pChitPicked').value==='Yes'?'block':'none';}
 
+function clearMemberSearch(){
+    document.getElementById('summarySearch').value='';
+    document.getElementById('summaryView').value='';
+    document.getElementById('summaryList').style.display='none';
+    document.getElementById('ledgerData').innerHTML='';
+    updateUI();
+}
+
 function showToast(msg,ok=true){
     const t=document.createElement('div');
     t.style.cssText=`position:fixed;top:20px;left:50%;transform:translateX(-50%);background:${ok?'#10b981':'#ef4444'};color:white;padding:12px 24px;border-radius:12px;font-weight:700;font-size:13px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.4);white-space:nowrap;`;
@@ -442,82 +453,45 @@ async function loadMemberLedger(){
     const payTablesHtml=Object.entries(grouped).map(([gid,pays])=>{
         const grp=gs.find(g=>g.id===gid);
         pays.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-        // FIX 1: Only show due dates up to TODAY (no future dates)
+        // All due dates (for month numbering lookup)
         const allDueDates=grp?getGroupDueDates(grp):[];
-        const dueDates=allDueDates.filter(dd=>dd<=today);
 
-        // Build month slots — group payments by slot
-        const monthSlots=dueDates.map((dd,i)=>{
-            const nextDue=dueDates[i+1]||allDueDates[i+1]||'9999-99-99';
-            const slotPays=pays.filter(p=>p.date>=dd&&p.date<nextDue);
-            const slotPaid=slotPays.reduce((s,p)=>s+(parseFloat(p.paid)||0),0);
-            // Use the max chit value entered across payments in this slot (admin sets it per payment)
-            const effectiveChit=slotPays.length>0?Math.max(...slotPays.map(p=>parseFloat(p.chit)||0)):0;
-            const slotBal=slotPays.reduce((s,p)=>s+(parseFloat(p.balance)||0),0);
-            const isPartial=slotPays.length>0 && slotBal>0;
-            const isPaid=slotPays.length>0 && slotBal<=0;
-            const isPending=slotPays.length===0;
-            return{dd,i,slotPays,slotPaid,slotBal,effectiveChit,isPartial,isPaid,isPending};
-        });
+        // Flat sorted payment list — one row per payment
+        pays.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
 
-        // payments not in any slot
-        const orphanPays=pays.filter(p=>{
-            const slot=getMonthSlot(dueDates,p.date);
-            return slot===-1;
-        });
+        // Determine which month number each payment belongs to
+        function getMonthNum(payDate){
+            for(let i=0;i<allDueDates.length;i++){
+                const nextDue=allDueDates[i+1]||'9999-99-99';
+                if(payDate>=allDueDates[i]&&payDate<nextDue) return i+1;
+            }
+            return '—';
+        }
 
-        let rows='';
-        monthSlots.forEach(slot=>{
-            const statusIcon=slot.isPaid?'✅':slot.isPartial?'⚠️ Partial':'⚠️';
-            const statusText=slot.isPaid?'Paid':slot.isPartial?`Partial — ${fmtAmt(slot.slotPaid)} / ${fmtAmt(slot.effectiveChit)}  (Due: ${fmtAmt(slot.slotBal)})`: 'Pending';
-            const rowClass=slot.isPaid?'':'due-row';
-            const color=slot.isPaid?'#34d399':slot.isPartial?'#fbbf24':'#f87171';
-
-            rows+=`<tr class="${rowClass}">
-                <td><span class="${slot.isPaid?'chit-yes-badge':slot.isPartial?'partial-badge':'due-badge'}">${statusIcon}</span></td>
-                <td style="color:${color};font-weight:700;">${fmtDate(slot.dd)}</td>
-                <td style="color:#a5b4fc;">${slot.effectiveChit>0?fmtAmt(slot.effectiveChit):'—'}</td>
-                <td colspan="4" style="color:${color};">Month ${slot.i+1} — ${statusText}</td>
-            </tr>`;
-
-            // FIX 3: Show each partial payment as a sub-row
-            slot.slotPays.forEach(p=>{
-                const cp=p.chitPicked==='Yes';
-                rows+=`<tr class="${cp?'chit-picked':'partial-row'}" style="background:rgba(255,255,255,0.02);">
-                    <td style="padding-left:16px;color:var(--text-dim);font-size:0.6rem;">↳</td>
-                    <td>${fmtDate(p.date)}</td>
-                    <td style="color:#a5b4fc;">${fmtAmt(p.chit)}</td>
-                    <td style="color:#34d399;font-weight:700;">${fmtAmt(p.paid)}</td>
-                    <td style="color:#f59e0b;">${fmtAmt(p.balance)}</td>
-                    <td style="color:var(--text-dim);font-size:0.6rem;">${p.paidBy||'—'}</td>
-                    <td>${cp?'<span class="chit-yes-badge">✅ Yes</span>':'<span class="chit-no">No</span>'}</td>
-                </tr>`;
-            });
-        });
-
-        // orphan payments (before group start or outside slots)
-        orphanPays.forEach(p=>{
+        const rows=pays.map((p,idx)=>{
             const cp=p.chitPicked==='Yes';
-            rows+=`<tr class="${cp?'chit-picked':''}">
-                <td></td>
+            const monthNum=getMonthNum(p.date);
+            return`<tr class="${cp?'chit-picked':''}">
+                <td style="color:var(--text-dim);font-weight:700;">${idx+1}</td>
+                <td style="color:#a5b4fc;font-weight:700;">${monthNum!=='—'?`Month ${monthNum}`:'—'}</td>
                 <td>${fmtDate(p.date)}</td>
-                <td style="color:#a5b4fc;">${fmtAmt(p.chit)}</td>
+                <td style="color:#c4b5fd;">${fmtAmt(p.chit)}</td>
                 <td style="color:#34d399;font-weight:700;">${fmtAmt(p.paid)}</td>
                 <td style="color:#f59e0b;">${fmtAmt(p.balance)}</td>
                 <td style="color:var(--text-dim);font-size:0.6rem;">${p.paidBy||'—'}</td>
                 <td>${cp?'<span class="chit-yes-badge">✅ Yes</span>':'<span class="chit-no">No</span>'}</td>
             </tr>`;
-        });
+        }).join('');
 
         const tPaid=pays.reduce((s,p)=>s+(parseFloat(p.paid)||0),0);
         const tBal=pays.reduce((s,p)=>s+(parseFloat(p.balance)||0),0);
         return`<div style="margin-bottom:14px;">
             <div style="font-size:0.7rem;font-weight:700;color:#f39c12;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">📂 ${grp?grp.name:'Unknown Group'}</div>
             <div style="overflow-x:auto;"><table class="table-custom">
-                <thead><tr><th>Status</th><th>Date</th><th>Chit Val</th><th>Paid</th><th>Balance</th><th>Mode</th><th>Chit?</th></tr></thead>
-                <tbody>${rows}
+                <thead><tr><th>#</th><th>Month</th><th>Date</th><th>Chit Val</th><th>Paid</th><th>Balance</th><th>Mode</th><th>Chit?</th></tr></thead>
+                <tbody>${rows||`<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:16px;">No payments yet</td></tr>`}
                 <tr style="font-weight:800;background:rgba(255,255,255,.04);">
-                    <td colspan="3" style="color:var(--text-dim);">Total</td>
+                    <td colspan="4" style="color:var(--text-dim);">Total</td>
                     <td style="color:#34d399;">${fmtAmt(tPaid)}</td>
                     <td style="color:#f59e0b;">${fmtAmt(tBal)}</td>
                     <td colspan="2"></td>
