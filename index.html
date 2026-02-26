@@ -272,6 +272,43 @@
     </div>
 </div>
 
+<!-- EDIT PAYMENT MODAL -->
+<div id="editPaymentModal" class="modal-overlay">
+    <div class="modal-content-custom">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div class="modal-title" style="margin-bottom:0;">✏️ Edit Payment</div>
+            <button onclick="closeModal('editPaymentModal')" style="background:none;border:none;color:var(--text-dim);font-size:1.3rem;cursor:pointer;">✕</button>
+        </div>
+        <input type="hidden" id="epId">
+        <label class="form-label-small">Payment Date</label>
+        <input type="date" id="epDate" class="form-input">
+        <div class="row g-2">
+            <div class="col-6"><label class="form-label-small">Chit Amount</label><input type="number" id="epChit" class="form-input" placeholder="₹" oninput="epCalcBalance()"></div>
+            <div class="col-6"><label class="form-label-small">Amount Paid</label><input type="number" id="epPaid" class="form-input" placeholder="₹" oninput="epCalcBalance()"></div>
+        </div>
+        <label class="form-label-small">Balance (auto)</label>
+        <input type="number" id="epBal" class="form-input" placeholder="Balance" readonly style="opacity:.7;">
+        <label class="form-label-small">Paid By</label>
+        <select id="epPaidBy" class="form-input">
+            <option value="">-- Select Mode --</option>
+            <option>UPI</option><option>GPay</option><option>PhonePe</option>
+            <option>PPay</option><option>Bank Transfer</option><option>Cash</option><option>Cheque</option>
+        </select>
+        <label class="form-label-small">Chit Picked?</label>
+        <select id="epChitPicked" class="form-input" onchange="epTogglePickedName()">
+            <option value="No">No</option>
+            <option value="Yes">Yes ✅</option>
+        </select>
+        <div id="epChitPickedNameDiv" style="display:none;">
+            <label class="form-label-small">Picked By (Name)</label>
+            <input type="text" id="epChitPickedBy" class="form-input" placeholder="Member who picked chit">
+        </div>
+        <button class="btn-save" onclick="saveEditPayment()">✓ Update Payment</button>
+        <button class="btn-danger-full" onclick="deletePayment()">🗑 Delete Payment</button>
+        <button class="btn-cancel" onclick="closeModal('editPaymentModal')">Cancel</button>
+    </div>
+</div>
+
 <!-- CONFIRM MODAL -->
 <div id="confirmModal" class="modal-overlay">
     <div class="modal-content-custom" style="max-width:360px;">
@@ -478,6 +515,7 @@ async function loadMemberLedger(){
                 <td style="color:#f59e0b;">${fmtAmt(p.balance)}</td>
                 <td style="color:var(--text-dim);font-size:0.6rem;">${p.paidBy||'—'}</td>
                 <td>${cp?'<span class="chit-yes-badge">✅ Yes</span>':'<span class="chit-no">No</span>'}</td>
+                <td><button class="btn-edit-sm" onclick="openEditPayment('${p.id}')" style="font-size:0.6rem;padding:3px 7px;">✏️</button></td>
             </tr>`;
         }).join('');
 
@@ -487,8 +525,8 @@ async function loadMemberLedger(){
                 <div>
                     <div style="font-size:0.8rem;font-weight:800;color:#f39c12;margin-bottom:4px;">📂 ${grp.name}</div>
                     <div style="display:flex;gap:5px;flex-wrap:wrap;">
-                        <span style="font-size:0.58rem;background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);border-radius:5px;padding:1px 6px;color:#a5b4fc;">🗓 Chit Start ${gStartDisplay}</span>
-                        ${grp.dueDay?`<span style="font-size:0.58rem;background:rgba(243,156,18,.12);border:1px solid rgba(243,156,18,.3);border-radius:5px;padding:1px 6px;color:#f39c12;">📅 Due ${gDueDayOrd}</span>`:''}
+                        <span style="font-size:0.58rem;background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);border-radius:5px;padding:1px 6px;color:#a5b4fc;">🗓 Chit Started: ${gStartDisplay}</span>
+                        ${grp.dueDay?`<span style="font-size:0.58rem;background:rgba(243,156,18,.12);border:1px solid rgba(243,156,18,.3);border-radius:5px;padding:1px 6px;color:#f39c12;">📅 Due Date: ${gDueDayOrd}</span>`:''}
                     </div>
                 </div>
                 <div style="text-align:right;flex-shrink:0;">
@@ -507,13 +545,13 @@ async function loadMemberLedger(){
                 </div>
                 <div id="${tableId}" style="display:none;">
                     <div style="overflow-x:auto;"><table class="table-custom">
-                        <thead><tr><th>#</th><th>Month</th><th>Date</th><th>Chit Val</th><th>Paid</th><th>Balance</th><th>Mode</th><th>Chit?</th></tr></thead>
+                        <thead><tr><th>#</th><th>Month</th><th>Date</th><th>Chit Val</th><th>Paid</th><th>Balance</th><th>Mode</th><th>Chit?</th><th></th></tr></thead>
                         <tbody>${rows||`<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:16px;">No payments yet for this group</td></tr>`}
                         ${pays.length?`<tr style="font-weight:800;background:rgba(255,255,255,.04);">
                             <td colspan="4" style="color:var(--text-dim);">Total</td>
                             <td style="color:#34d399;">${fmtAmt(tPaid)}</td>
                             <td style="color:#f59e0b;">${fmtAmt(tBal)}</td>
-                            <td colspan="2"></td>
+                            <td colspan="3"></td>
                         </tr>`:''}
                         </tbody>
                     </table></div>
@@ -738,6 +776,57 @@ async function savePayment(){
 }
 
 // ══════════════════════════════════════════
+// EDIT / DELETE EXISTING PAYMENT
+// ══════════════════════════════════════════
+async function openEditPayment(pid){
+    const ps=await getCollection('payments');
+    const p=ps.find(x=>x.id===pid);if(!p)return;
+    document.getElementById('epId').value=pid;
+    document.getElementById('epDate').value=p.date||'';
+    document.getElementById('epChit').value=p.chit||'';
+    document.getElementById('epPaid').value=p.paid||'';
+    document.getElementById('epBal').value=p.balance||'';
+    document.getElementById('epPaidBy').value=p.paidBy||'';
+    document.getElementById('epChitPicked').value=p.chitPicked||'No';
+    document.getElementById('epChitPickedBy').value=p.chitPickedBy||'';
+    document.getElementById('epChitPickedNameDiv').style.display=p.chitPicked==='Yes'?'block':'none';
+    openModal('editPaymentModal');
+}
+function epCalcBalance(){
+    const chit=parseFloat(document.getElementById('epChit').value)||0;
+    const paid=parseFloat(document.getElementById('epPaid').value)||0;
+    document.getElementById('epBal').value=Math.max(0,chit-paid);
+}
+function epTogglePickedName(){
+    document.getElementById('epChitPickedNameDiv').style.display=document.getElementById('epChitPicked').value==='Yes'?'block':'none';
+}
+async function saveEditPayment(){
+    const pid=document.getElementById('epId').value;if(!pid)return;
+    const date=document.getElementById('epDate').value;
+    const chit=parseFloat(document.getElementById('epChit').value)||0;
+    const paid=parseFloat(document.getElementById('epPaid').value)||0;
+    const balance=Math.max(0,chit-paid);
+    const paidBy=document.getElementById('epPaidBy').value;
+    const chitPicked=document.getElementById('epChitPicked').value;
+    const chitPickedBy=document.getElementById('epChitPickedBy').value.trim();
+    if(!date)return showToast('❌ Enter date',false);
+    if(!paid)return showToast('❌ Enter amount paid',false);
+    await db.collection('payments').doc(pid).update({date,chit,paid,balance,paidBy,chitPicked,chitPickedBy});
+    closeModal('editPaymentModal');showToast('✅ Payment updated!');updateUI();
+    const mid=document.getElementById('summaryView').value;
+    if(mid)loadMemberLedger();
+}
+async function deletePayment(){
+    const pid=document.getElementById('epId').value;if(!pid)return;
+    showConfirm('🗑','Delete Payment?','This will permanently delete this payment record.',async()=>{
+        await db.collection('payments').doc(pid).delete();
+        closeModal('editPaymentModal');showToast('🗑 Payment deleted');updateUI();
+        const mid=document.getElementById('summaryView').value;
+        if(mid)loadMemberLedger();
+    });
+}
+
+// ══════════════════════════════════════════
 // GROUPS TAB — with working collapse
 // ══════════════════════════════════════════
 async function renderGroupsTab(){
@@ -778,8 +867,8 @@ async function renderGroupsTab(){
                         <div style="font-size:1rem;font-weight:800;color:#f39c12;">📂 ${g.name}</div>
                         <div style="font-size:0.68rem;color:var(--text-dim);">${gMs.length} members · ${gPays.length} payments</div>
                         <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap;">
-                            <span style="font-size:0.62rem;background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);border-radius:6px;padding:2px 7px;color:#a5b4fc;">🗓 Start: ${gStartDisp}</span>
-                            ${g.dueDay?`<span style="font-size:0.62rem;background:rgba(243,156,18,.12);border:1px solid rgba(243,156,18,.3);border-radius:6px;padding:2px 7px;color:#f39c12;">📅 Due: ${gDueDayDisp} of month</span>`:''}
+                            <span style="font-size:0.62rem;background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);border-radius:6px;padding:2px 7px;color:#a5b4fc;">🗓 Chit Started: ${gStartDisp}</span>
+                            ${g.dueDay?`<span style="font-size:0.62rem;background:rgba(243,156,18,.12);border:1px solid rgba(243,156,18,.3);border-radius:6px;padding:2px 7px;color:#f39c12;">📅 Due Date: ${gDueDayDisp} of month</span>`:''}
                         </div>
                     </div>
                     <div style="display:flex;gap:6px;align-items:center;">
