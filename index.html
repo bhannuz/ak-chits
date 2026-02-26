@@ -341,12 +341,7 @@ async function loadMemberLedger(){
                 <div style="font-size:1.1rem;font-weight:800;color:#f59e0b;">${fmtAmt(totalBal)}</div>
             </div></div>
         </div>
-        <div style="background:#1c253b;border-radius:12px;padding:14px;margin-bottom:14px;">
-            <div class="summary-stat-row"><span class="sk">Total Payments</span><span class="sv">${mPays.length}</span></div>
-            <div class="summary-stat-row"><span class="sk">Last Payment</span><span class="sv">${lastPay?fmtDate(lastPay.date)+' · '+fmtAmt(lastPay.paid):'None yet'}</span></div>
-            <div class="summary-stat-row"><span class="sk">Chits Picked</span><span class="sv" style="color:#34d399;">${chitsPicked>0?'✅ '+chitsPicked+' time(s)':'None'}</span></div>
-            ${monthsHtml}
-        </div>
+        ${monthsHtml?`<div style="background:#1c253b;border-radius:12px;padding:14px;margin-bottom:14px;">${monthsHtml}</div>`:''}
         ${payTablesHtml||'<div style="text-align:center;color:var(--text-dim);padding:20px;">No payments yet</div>'}
     `;
 }
@@ -730,15 +725,32 @@ async function generateGroupPDF(gid){
 // ═══════════════════════════════════════
 async function renderListTab(){
     const gs=await getCollection('groups');const ms=await getCollection('members');
-    document.getElementById('simpleListArea').innerHTML=gs.map(g=>{
+    document.getElementById('simpleListArea').innerHTML=gs.map((g,gi)=>{
         const gMs=ms.filter(m=>m.groupIds&&m.groupIds.includes(g.id));
-        return`<div class="list-group-header">${g.name}<span style="font-size:0.75rem;color:var(--text-dim);">${gMs.length} members</span></div>`+
-            gMs.map((m,i)=>`<div style="padding:10px 20px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;gap:10px;">
+        const listId=`listGroup_${gi}`;
+        return`<div class="list-group-header" onclick="toggleListGroup('${listId}',this)">
+            <span>${g.name}</span>
+            <span style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:0.75rem;color:var(--text-dim);">${gMs.length} members</span>
+                <span class="list-chevron" style="font-size:0.8rem;color:var(--text-dim);transition:transform .25s;">▼</span>
+            </span>
+        </div>
+        <div id="${listId}" style="display:block;">
+            ${gMs.map((m,i)=>`<div style="padding:10px 20px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;gap:10px;">
                 <span style="width:28px;color:var(--text-dim);font-size:0.75rem;">${i+1}.</span>
                 <span style="flex:1;">${m.name}</span>
                 <span style="font-size:0.75rem;color:var(--text-dim);">${m.phone||''}</span>
-            </div>`).join('');
+            </div>`).join('')}
+        </div>`;
     }).join('');
+}
+
+function toggleListGroup(id, header){
+    const el=document.getElementById(id);
+    const chevron=header.querySelector('.list-chevron');
+    const isOpen=el.style.display!=='none';
+    el.style.display=isOpen?'none':'block';
+    chevron.style.transform=isOpen?'rotate(-90deg)':'rotate(0deg)';
 }
 
 // ═══════════════════════════════════════
