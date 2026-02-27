@@ -671,15 +671,18 @@ async function loadMemberLedger(){
             }
 
             const rowClass=cp?'chit-picked':(isMulti?'multi-month-row':'');
+            const chitPickedAmt=cp?(parseFloat(p.chit)||0)*(parseInt(p.numMonths)||1):0;
             return`<tr class="${rowClass}">
                 <td style="color:var(--text-dim);font-weight:700;">${idx+1}</td>
-                <td style="color:${isMulti?'#a5b4fc':'#a5b4fc'};font-weight:700;white-space:normal;min-width:90px;font-size:0.62rem;">${monthLabel}${isMulti?`<br><span class="multi-month-badge">📅 ${p.numMonths} months</span>`:''}</td>
+                <td style="color:#a5b4fc;font-weight:700;white-space:normal;min-width:90px;font-size:0.62rem;">${monthLabel}${isMulti?`<br><span class="multi-month-badge">📅 ${p.numMonths} months</span>`:''}</td>
                 <td>${fmtDate(p.date)}</td>
                 <td style="color:#c4b5fd;">${fmtAmt(p.chit)}${isMulti?`<span style="font-size:0.55rem;color:var(--text-dim);display:block;">/mo × ${p.numMonths}</span>`:''}</td>
                 <td style="color:#34d399;font-weight:700;">${fmtAmt(p.paid)}</td>
                 <td style="color:#f59e0b;">${fmtAmt(p.balance)}</td>
                 <td style="color:var(--text-dim);font-size:0.6rem;">${p.paidBy||'—'}</td>
-                <td>${cp?'<span class="chit-yes-badge">✅ Yes</span>':'<span class="chit-no">No</span>'}</td>
+                <td>${cp
+                    ?`<div><span class="chit-yes-badge">✅ Picked</span><div style="color:#34d399;font-weight:800;font-size:0.72rem;margin-top:3px;">${fmtAmt(chitPickedAmt)}</div>${p.chitPickedBy?`<div style="font-size:0.58rem;color:var(--text-dim);">by ${p.chitPickedBy}</div>`:''}</div>`
+                    :'<span class="chit-no">—</span>'}</td>
                 <td><button class="btn-edit-sm" onclick="openEditPayment('${p.id}')" style="font-size:0.6rem;padding:3px 7px;">✏️</button></td>
             </tr>`;
         }).join('');
@@ -695,7 +698,6 @@ async function loadMemberLedger(){
                     </div>
                 </div>
                 <div style="text-align:right;flex-shrink:0;">
-                    ${pickedPay?`<div style="margin-bottom:4px;"><span class="chit-yes-badge" style="font-size:0.65rem;">✅ Chit Picked</span><div style="color:#34d399;font-weight:800;font-size:0.9rem;margin-top:2px;">${fmtAmt(pickedAmt)}</div>${pickedBy?`<div style="font-size:0.58rem;color:var(--text-dim);">by ${pickedBy}</div>`:''}</div>`:''}
                     <div style="font-size:1rem;font-weight:800;color:#a5b4fc;">${left}<span style="font-size:0.62rem;color:var(--text-dim);">/${totalMonths}</span></div>
                     <div style="font-size:0.55rem;color:var(--text-dim);text-transform:uppercase;">months pending</div>
                 </div>
@@ -706,13 +708,12 @@ async function loadMemberLedger(){
                     <div style="display:flex;align-items:center;gap:8px;">
                         <span style="font-size:0.65rem;color:#34d399;">${fmtAmt(tPaid)} paid</span>
                         ${tBal>0?`<span style="font-size:0.65rem;color:#f59e0b;">${fmtAmt(tBal)} bal</span>`:''}
-                        ${pickedPay?`<span style="font-size:0.65rem;color:#10b981;font-weight:700;">🏆 ${fmtAmt(pickedAmt)}</span>`:''}
                         <span style="font-size:0.8rem;color:var(--text-dim);transition:transform .25s;" class="ledger-chevron">▶</span>
                     </div>
                 </div>
                 <div id="${tableId}" style="display:none;">
                     <div style="overflow-x:auto;"><table class="table-custom">
-                        <thead><tr><th>#</th><th>Month(s) Covered</th><th>Pay Date</th><th>Chit/Mo</th><th>Total Paid</th><th>Balance</th><th>Mode</th><th>Chit?</th><th></th></tr></thead>
+                        <thead><tr><th>#</th><th>Month(s) Covered</th><th>Pay Date</th><th>Chit/Mo</th><th>Total Paid</th><th>Balance</th><th>Mode</th><th>Chit Picked Amt</th><th></th></tr></thead>
                         <tbody>${rows||`<tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:16px;">No payments yet</td></tr>`}
                         ${pays.length?`<tr style="font-weight:800;background:rgba(255,255,255,.04);">
                             <td colspan="4" style="color:var(--text-dim);">Total</td>
