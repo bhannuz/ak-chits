@@ -650,6 +650,10 @@ async function loadMemberLedger(){
 
         // Count multi-month payments
         const multiMonthCount=pays.filter(p=>p.numMonths&&p.numMonths>1).length;
+        // Chit picked info
+        const pickedPay=pays.find(p=>p.chitPicked==='Yes');
+        const pickedAmt=pickedPay?(parseFloat(pickedPay.chit)||0)*(parseInt(pickedPay.numMonths)||1):0;
+        const pickedBy=pickedPay&&pickedPay.chitPickedBy?pickedPay.chitPickedBy:'';
 
         const rows=pays.map((p,idx)=>{
             const cp=p.chitPicked==='Yes';
@@ -691,6 +695,7 @@ async function loadMemberLedger(){
                     </div>
                 </div>
                 <div style="text-align:right;flex-shrink:0;">
+                    ${pickedPay?`<div style="margin-bottom:4px;"><span class="chit-yes-badge" style="font-size:0.65rem;">✅ Chit Picked</span><div style="color:#34d399;font-weight:800;font-size:0.9rem;margin-top:2px;">${fmtAmt(pickedAmt)}</div>${pickedBy?`<div style="font-size:0.58rem;color:var(--text-dim);">by ${pickedBy}</div>`:''}</div>`:''}
                     <div style="font-size:1rem;font-weight:800;color:#a5b4fc;">${left}<span style="font-size:0.62rem;color:var(--text-dim);">/${totalMonths}</span></div>
                     <div style="font-size:0.55rem;color:var(--text-dim);text-transform:uppercase;">months pending</div>
                 </div>
@@ -701,6 +706,7 @@ async function loadMemberLedger(){
                     <div style="display:flex;align-items:center;gap:8px;">
                         <span style="font-size:0.65rem;color:#34d399;">${fmtAmt(tPaid)} paid</span>
                         ${tBal>0?`<span style="font-size:0.65rem;color:#f59e0b;">${fmtAmt(tBal)} bal</span>`:''}
+                        ${pickedPay?`<span style="font-size:0.65rem;color:#10b981;font-weight:700;">🏆 ${fmtAmt(pickedAmt)}</span>`:''}
                         <span style="font-size:0.8rem;color:var(--text-dim);transition:transform .25s;" class="ledger-chevron">▶</span>
                     </div>
                 </div>
@@ -1077,16 +1083,20 @@ async function renderGroupsTab(){
             const mp=ps.filter(p=>p.memberId===m.id&&p.groupId===g.id);
             const paid=mp.reduce((s,p)=>s+(parseFloat(p.paid)||0),0);
             const bal=mp.reduce((s,p)=>s+(parseFloat(p.balance)||0),0);
-            const mpicked=mp.filter(p=>p.chitPicked==='Yes').length;
-            // Count months actually covered (accounting for multi-month payments)
+            const pickedPay=mp.find(p=>p.chitPicked==='Yes');
+            // Chit picked amount = chit per month × numMonths for that payment record
+            const pickedAmt=pickedPay?(parseFloat(pickedPay.chit)||0)*(parseInt(pickedPay.numMonths)||1):0;
+            const pickedBy=pickedPay&&pickedPay.chitPickedBy?pickedPay.chitPickedBy:'';
             const monthsCovered=mp.reduce((s,p)=>s+(p.numMonths||1),0);
-            return`<tr>
+            return`<tr${pickedPay?' class="chit-picked"':''}>
                 <td>${i+1}</td>
                 <td><strong>${m.name}</strong><br><span style="font-size:0.6rem;color:var(--text-dim);">${m.phone||''}</span></td>
                 <td style="color:#34d399;">${fmtAmt(paid)}</td>
                 <td style="color:#f59e0b;">${fmtAmt(bal)}</td>
                 <td style="color:#a5b4fc;font-size:0.65rem;">${monthsCovered}/${totalMonths}</td>
-                <td>${mpicked>0?`<span class="chit-yes-badge">✅ ${mpicked}x</span>`:'<span class="chit-no">—</span>'}</td>
+                <td>${pickedPay
+                    ?`<div><span class="chit-yes-badge">✅ Picked</span><div style="color:#34d399;font-weight:800;font-size:0.72rem;margin-top:3px;">${fmtAmt(pickedAmt)}</div>${pickedBy?`<div style="font-size:0.58rem;color:var(--text-dim);">by ${pickedBy}</div>`:''}</div>`
+                    :'<span class="chit-no">—</span>'}</td>
                 <td><button class="btn-edit-sm" onclick="openEditMember('${m.id}')">✏️</button></td>
             </tr>`;}).join('');
 
@@ -1121,7 +1131,7 @@ async function renderGroupsTab(){
             </div>
             <div class="group-body" id="${bodyId}" style="max-height:2000px;opacity:1;margin-top:12px;">
                 ${gMs.length?`<div style="overflow-x:auto;"><table class="table-custom">
-                    <thead><tr><th>#</th><th>Member</th><th>Paid</th><th>Balance</th><th>Months</th><th>Chit?</th><th></th></tr></thead>
+                    <thead><tr><th>#</th><th>Member</th><th>Paid</th><th>Balance</th><th>Months</th><th>Chit Picked Amt</th><th></th></tr></thead>
                     <tbody>${memberRows}</tbody>
                 </table></div>`:'<div style="text-align:center;color:var(--text-dim);font-size:0.8rem;padding:10px;">No members yet</div>'}
             </div>
