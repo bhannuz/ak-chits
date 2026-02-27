@@ -99,9 +99,18 @@
         .multi-month-preview { background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.25); border-radius:12px; padding:12px 14px; margin-bottom:12px; display:none; }
         .multi-month-preview-title { font-size:0.68rem; color:#a5b4fc; font-weight:700; text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
         .multi-month-chip { display:inline-flex; align-items:center; background:rgba(99,102,241,0.2); border:1px solid rgba(99,102,241,0.35); border-radius:6px; padding:3px 9px; font-size:0.68rem; color:#c7d2fe; margin:2px; font-weight:600; }
+        /* Month selector checkboxes */
+        .month-selector-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; max-height:220px; overflow-y:auto; }
+        .month-cb-item { display:flex; align-items:center; gap:6px; background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:8px; padding:6px 8px; cursor:pointer; transition:all .15s; font-size:0.68rem; }
+        .month-cb-item:hover { background:rgba(99,102,241,0.12); border-color:rgba(99,102,241,0.4); }
+        .month-cb-item.selected { background:rgba(99,102,241,0.2); border-color:rgba(99,102,241,0.6); color:#a5b4fc; font-weight:700; }
+        .month-cb-item.already-paid { background:rgba(16,185,129,0.07); border-color:rgba(16,185,129,0.3); color:#34d399; opacity:0.6; cursor:not-allowed; }
+        .month-cb-item input[type=checkbox] { accent-color:#818cf8; width:13px; height:13px; flex-shrink:0; }
+        .selected-summary { font-size:0.68rem; color:#a5b4fc; margin-top:8px; font-weight:700; padding:6px 10px; background:rgba(99,102,241,0.12); border-radius:8px; }
 
         /* ══ PDF STYLES ══ */
-        #pdf-template { position:fixed; top:0; left:0; width:100%; z-index:-9999; visibility:hidden; pointer-events:none; }
+        #pdf-template { position:absolute; left:-9999px; top:0; width:794px; visibility:hidden; pointer-events:none; background:white; }
+        #pdf-template.rendering { visibility:visible; }
         .pdf-page { background:white; color:#111; padding:20px 30px; font-family:'Segoe UI',Arial,sans-serif; width:750px; }
         .pdf-header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:4px solid #f39c12; padding-bottom:14px; margin-bottom:20px; }
         .pdf-brand { font-size:26px; font-weight:900; color:#f39c12; }
@@ -197,8 +206,8 @@
     </div>
 </div>
 
-<!-- PDF TEMPLATE -->
-<div id="pdf-template"><div class="pdf-page" id="pdfContent"></div></div>
+<!-- PDF TEMPLATE - off screen container -->
+<div id="pdf-template"><div id="pdfContent" style="background:white;font-family:'Segoe UI',Arial,sans-serif;width:794px;color:#111;"></div></div>
 
 <!-- ══════ MODALS ══════ -->
 
@@ -262,27 +271,24 @@
 
         <!-- ── MULTI-MONTH SELECTOR ── -->
         <label class="form-label-small">Number of Months Paying</label>
-        <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
             <select id="pNumMonths" class="form-input" style="margin-bottom:0;flex:1;" onchange="onNumMonthsChange()">
                 <option value="1">1 Month (Normal)</option>
-                <option value="2">2 Months</option>
-                <option value="3">3 Months</option>
-                <option value="4">4 Months</option>
-                <option value="5">5 Months</option>
-                <option value="6">6 Months</option>
+                <option value="multi">Multiple Months (pick below) 📅</option>
             </select>
         </div>
 
-        <!-- Month preview chips -->
+        <!-- Month picker grid — shown when "Multiple Months" is selected -->
         <div id="multiMonthPreview" class="multi-month-preview">
-            <div class="multi-month-preview-title">📅 Months Being Covered</div>
-            <div id="multiMonthChips"></div>
-            <div id="multiMonthNote" style="font-size:0.65rem;color:var(--text-dim);margin-top:6px;"></div>
+            <div class="multi-month-preview-title">📅 Select Months to Pay</div>
+            <div style="font-size:0.62rem;color:var(--text-dim);margin-bottom:8px;">✅ Green = already paid &nbsp;|&nbsp; Tick boxes to select months being paid now</div>
+            <div id="monthSelectorGrid" class="month-selector-grid"></div>
+            <div id="selectedSummary" class="selected-summary" style="display:none;"></div>
         </div>
 
         <div class="row g-2">
             <div class="col-6">
-                <label class="form-label-small">Chit Amount <span id="perMonthLabel" style="color:#a5b4fc;"></span></label>
+                <label class="form-label-small">Chit Amount <span id="perMonthLabel" style="color:#a5b4fc;font-size:0.65rem;"></span></label>
                 <input type="number" id="pChit" class="form-input" placeholder="₹ per month" oninput="calcBalance()">
             </div>
             <div class="col-6">
@@ -459,36 +465,113 @@ function getMonthSlot(dueDates, payDate){
 // ══════════════════════════════════════════
 // MULTI-MONTH HELPERS
 // ══════════════════════════════════════════
-// Get the NEXT unpaid month slot for a member in a group
-async function getNextUnpaidSlot(memberId, groupId, group){
+// Returns set of already-paid month slot indices for a member in a group
+async function getPaidSlots(memberId, groupId, group){
     const allDueDates=getGroupDueDates(group);
-    if(!allDueDates.length) return {slot:0, dueDates:allDueDates};
     const ps=await getCollection('payments');
     const mPays=ps.filter(p=>p.memberId===memberId&&p.groupId===groupId);
-    // Build set of paid month slots
     const paidSlots=new Set();
     mPays.forEach(p=>{
-        if(p.monthSlot!==undefined && p.monthSlot!==null){
-            // Could be multi-month: monthSlots array or single monthSlot
-            if(Array.isArray(p.monthSlots)) p.monthSlots.forEach(s=>paidSlots.add(s));
-            else paidSlots.add(p.monthSlot);
-        } else {
-            // Legacy: guess from date
+        if(Array.isArray(p.monthSlots)) p.monthSlots.forEach(s=>paidSlots.add(s));
+        else if(p.monthSlot!==undefined&&p.monthSlot!==null) paidSlots.add(p.monthSlot);
+        else {
+            // legacy: guess from date
             const slot=getMonthSlot(allDueDates,p.date);
             if(slot>=0) paidSlots.add(slot);
         }
     });
-    // Find first unpaid slot
-    let startSlot=0;
-    for(let i=0;i<allDueDates.length;i++){
-        if(!paidSlots.has(i)){startSlot=i;break;}
-        if(i===allDueDates.length-1) startSlot=allDueDates.length; // all paid
-    }
-    return {slot:startSlot, dueDates:allDueDates, paidSlots};
+    return {paidSlots, allDueDates};
 }
 
-// ══════════════════════════════════════════
-// NAV
+// Get selected month slot indices from the checkbox grid
+function getSelectedMonthSlots(){
+    return Array.from(document.querySelectorAll('#monthSelectorGrid input[type=checkbox]:checked')).map(cb=>parseInt(cb.value));
+}
+
+async function onNumMonthsChange(){
+    const val=document.getElementById('pNumMonths').value;
+    const preview=document.getElementById('multiMonthPreview');
+    const perMonthLabel=document.getElementById('perMonthLabel');
+    document.getElementById('totalChitRef').style.display='none';
+
+    if(val==='1'){
+        preview.style.display='none';
+        perMonthLabel.textContent='';
+    } else {
+        perMonthLabel.textContent='(per month)';
+        preview.style.display='block';
+        await buildMonthSelectorGrid();
+    }
+    calcBalance();
+}
+
+async function buildMonthSelectorGrid(){
+    const mid=document.getElementById('pMember').value;
+    const gid=document.getElementById('pGroup').value;
+    const grid=document.getElementById('monthSelectorGrid');
+    const summary=document.getElementById('selectedSummary');
+    grid.innerHTML='<div style="color:var(--text-dim);font-size:0.72rem;padding:8px;">Select member & group first…</div>';
+    summary.style.display='none';
+    if(!mid||!gid) return;
+
+    const gs=await getCollection('groups');
+    const grp=gs.find(g=>g.id===gid);
+    if(!grp){grid.innerHTML='<div style="color:#f87171;font-size:0.72rem;">Group not found</div>';return;}
+
+    const {paidSlots,allDueDates}=await getPaidSlots(mid,gid,grp);
+    if(!allDueDates.length){grid.innerHTML='<div style="color:#f87171;font-size:0.72rem;">No due dates configured for this group</div>';return;}
+
+    const today=new Date().toISOString().split('T')[0];
+    grid.innerHTML=allDueDates.map((dd,i)=>{
+        const paid=paidSlots.has(i);
+        const isPast=dd<=today;
+        return`<label class="month-cb-item ${paid?'already-paid':''}" onclick="updateSelectedSummary()">
+            <input type="checkbox" value="${i}" ${paid?'disabled checked':''} onchange="updateSelectedSummary();calcBalance();">
+            <div>
+                <div style="font-size:0.65rem;font-weight:700;">${fmtDate(dd)}</div>
+                <div style="font-size:0.55rem;color:${paid?'#34d399':(isPast?'#f87171':'var(--text-dim)')}">${paid?'✅ Paid':(isPast?'⚠ Overdue':'Upcoming')}</div>
+            </div>
+        </label>`;
+    }).join('');
+    updateSelectedSummary();
+}
+
+function updateSelectedSummary(){
+    const slots=getSelectedMonthSlots();
+    // Filter out already-paid (disabled) ones — only count newly selected
+    const newlySelected=Array.from(document.querySelectorAll('#monthSelectorGrid input[type=checkbox]:checked:not(:disabled)')).map(cb=>parseInt(cb.value));
+    const summary=document.getElementById('selectedSummary');
+    if(newlySelected.length===0){
+        summary.style.display='none';
+    } else {
+        summary.style.display='block';
+        summary.textContent=`📅 ${newlySelected.length} month${newlySelected.length>1?'s':''} selected for payment`;
+    }
+    calcBalance();
+}
+
+function calcBalance(){
+    const chit=parseFloat(document.getElementById('pChit').value)||0;
+    const paid=parseFloat(document.getElementById('pPaid').value)||0;
+    const isMulti=document.getElementById('pNumMonths').value==='multi';
+
+    if(isMulti){
+        const newlySelected=Array.from(document.querySelectorAll('#monthSelectorGrid input[type=checkbox]:checked:not(:disabled)')).length;
+        const numMonths=Math.max(1,newlySelected);
+        const totalChit=chit*numMonths;
+        const bal=Math.max(0,totalChit-paid);
+        if(numMonths>1){
+            document.getElementById('totalChitRef').style.display='block';
+            document.getElementById('totalChitVal').textContent=`₹${totalChit.toLocaleString('en-IN')} (${numMonths} × ₹${chit.toLocaleString('en-IN')})`;
+            document.getElementById('totalBalVal').textContent=`₹${bal.toLocaleString('en-IN')}`;
+        } else {
+            document.getElementById('totalChitRef').style.display='none';
+        }
+    } else {
+        const bal=Math.max(0,chit-paid);
+        document.getElementById('totalChitRef').style.display='none';
+    }
+}
 // ══════════════════════════════════════════
 function switchTab(t){
     document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
@@ -771,68 +854,10 @@ function deleteGroupFromModal(){
     });
 }
 
+
 // ══════════════════════════════════════════
 // PAYMENT — MULTI-MONTH SUPPORT
 // ══════════════════════════════════════════
-function calcBalance(){
-    const chit=parseFloat(document.getElementById('pChit').value)||0;
-    const paid=parseFloat(document.getElementById('pPaid').value)||0;
-    const numMonths=parseInt(document.getElementById('pNumMonths').value)||1;
-    const totalChit=chit*numMonths;
-    const bal=Math.max(0,totalChit-paid);
-    if(numMonths>1){
-        document.getElementById('totalChitRef').style.display='block';
-        document.getElementById('totalChitVal').textContent=`₹${totalChit.toLocaleString('en-IN')} (${numMonths} × ₹${chit.toLocaleString('en-IN')})`;
-        document.getElementById('totalBalVal').textContent=`₹${bal.toLocaleString('en-IN')}`;
-    } else {
-        document.getElementById('totalChitRef').style.display='none';
-    }
-}
-
-async function onNumMonthsChange(){
-    const numMonths=parseInt(document.getElementById('pNumMonths').value)||1;
-    const preview=document.getElementById('multiMonthPreview');
-    const perMonthLabel=document.getElementById('perMonthLabel');
-
-    if(numMonths<=1){
-        preview.style.display='none';
-        perMonthLabel.textContent='';
-        document.getElementById('totalChitRef').style.display='none';
-        document.getElementById('perMonthLabel').textContent='';
-    } else {
-        perMonthLabel.textContent=`(per month)`;
-        preview.style.display='block';
-        await updateMonthPreview();
-    }
-    calcBalance();
-}
-
-async function updateMonthPreview(){
-    const mid=document.getElementById('pMember').value;
-    const gid=document.getElementById('pGroup').value;
-    const numMonths=parseInt(document.getElementById('pNumMonths').value)||1;
-    const chipsEl=document.getElementById('multiMonthChips');
-    const noteEl=document.getElementById('multiMonthNote');
-
-    if(!mid||!gid||numMonths<=1){chipsEl.innerHTML='';noteEl.textContent='';return;}
-
-    const gs=await getCollection('groups');
-    const grp=gs.find(g=>g.id===gid);if(!grp)return;
-
-    const {slot,dueDates}=await getNextUnpaidSlot(mid,gid,grp);
-    const chips=[];
-    for(let i=0;i<numMonths;i++){
-        const s=slot+i;
-        if(s<dueDates.length){
-            chips.push(`<span class="multi-month-chip">📅 ${fmtDate(dueDates[s])}</span>`);
-        } else {
-            chips.push(`<span class="multi-month-chip" style="opacity:0.5;">Month ${s+1}</span>`);
-        }
-    }
-    chipsEl.innerHTML=chips.join('');
-    noteEl.textContent=`Covers months ${slot+1}–${slot+numMonths} of the chit group.`;
-}
-
 function resetPaymentForm(){
     document.getElementById('pDate').value=new Date().toISOString().split('T')[0];
     document.getElementById('pMemberSearch').value='';
@@ -849,6 +874,8 @@ function resetPaymentForm(){
     document.getElementById('multiMonthPreview').style.display='none';
     document.getElementById('totalChitRef').style.display='none';
     document.getElementById('perMonthLabel').textContent='';
+    document.getElementById('monthSelectorGrid').innerHTML='';
+    document.getElementById('selectedSummary').style.display='none';
     const sel=document.getElementById('pChitPicked');
     [...sel.options].forEach(o=>o.disabled=false);
     sel.title='';
@@ -888,9 +915,10 @@ async function onGroupChange(){
             sel.title='';
         }
     }
-    // Update multi-month preview if applicable
-    const numMonths=parseInt(document.getElementById('pNumMonths').value)||1;
-    if(numMonths>1) await updateMonthPreview();
+    // Refresh month picker grid if multi-month mode is active
+    if(document.getElementById('pNumMonths').value==='multi'){
+        await buildMonthSelectorGrid();
+    }
 }
 
 async function savePayment(){
@@ -902,7 +930,7 @@ async function savePayment(){
     const paidBy=document.getElementById('pPaidBy').value;
     const chitPicked=document.getElementById('pChitPicked').value;
     const chitPickedBy=document.getElementById('pChitPickedBy').value.trim();
-    const numMonths=parseInt(document.getElementById('pNumMonths').value)||1;
+    const isMulti=document.getElementById('pNumMonths').value==='multi';
 
     if(!mid)return showToast('❌ Select a member',false);
     if(!gid)return showToast('❌ Select a group',false);
@@ -915,45 +943,38 @@ async function savePayment(){
         if(alreadyPicked)return showToast('❌ This member already picked the chit',false);
     }
 
-    // Get the group to find month slots
-    const gs=await getCollection('groups');
-    const grp=gs.find(g=>g.id===gid);
-    const {slot:startSlot,dueDates}=grp?await getNextUnpaidSlot(mid,gid,grp):{slot:0,dueDates:[]};
-    const monthSlots=[];
-    for(let i=0;i<numMonths;i++) monthSlots.push(startSlot+i);
-
-    // Calculate balance: total chit value for all months minus what was paid
-    const totalChit=chitPerMonth*numMonths;
-    const balance=Math.max(0,totalChit-paid);
-
-    if(numMonths===1){
-        // Single month — save as before (backward compatible)
+    if(isMulti){
+        // Get ONLY the newly-selected (non-disabled) checkboxes
+        const monthSlots=Array.from(document.querySelectorAll('#monthSelectorGrid input[type=checkbox]:checked:not(:disabled)')).map(cb=>parseInt(cb.value));
+        if(monthSlots.length===0) return showToast('❌ Select at least one month in the picker',false);
+        const numMonths=monthSlots.length;
+        const totalChit=chitPerMonth*numMonths;
+        const balance=Math.max(0,totalChit-paid);
+        await db.collection('payments').add({
+            memberId:mid, groupId:gid, date,
+            chit:chitPerMonth, paid, balance, paidBy, chitPicked, chitPickedBy,
+            numMonths,
+            monthSlots,
+            monthSlot:monthSlots[0],   // first slot for sorting
+            paidPerMonth:paid/numMonths,
+            balPerMonth:balance/numMonths
+        });
+        showToast(`✅ ${numMonths}-month payment saved!`);
+    } else {
+        // Single month — determine slot from date
+        const gs=await getCollection('groups');
+        const grp=gs.find(g=>g.id===gid);
+        const dueDates=grp?getGroupDueDates(grp):[];
+        const slotIdx=getMonthSlot(dueDates,date);
+        const balance=Math.max(0,chitPerMonth-paid);
         await db.collection('payments').add({
             memberId:mid, groupId:gid, date,
             chit:chitPerMonth, paid, balance, paidBy, chitPicked, chitPickedBy,
             numMonths:1,
-            monthSlot:monthSlots[0]!==undefined?monthSlots[0]:null,
-            monthSlots:[monthSlots[0]||0]
+            monthSlot:slotIdx>=0?slotIdx:null,
+            monthSlots:slotIdx>=0?[slotIdx]:[]
         });
         showToast('✅ Payment saved!');
-    } else {
-        // Multi-month — save as ONE record with metadata
-        // The paid amount is distributed proportionally across months for display
-        const paidPerMonth=paid/numMonths;
-        const balPerMonth=balance/numMonths;
-        await db.collection('payments').add({
-            memberId:mid, groupId:gid, date,
-            chit:chitPerMonth,           // chit per month
-            paid,                         // total paid for all months
-            balance,                      // total balance
-            paidBy, chitPicked, chitPickedBy,
-            numMonths,                    // ← KEY: how many months this covers
-            monthSlots,                   // ← array of month slot indices
-            monthSlot:monthSlots[0]||0,   // first month slot (for sorting)
-            paidPerMonth,
-            balPerMonth
-        });
-        showToast(`✅ ${numMonths}-month payment saved!`);
     }
 
     closeModal('paymentModal');
@@ -1199,6 +1220,40 @@ async function executeRestore(){
 }
 
 // ══════════════════════════════════════════
+// PDF RENDER HELPER
+// ══════════════════════════════════════════
+function renderPDF(filename){
+    return new Promise((resolve)=>{
+        const wrapper=document.getElementById('pdf-template');
+        const content=document.getElementById('pdfContent');
+        wrapper.classList.add('rendering');
+        wrapper.style.visibility='visible';
+
+        const opt={
+            margin:[8,8,8,8],
+            filename,
+            image:{type:'jpeg',quality:0.97},
+            html2canvas:{scale:2,useCORS:true,logging:false,allowTaint:false,backgroundColor:'#ffffff'},
+            jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+            pagebreak:{mode:['avoid-all','css','legacy']}
+        };
+
+        setTimeout(()=>{
+            html2pdf().set(opt).from(content).save().then(()=>{
+                wrapper.classList.remove('rendering');
+                wrapper.style.visibility='hidden';
+                resolve();
+            }).catch(err=>{
+                console.error('PDF error:',err);
+                wrapper.classList.remove('rendering');
+                wrapper.style.visibility='hidden';
+                resolve();
+            });
+        },400);
+    });
+}
+
+// ══════════════════════════════════════════
 // PDF — MEMBER STATEMENT
 // ══════════════════════════════════════════
 async function generateMemberPDF(mid){
@@ -1272,6 +1327,7 @@ async function generateMemberPDF(mid){
     }).join('');
 
     document.getElementById('pdfContent').innerHTML=`
+        <div class="pdf-page">
         <div class="pdf-header">
             <div><div class="pdf-brand">🏆 AK CHIT FUNDS</div><div class="pdf-brand-sub">Chit Fund Management · Admin Report</div></div>
             <div><div class="pdf-right-title">MEMBER STATEMENT</div><div class="pdf-right-sub">Generated: ${today}</div></div>
@@ -1293,25 +1349,23 @@ async function generateMemberPDF(mid){
         </div>
         <div class="pdf-section-title">Payment History — Group Wise</div>
         ${groupSections||'<p style="color:#888;">No payments recorded.</p>'}
-        <div class="pdf-footer"><span>AK Chit Funds · Admin Portal</span><span>Member: ${m.name} · ${today}</span><span>CONFIDENTIAL</span></div>`;
+        <div class="pdf-footer"><span>AK Chit Funds · Admin Portal</span><span>Member: ${m.name} · ${today}</span><span>CONFIDENTIAL</span></div>
+        </div>`;
 
-    const el=document.getElementById('pdf-template');
-    el.style.visibility='visible';
-    const opt={margin:0,filename:`AKChitFunds_${m.name.replace(/\s+/g,'_')}_Statement.pdf`,image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:true,logging:false},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}};
-    setTimeout(()=>{html2pdf().set(opt).from(document.getElementById('pdfContent')).save().then(()=>{el.style.visibility='hidden';showToast('✅ PDF Downloaded!',true);});},300);
+    await renderPDF(`AKChitFunds_${m.name.replace(/\s+/g,'_')}_Statement.pdf`);
+    showToast('✅ PDF Downloaded!',true);
 }
 
 // ══════════════════════════════════════════
-// PDF — GROUP REPORT
+// PDF — GROUP REPORT (FIXED)
 // ══════════════════════════════════════════
 async function generateGroupPDF(gid){
     showToast('⏳ Generating Group PDF…',true);
     const gs=await getCollection('groups');const ms=await getCollection('members');const ps=await getCollection('payments');
-    const g=gs.find(x=>x.id===gid);if(!g)return;
+    const g=gs.find(x=>x.id===gid);if(!g){showToast('❌ Group not found',false);return;}
     const gMs=ms.filter(m=>m.groupIds&&m.groupIds.includes(g.id));
     const gPays=ps.filter(p=>p.groupId===gid);
     const today=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
-    const todayStr=new Date().toISOString().split('T')[0];
     const totalPaid=gPays.reduce((s,p)=>s+(parseFloat(p.paid)||0),0);
     const totalBal=gPays.reduce((s,p)=>s+(parseFloat(p.balance)||0),0);
     const totalPicked=gPays.filter(p=>p.chitPicked==='Yes').length;
@@ -1321,6 +1375,7 @@ async function generateGroupPDF(gid){
     const left=Math.max(0,totalMonths-elapsed);const pct=Math.min(100,Math.round(elapsed/totalMonths*100));
     const allDueDates=getGroupDueDates(g);
 
+    // ── Member Summary table
     const summaryRows=gMs.map((m,i)=>{
         const mp=gPays.filter(p=>p.memberId===m.id);
         const mPaid=mp.reduce((s,p)=>s+(parseFloat(p.paid)||0),0);
@@ -1333,16 +1388,18 @@ async function generateGroupPDF(gid){
             <td><strong>${m.name}</strong>${m.phone?`<br><span style="font-size:9px;color:#888;">${m.phone}</span>`:''}</td>
             <td style="color:#065f46;font-weight:700;">₹${mPaid.toLocaleString('en-IN')}</td>
             <td style="color:${mBal>0?'#92400e':'#065f46'};font-weight:700;">₹${mBal.toLocaleString('en-IN')}</td>
-            <td>${mp.length} (${monthsCovered} mo.)</td>
+            <td>${mp.length} (${monthsCovered}/${totalMonths} mo.)</td>
             <td>${lastPay?fmtDate(lastPay.date):'—'}</td>
             <td>${mPicked>0?`<span class="pdf-chit-badge">✅ ${mPicked}x</span>`:'—'}</td>
         </tr>`;
     }).join('');
 
+    // ── Per-member detailed payment history
     const detailSections=gMs.map((m,mi)=>{
         const mp=gPays.filter(p=>p.memberId===m.id).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
         const mPaid=mp.reduce((s,p)=>s+(parseFloat(p.paid)||0),0);
         const mBal=mp.reduce((s,p)=>s+(parseFloat(p.balance)||0),0);
+        const monthsCovered=mp.reduce((s,p)=>s+(p.numMonths||1),0);
 
         const rows=mp.map((p,idx)=>{
             const cp=p.chitPicked==='Yes';
@@ -1358,65 +1415,136 @@ async function generateGroupPDF(gid){
             }
             return`<tr class="${cp?'pdf-chit-row':(isMulti?'pdf-multi-row':'')}">
                 <td>${idx+1}</td>
-                <td style="font-weight:700;">${monthLabel}${isMulti?`<br><span class="pdf-multi-badge">📅 ${p.numMonths} months</span>`:''}</td>
+                <td>${monthLabel}${isMulti?`<br><span class="pdf-multi-badge">📅 ${p.numMonths} months</span>`:''}</td>
                 <td>${fmtDate(p.date)}</td>
                 <td>₹${(parseFloat(p.chit)||0).toLocaleString('en-IN')}${isMulti?` × ${p.numMonths}`:''}</td>
                 <td style="color:#065f46;font-weight:700;">₹${(parseFloat(p.paid)||0).toLocaleString('en-IN')}</td>
-                <td style="color:#92400e;font-weight:700;">₹${(parseFloat(p.balance)||0).toLocaleString('en-IN')}</td>
+                <td style="color:${(parseFloat(p.balance)||0)>0?'#92400e':'#065f46'};font-weight:700;">₹${(parseFloat(p.balance)||0).toLocaleString('en-IN')}</td>
                 <td>${p.paidBy||'—'}</td>
                 <td>${cp?`<span class="pdf-chit-badge">✅ PICKED</span>`:'—'}</td>
             </tr>`;
         }).join('');
 
-        if(!mp.length)return`<div style="margin-bottom:14px;"><div style="font-size:12px;font-weight:800;">${mi+1}. ${m.name}</div><p style="font-size:10px;color:#888;">No payments recorded.</p></div>`;
-        return`<div style="margin-bottom:22px;page-break-inside:avoid;">
-            <table style="width:100%;margin-bottom:6px;"><tr>
-                <td><div style="font-size:12px;font-weight:800;">${mi+1}. ${m.name}${m.phone?` <span style="font-size:10px;color:#888;">· ${m.phone}</span>`:''}</div></td>
-                <td style="text-align:right;font-size:10px;color:#888;">Paid: ₹${mPaid.toLocaleString('en-IN')} · Bal: ₹${mBal.toLocaleString('en-IN')}</td>
-            </tr></table>
-            <table class="pdf-table"><thead><tr><th>#</th><th>Month(s) Covered</th><th>Pay Date</th><th>Chit/Mo</th><th>Total Paid</th><th>Balance</th><th>Mode</th><th>Chit?</th></tr></thead>
-            <tbody>${rows}<tr class="pdf-total-row"><td colspan="4"><strong>Total</strong></td><td><strong>₹${mPaid.toLocaleString('en-IN')}</strong></td><td><strong>₹${mBal.toLocaleString('en-IN')}</strong></td><td colspan="2"></td></tr></tbody></table>
+        return`<div style="margin-bottom:18px;page-break-inside:avoid;">
+            <table style="width:100%;border-collapse:collapse;margin-bottom:5px;">
+                <tr>
+                    <td style="font-size:12px;font-weight:800;padding:6px 0;">${mi+1}. ${m.name}${m.phone?` <span style="font-size:10px;color:#888;font-weight:400;">· ${m.phone}</span>`:''}</td>
+                    <td style="text-align:right;font-size:10px;color:#555;">
+                        Paid: <strong style="color:#065f46;">₹${mPaid.toLocaleString('en-IN')}</strong> &nbsp;
+                        Bal: <strong style="color:${mBal>0?'#92400e':'#065f46'};">₹${mBal.toLocaleString('en-IN')}</strong> &nbsp;
+                        Months: <strong>${monthsCovered}/${totalMonths}</strong>
+                    </td>
+                </tr>
+            </table>
+            ${mp.length===0?`<p style="font-size:10px;color:#999;padding:6px 0;">No payments recorded.</p>`:`
+            <table class="pdf-table">
+                <thead><tr><th>#</th><th>Month(s) Covered</th><th>Pay Date</th><th>Chit/Mo</th><th>Paid</th><th>Balance</th><th>Mode</th><th>Chit?</th></tr></thead>
+                <tbody>
+                    ${rows}
+                    <tr class="pdf-total-row">
+                        <td colspan="4"><strong>Subtotal</strong></td>
+                        <td><strong>₹${mPaid.toLocaleString('en-IN')}</strong></td>
+                        <td><strong>₹${mBal.toLocaleString('en-IN')}</strong></td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tbody>
+            </table>`}
         </div>`;
     }).join('');
 
     document.getElementById('pdfContent').innerHTML=`
+    <div class="pdf-page">
+        <!-- HEADER -->
         <div class="pdf-header">
-            <div><div class="pdf-brand">🏆 AK CHIT FUNDS</div><div class="pdf-brand-sub">Chit Fund Management · Admin Report</div></div>
-            <div><div class="pdf-right-title">GROUP STATEMENT</div><div class="pdf-right-sub">Generated: ${today}</div></div>
+            <div>
+                <div class="pdf-brand">🏆 AK CHIT FUNDS</div>
+                <div class="pdf-brand-sub">Chit Fund Management · Group Report</div>
+            </div>
+            <div>
+                <div class="pdf-right-title">GROUP STATEMENT</div>
+                <div class="pdf-right-sub">Generated: ${today}</div>
+            </div>
         </div>
+
+        <!-- GROUP INFO BOX -->
         <div class="pdf-member-box">
-            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px;">
-                <div>
+            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px;align-items:flex-start;">
+                <div style="flex:1;min-width:200px;">
                     <div class="pdf-member-name">📂 ${g.name}</div>
-                    <div class="pdf-member-sub">Duration: ${totalMonths} months · Start: <strong>${fmtDate(g.startDate||g.gStart||'')}</strong></div>
-                    <div class="pdf-member-sub">Monthly Due: <strong>${g.dueDay?`${g.dueDay}${['st','nd','rd'][((g.dueDay%100-11)%10)-1]||'th'} of every month`:'—'}</strong></div>
-                    <div class="pdf-member-sub">Month ${elapsed}/${totalMonths} · <strong>${left} pending</strong></div>
-                    <div style="margin-top:8px;"><div class="pdf-progress-outer"><div class="pdf-progress-inner" style="width:${pct}%"></div></div>
-                    <div style="font-size:9px;color:#888;text-align:right;margin-top:2px;">${pct}% complete</div></div>
+                    <div class="pdf-member-sub">📅 Duration: <strong>${totalMonths} months</strong> &nbsp;|&nbsp; Start: <strong>${fmtDate(g.startDate||g.gStart||'')}</strong></div>
+                    <div class="pdf-member-sub">🗓 Monthly Due: <strong>${g.dueDay?`${g.dueDay}${['st','nd','rd'][((g.dueDay%100-11)%10)-1]||'th'} of every month`:'—'}</strong></div>
+                    <div class="pdf-member-sub">📊 Progress: Month <strong>${elapsed}/${totalMonths}</strong> &nbsp;·&nbsp; <strong>${left} months pending</strong></div>
+                    <div style="margin-top:10px;">
+                        <div class="pdf-progress-outer" style="height:10px;">
+                            <div class="pdf-progress-inner" style="width:${pct}%;"></div>
+                        </div>
+                        <div style="font-size:9px;color:#888;text-align:right;margin-top:2px;">${pct}% complete</div>
+                    </div>
                 </div>
-                <div class="pdf-stats-row">
-                    <div class="pdf-stat-box"><div class="pdf-stat-val" style="color:#065f46;">₹${totalPaid.toLocaleString('en-IN')}</div><div class="pdf-stat-lbl">Collected</div></div>
-                    <div class="pdf-stat-box"><div class="pdf-stat-val" style="color:#92400e;">₹${totalBal.toLocaleString('en-IN')}</div><div class="pdf-stat-lbl">Balance</div></div>
-                    <div class="pdf-stat-box"><div class="pdf-stat-val">${gMs.length}</div><div class="pdf-stat-lbl">Members</div></div>
-                    <div class="pdf-stat-box"><div class="pdf-stat-val" style="color:#065f46;">${totalPicked}</div><div class="pdf-stat-lbl">Chits Picked</div></div>
+                <div>
+                    <div class="pdf-stats-row" style="gap:8px;">
+                        <div class="pdf-stat-box">
+                            <div class="pdf-stat-val" style="color:#065f46;">₹${totalPaid.toLocaleString('en-IN')}</div>
+                            <div class="pdf-stat-lbl">Total Collected</div>
+                        </div>
+                        <div class="pdf-stat-box">
+                            <div class="pdf-stat-val" style="color:#92400e;">₹${totalBal.toLocaleString('en-IN')}</div>
+                            <div class="pdf-stat-lbl">Total Balance</div>
+                        </div>
+                        <div class="pdf-stat-box">
+                            <div class="pdf-stat-val">${gMs.length}</div>
+                            <div class="pdf-stat-lbl">Members</div>
+                        </div>
+                        <div class="pdf-stat-box">
+                            <div class="pdf-stat-val" style="color:#065f46;">${totalPicked}</div>
+                            <div class="pdf-stat-lbl">Chits Picked</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="pdf-section-title">Member Summary</div>
-        <table class="pdf-table" style="margin-bottom:24px;">
-            <thead><tr><th>#</th><th>Member</th><th>Total Paid</th><th>Balance</th><th>Entries (Months)</th><th>Last Payment</th><th>Chit Picked</th></tr></thead>
-            <tbody>${summaryRows}<tr class="pdf-total-row"><td colspan="2"><strong>TOTAL (${gMs.length})</strong></td><td><strong>₹${totalPaid.toLocaleString('en-IN')}</strong></td><td><strong>₹${totalBal.toLocaleString('en-IN')}</strong></td><td><strong>${gPays.length}</strong></td><td colspan="2">${totalPicked} picked</td></tr></tbody>
+
+        <!-- MEMBER SUMMARY TABLE -->
+        <div class="pdf-section-title">👥 Member Summary (${gMs.length} Members)</div>
+        <table class="pdf-table" style="margin-bottom:20px;">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Member Name</th>
+                    <th>Total Paid</th>
+                    <th>Balance</th>
+                    <th>Payments (Months)</th>
+                    <th>Last Payment</th>
+                    <th>Chit Picked</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${summaryRows||`<tr><td colspan="7" style="text-align:center;color:#888;padding:12px;">No members in this group</td></tr>`}
+                <tr class="pdf-total-row">
+                    <td colspan="2"><strong>GRAND TOTAL (${gMs.length} members)</strong></td>
+                    <td><strong style="color:#065f46;">₹${totalPaid.toLocaleString('en-IN')}</strong></td>
+                    <td><strong style="color:${totalBal>0?'#92400e':'#065f46'};">₹${totalBal.toLocaleString('en-IN')}</strong></td>
+                    <td><strong>${gPays.length} entries</strong></td>
+                    <td colspan="2"><strong>${totalPicked} chit${totalPicked!==1?'s':''} picked</strong></td>
+                </tr>
+            </tbody>
         </table>
-        <div class="pdf-section-title">Detailed Payment History — Member Wise</div>
-        ${detailSections}
-        <div class="pdf-footer"><span>AK Chit Funds</span><span>Group: ${g.name} · ${today}</span><span>CONFIDENTIAL</span></div>`;
 
-    const el=document.getElementById('pdf-template');
-    el.style.visibility='visible';
-    const opt={margin:0,filename:`AKChitFunds_Group_${g.name.replace(/\s+/g,'_')}_Report.pdf`,image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:true,logging:false},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}};
-    setTimeout(()=>{html2pdf().set(opt).from(document.getElementById('pdfContent')).save().then(()=>{el.style.visibility='hidden';showToast('✅ Group PDF Downloaded!',true);});},300);
+        <!-- DETAILED PAYMENT HISTORY -->
+        <div class="pdf-section-title" style="page-break-before:auto;">📋 Detailed Payment History — Member Wise</div>
+        ${detailSections||'<p style="color:#888;font-size:11px;">No payment records found.</p>'}
+
+        <!-- FOOTER -->
+        <div class="pdf-footer">
+            <span>AK Chit Funds · Admin Portal</span>
+            <span>Group: <strong>${g.name}</strong> · ${today}</span>
+            <span>CONFIDENTIAL</span>
+        </div>
+    </div>`;
+
+    await renderPDF(`AKChitFunds_Group_${g.name.replace(/\s+/g,'_')}_Report.pdf`);
+    showToast('✅ Group PDF Downloaded!',true);
 }
-
 // ══════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════
