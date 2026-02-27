@@ -108,7 +108,34 @@
         .month-cb-item input[type=checkbox] { accent-color:#818cf8; width:13px; height:13px; flex-shrink:0; }
         .selected-summary { font-size:0.68rem; color:#a5b4fc; margin-top:8px; font-weight:700; padding:6px 10px; background:rgba(99,102,241,0.12); border-radius:8px; }
 
-        /* ══ PDF STYLES ══ */
+        /* ══ AUTH / LOGIN ══ */
+        #loginScreen { position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg-dark); z-index:9000; display:flex; align-items:center; justify-content:center; padding:20px; }
+        .login-card { background:var(--card-bg); border:1px solid var(--border); border-radius:28px; padding:32px 28px; width:100%; max-width:400px; }
+        .login-brand { text-align:center; margin-bottom:28px; }
+        .login-brand-title { font-size:1.6rem; font-weight:900; color:#f39c12; }
+        .login-brand-sub { font-size:0.75rem; color:var(--text-dim); margin-top:4px; }
+        .login-step { display:none; }
+        .login-step.active { display:block; }
+        .login-phone-input { display:flex; gap:8px; }
+        .phone-prefix { background:var(--input-bg); border:1px solid var(--border); color:var(--text-dim); padding:12px 14px; border-radius:12px; font-size:0.9rem; flex-shrink:0; }
+        .login-info-box { background:rgba(243,156,18,.08); border:1px solid rgba(243,156,18,.25); border-radius:12px; padding:12px 14px; font-size:0.78rem; color:#f39c12; margin-bottom:14px; }
+        .pending-box { background:rgba(245,158,11,.08); border:1px solid rgba(245,158,11,.3); border-radius:16px; padding:20px; text-align:center; }
+        .denied-box { background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.3); border-radius:16px; padding:20px; text-align:center; }
+        /* Access Requests panel (admin) */
+        .req-card { background:var(--input-bg); border:1px solid var(--border); border-radius:12px; padding:12px 14px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+        .req-name { font-weight:700; font-size:0.85rem; }
+        .req-phone { font-size:0.7rem; color:var(--text-dim); }
+        .btn-approve { background:linear-gradient(135deg,#10b981,#059669); color:white; border:none; border-radius:8px; padding:6px 14px; font-size:0.72rem; font-weight:700; cursor:pointer; }
+        .btn-deny { background:rgba(239,68,68,.15); border:1px solid rgba(239,68,68,.4); color:#f87171; border-radius:8px; padding:6px 14px; font-size:0.72rem; font-weight:700; cursor:pointer; }
+        .badge-pending { background:rgba(245,158,11,.2); color:#fbbf24; border:1px solid rgba(245,158,11,.4); border-radius:5px; padding:2px 8px; font-size:0.62rem; font-weight:700; }
+        .badge-approved { background:rgba(16,185,129,.2); color:#34d399; border:1px solid rgba(16,185,129,.4); border-radius:5px; padding:2px 8px; font-size:0.62rem; font-weight:700; }
+        .badge-denied { background:rgba(239,68,68,.15); color:#f87171; border:1px solid rgba(239,68,68,.3); border-radius:5px; padding:2px 8px; font-size:0.62rem; font-weight:700; }
+        /* Member-only view tweaks */
+        body.member-mode .nav-bar { display:none !important; }
+        body.member-mode #homeTab .row.g-2 { display:none; }
+        body.member-mode #homeTab > .d-flex:first-of-type { display:none !important; }
+        body.member-mode #homeTab .d-flex.gap-2:last-of-type { display:none !important; }
+        body.member-mode .app-header .badge { display:none; }
         #pdf-template { position:absolute; left:-9999px; top:0; width:794px; visibility:hidden; pointer-events:none; background:white; }
         #pdf-template.rendering { visibility:visible; }
         .pdf-page { background:white; color:#111; padding:20px 30px; font-family:'Segoe UI',Arial,sans-serif; width:750px; }
@@ -151,11 +178,23 @@
 <div class="container py-2">
     <div class="app-header">
         <div class="brand">🏆 AK Chit Funds <small style="font-size:0.5em;color:#2ecc71;">☁ CLOUD</small></div>
-        <span class="badge text-warning border border-warning px-2">ADMIN</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+            <span id="headerRoleBadge" class="badge text-warning border border-warning px-2">ADMIN</span>
+            <button id="accessReqBtn" onclick="openAccessRequests()" title="Access Requests" style="display:none;background:rgba(243,156,18,.12);border:1px solid rgba(243,156,18,.3);color:#f39c12;border-radius:10px;padding:5px 10px;font-size:0.75rem;font-weight:700;cursor:pointer;position:relative;">
+                🔐 Requests <span id="pendingCount" style="display:none;background:#ef4444;color:white;border-radius:50%;width:16px;height:16px;font-size:0.55rem;font-weight:900;position:absolute;top:-5px;right:-5px;display:flex;align-items:center;justify-content:center;"></span>
+            </button>
+            <button id="logoutBtn" onclick="handleLogout()" style="display:none;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#f87171;border-radius:10px;padding:5px 10px;font-size:0.75rem;font-weight:700;cursor:pointer;">⏻ Logout</button>
+        </div>
     </div>
 
     <!-- HOME TAB -->
     <div id="homeTab" class="tab-content active">
+        <!-- Member welcome banner (hidden for admin) -->
+        <div id="memberWelcomeBanner" style="display:none;background:linear-gradient(135deg,rgba(243,156,18,.15),rgba(243,156,18,.05));border:1px solid rgba(243,156,18,.3);border-radius:16px;padding:14px 16px;margin-top:12px;margin-bottom:4px;">
+            <div style="font-size:0.72rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;">Welcome back</div>
+            <div id="memberWelcomeName" style="font-size:1.1rem;font-weight:800;color:#f39c12;"></div>
+            <div id="memberWelcomePhone" style="font-size:0.72rem;color:var(--text-dim);margin-top:2px;"></div>
+        </div>
         <div class="row g-2 mt-3 text-center">
             <div class="col-4"><div class="stat-card"><span class="stat-num" id="memberCount">-</span><span class="stat-label">Members</span></div></div>
             <div class="col-4"><div class="stat-card"><span class="stat-num" id="groupCount">-</span><span class="stat-label">Groups</span></div></div>
@@ -378,6 +417,67 @@
     </div>
 </div>
 
+<!-- ══════ LOGIN SCREEN ══════ -->
+<div id="loginScreen">
+    <div class="login-card">
+        <div class="login-brand">
+            <div style="font-size:2.5rem;margin-bottom:8px;">🏆</div>
+            <div class="login-brand-title">AK Chit Funds</div>
+            <div class="login-brand-sub">Enter your mobile number to continue</div>
+        </div>
+
+        <!-- STEP 1: Enter phone -->
+        <div id="loginStep1" class="login-step active">
+            <label class="form-label-small">Mobile Number</label>
+            <div class="login-phone-input">
+                <span class="phone-prefix">+91</span>
+                <input type="tel" id="loginPhone" class="form-input" style="margin-bottom:0;" placeholder="10-digit mobile number" maxlength="10" oninput="this.value=this.value.replace(/\D/g,'')">
+            </div>
+            <div style="height:12px;"></div>
+            <button class="btn-save" onclick="handleLoginSubmit()">🔐 Continue</button>
+        </div>
+
+        <!-- STEP 2: Pending approval -->
+        <div id="loginStep2" class="login-step">
+            <div class="pending-box">
+                <div style="font-size:2rem;margin-bottom:10px;">⏳</div>
+                <div style="font-weight:800;font-size:1rem;margin-bottom:6px;">Access Requested</div>
+                <div style="font-size:0.8rem;color:var(--text-dim);margin-bottom:16px;">Your request has been sent to the admin. Please wait for approval.</div>
+                <div id="pendingPhone" style="font-size:0.85rem;color:#f39c12;font-weight:700;margin-bottom:16px;"></div>
+                <button class="btn-cancel" onclick="checkAccessStatus()" style="margin-bottom:8px;">🔄 Check Status</button>
+                <button class="btn-cancel" onclick="goBackToLogin()">← Back</button>
+            </div>
+        </div>
+
+        <!-- STEP 3: Denied -->
+        <div id="loginStep3" class="login-step">
+            <div class="denied-box">
+                <div style="font-size:2rem;margin-bottom:10px;">🚫</div>
+                <div style="font-weight:800;color:#f87171;margin-bottom:6px;">Access Denied</div>
+                <div style="font-size:0.8rem;color:var(--text-dim);margin-bottom:16px;">Your access request was denied. Contact the admin for assistance.</div>
+                <button class="btn-cancel" onclick="goBackToLogin()">← Try Another Number</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════ ACCESS REQUESTS MODAL (admin) ══════ -->
+<div id="accessModal" class="modal-overlay">
+    <div class="modal-content-custom" style="max-width:500px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div class="modal-title" style="margin-bottom:0;">🔐 Access Requests</div>
+            <button onclick="closeModal('accessModal')" style="background:none;border:none;color:var(--text-dim);font-size:1.2rem;cursor:pointer;">✕</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+            <button onclick="filterRequests('pending')" id="reqTabPending" class="btn-save" style="flex:1;padding:8px;font-size:0.75rem;margin-bottom:0;">⏳ Pending</button>
+            <button onclick="filterRequests('approved')" id="reqTabApproved" class="btn-cancel" style="flex:1;padding:8px;font-size:0.75rem;">✅ Approved</button>
+            <button onclick="filterRequests('all')" id="reqTabAll" class="btn-cancel" style="flex:1;padding:8px;font-size:0.75rem;">📋 All</button>
+        </div>
+        <div id="accessRequestsList" style="max-height:400px;overflow-y:auto;"></div>
+        <button class="btn-cancel" onclick="closeModal('accessModal')" style="margin-top:10px;">Close</button>
+    </div>
+</div>
+
 <!-- BOTTOM NAV -->
 <div class="nav-bar">
     <div class="nav-item active" id="navHome" onclick="switchTab('home')">🏠<br>Home</div>
@@ -593,6 +693,16 @@ async function migrateData(){
 async function updateUI(){
     const m=await getCollection('members');const g=await getCollection('groups');const p=await getCollection('payments');
     ALL_MEMBERS=m;
+    if(CURRENT_USER && CURRENT_USER.role==='member'){
+        // Member sees only their own group count and paid today
+        const myPays=p.filter(x=>x.memberId===CURRENT_USER.memberId);
+        const myGroups=new Set(myPays.map(x=>x.groupId));
+        document.getElementById('memberCount').innerText='—';
+        document.getElementById('groupCount').innerText=myGroups.size;
+        const today=new Date().toISOString().split('T')[0];
+        document.getElementById('todayColl').innerText=fmtAmt(myPays.filter(x=>x.date===today).reduce((s,x)=>s+(parseFloat(x.paid)||0),0));
+        return;
+    }
     document.getElementById('memberCount').innerText=m.length;
     document.getElementById('groupCount').innerText=g.length;
     const today=new Date().toISOString().split('T')[0];
@@ -1557,10 +1667,265 @@ async function generateGroupPDF(gid){
     showToast('✅ Group PDF Downloaded!',true);
 }
 // ══════════════════════════════════════════
+// AUTH SYSTEM
+// ══════════════════════════════════════════
+const ADMIN_PHONE = '9876543210'; // ← Change this to your admin mobile number
+let CURRENT_USER = null; // {phone, role:'admin'|'member', memberId, name}
+
+// Session persistence via sessionStorage
+function saveSession(user){ sessionStorage.setItem('akcf_user', JSON.stringify(user)); }
+function loadSession(){ try{ return JSON.parse(sessionStorage.getItem('akdf_user'))||null; }catch(e){ return null; } }
+function clearSession(){ sessionStorage.removeItem('akdf_user'); sessionStorage.removeItem('akdf_user'); }
+
+async function initAuth(){
+    // Check existing session
+    const saved = sessionStorage.getItem('akdf_session');
+    if(saved){
+        try{
+            const u = JSON.parse(saved);
+            CURRENT_USER = u;
+            applyUserSession(u);
+            return;
+        }catch(e){}
+    }
+    // Show login screen
+    document.getElementById('loginScreen').style.display='flex';
+}
+
+async function handleLoginSubmit(){
+    const phone = document.getElementById('loginPhone').value.trim();
+    if(phone.length !== 10){ showToast('❌ Enter valid 10-digit mobile number', false); return; }
+
+    showToast('⏳ Checking access…', true);
+
+    // Check if admin
+    if(phone === ADMIN_PHONE){
+        const user = {phone, role:'admin', name:'Admin'};
+        CURRENT_USER = user;
+        sessionStorage.setItem('akdf_session', JSON.stringify(user));
+        applyUserSession(user);
+        return;
+    }
+
+    // Check if this phone matches an approved member
+    const members = await getCollection('members');
+    const matched = members.find(m => (m.phone||'').replace(/\D/g,'').slice(-10) === phone);
+
+    if(matched){
+        // Check access request status
+        const reqs = await db.collection('accessRequests').where('phone','==',phone).get();
+        if(!reqs.empty){
+            const req = reqs.docs[0].data();
+            if(req.status === 'approved'){
+                const user = {phone, role:'member', memberId: matched.id, name: matched.name};
+                CURRENT_USER = user;
+                sessionStorage.setItem('akdf_session', JSON.stringify(user));
+                applyUserSession(user);
+                return;
+            } else if(req.status === 'denied'){
+                showLoginStep('loginStep3');
+                return;
+            } else {
+                // Still pending
+                document.getElementById('pendingPhone').textContent = `+91 ${phone}`;
+                showLoginStep('loginStep2');
+                return;
+            }
+        } else {
+            // First time — create access request
+            await db.collection('accessRequests').add({
+                phone, name: matched.name, memberId: matched.id,
+                status: 'pending', requestedAt: new Date().toISOString()
+            });
+            document.getElementById('pendingPhone').textContent = `+91 ${phone}`;
+            showLoginStep('loginStep2');
+            showToast('📨 Access request sent to admin', true);
+            return;
+        }
+    } else {
+        // Phone not found in members
+        showToast('❌ Mobile number not registered. Contact admin.', false);
+        return;
+    }
+}
+
+async function checkAccessStatus(){
+    const phone = document.getElementById('loginPhone').value.trim() ||
+                  (CURRENT_USER && CURRENT_USER.phone) || '';
+    if(!phone){ goBackToLogin(); return; }
+
+    const reqs = await db.collection('accessRequests').where('phone','==',phone).get();
+    if(!reqs.empty){
+        const req = reqs.docs[0].data();
+        if(req.status === 'approved'){
+            const members = await getCollection('members');
+            const matched = members.find(m => (m.phone||'').replace(/\D/g,'').slice(-10) === phone);
+            if(matched){
+                const user = {phone, role:'member', memberId: matched.id, name: matched.name};
+                CURRENT_USER = user;
+                sessionStorage.setItem('akdf_session', JSON.stringify(user));
+                applyUserSession(user);
+                return;
+            }
+        } else if(req.status === 'denied'){
+            showLoginStep('loginStep3');
+            return;
+        }
+    }
+    showToast('⏳ Still pending approval', true);
+}
+
+function showLoginStep(stepId){
+    ['loginStep1','loginStep2','loginStep3'].forEach(id=>{
+        document.getElementById(id).classList.remove('active');
+    });
+    document.getElementById(stepId).classList.add('active');
+}
+
+function goBackToLogin(){
+    document.getElementById('loginPhone').value='';
+    showLoginStep('loginStep1');
+}
+
+function applyUserSession(user){
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('logoutBtn').style.display='block';
+
+    if(user.role === 'admin'){
+        document.getElementById('headerRoleBadge').textContent='ADMIN';
+        document.getElementById('headerRoleBadge').style.display='inline';
+        document.getElementById('accessReqBtn').style.display='inline-flex';
+        // Full admin access — normal app
+        updateUI();
+        pollPendingRequests();
+    } else {
+        // Member mode
+        document.getElementById('headerRoleBadge').textContent='MEMBER';
+        document.getElementById('headerRoleBadge').className='badge text-success border border-success px-2';
+        document.getElementById('headerRoleBadge').style.display='inline';
+        document.body.classList.add('member-mode');
+        // Hide admin nav items
+        document.getElementById('navGroups').style.display='none';
+        document.getElementById('navList').style.display='none';
+        document.getElementById('navBackup').style.display='none';
+        // Show member welcome
+        document.getElementById('memberWelcomeBanner').style.display='block';
+        document.getElementById('memberWelcomeName').textContent = user.name;
+        document.getElementById('memberWelcomePhone').textContent = `📱 +91 ${user.phone}`;
+        // Auto-load this member's ledger
+        document.getElementById('summaryView').value = user.memberId;
+        loadMemberLedger();
+        // Hide search bar (member sees only their own data)
+        document.querySelector('#homeTab .p-3.my-3').querySelector('div[style*="display:flex"]').style.display='none';
+    }
+}
+
+function handleLogout(){
+    sessionStorage.removeItem('akdf_session');
+    CURRENT_USER = null;
+    document.body.classList.remove('member-mode');
+    // Reset nav visibility
+    document.getElementById('navGroups').style.display='';
+    document.getElementById('navList').style.display='';
+    document.getElementById('navBackup').style.display='';
+    document.getElementById('memberWelcomeBanner').style.display='none';
+    document.getElementById('logoutBtn').style.display='none';
+    document.getElementById('accessReqBtn').style.display='none';
+    document.getElementById('headerRoleBadge').textContent='ADMIN';
+    document.getElementById('headerRoleBadge').className='badge text-warning border border-warning px-2';
+    document.getElementById('ledgerData').innerHTML='';
+    document.getElementById('summarySearch').value='';
+    document.getElementById('summaryView').value='';
+    // Show login
+    showLoginStep('loginStep1');
+    document.getElementById('loginPhone').value='';
+    document.getElementById('loginScreen').style.display='flex';
+}
+
+// ── ACCESS REQUESTS PANEL (admin only) ──
+let _reqFilter = 'pending';
+async function openAccessRequests(){
+    _reqFilter = 'pending';
+    await renderAccessRequests();
+    openModal('accessModal');
+}
+
+async function filterRequests(type){
+    _reqFilter = type;
+    ['pending','approved','all'].forEach(t=>{
+        const btn = document.getElementById(`reqTab${t.charAt(0).toUpperCase()+t.slice(1)}`);
+        if(btn) btn.className = t===type ? 'btn-save' : 'btn-cancel';
+    });
+    await renderAccessRequests();
+}
+
+async function renderAccessRequests(){
+    const list = document.getElementById('accessRequestsList');
+    list.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:16px;">Loading…</div>';
+    let q = db.collection('accessRequests');
+    const snap = await q.orderBy('requestedAt','desc').get().catch(()=> db.collection('accessRequests').get());
+    const all = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const filtered = _reqFilter==='all' ? all : all.filter(r=>r.status===_reqFilter);
+
+    if(!filtered.length){
+        list.innerHTML=`<div style="text-align:center;color:var(--text-dim);padding:24px;font-size:0.85rem;">No ${_reqFilter==='all'?'':_reqFilter} requests</div>`;
+        return;
+    }
+
+    list.innerHTML = filtered.map(r=>`
+        <div class="req-card">
+            <div style="flex:1;min-width:0;">
+                <div class="req-name">${r.name||'Unknown'}</div>
+                <div class="req-phone">📱 +91 ${r.phone} &nbsp;·&nbsp; ${r.requestedAt?new Date(r.requestedAt).toLocaleDateString('en-IN'):'—'}</div>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+                ${r.status==='pending'
+                    ? `<button class="btn-approve" onclick="handleApprove('${r.id}','${r.phone}')">✅ Approve</button>
+                       <button class="btn-deny" onclick="handleDeny('${r.id}')">✕ Deny</button>`
+                    : r.status==='approved'
+                        ? `<span class="badge-approved">✅ Approved</span><button class="btn-deny" style="font-size:0.62rem;padding:4px 8px;" onclick="handleDeny('${r.id}')">Revoke</button>`
+                        : `<span class="badge-denied">🚫 Denied</span><button class="btn-approve" style="font-size:0.62rem;padding:4px 8px;" onclick="handleApprove('${r.id}','${r.phone}')">Re-approve</button>`
+                }
+            </div>
+        </div>`).join('');
+}
+
+async function handleApprove(reqId, phone){
+    await db.collection('accessRequests').doc(reqId).update({status:'approved', approvedAt: new Date().toISOString()});
+    showToast('✅ Access approved!');
+    await renderAccessRequests();
+    await pollPendingRequests();
+}
+
+async function handleDeny(reqId){
+    await db.collection('accessRequests').doc(reqId).update({status:'denied', deniedAt: new Date().toISOString()});
+    showToast('🚫 Access denied');
+    await renderAccessRequests();
+    await pollPendingRequests();
+}
+
+async function pollPendingRequests(){
+    if(!CURRENT_USER || CURRENT_USER.role!=='admin') return;
+    const snap = await db.collection('accessRequests').where('status','==','pending').get().catch(()=>({docs:[]}));
+    const count = snap.docs.length;
+    const badge = document.getElementById('pendingCount');
+    if(count > 0){
+        badge.style.display='flex';
+        badge.textContent=count;
+    } else {
+        badge.style.display='none';
+    }
+}
+
+// ══════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════
 document.getElementById('pDate').value=new Date().toISOString().split('T')[0];
 setTimeout(migrateData,800);
+// Start auth
+initAuth();
+// Poll pending requests every 60s when admin is logged in
+setInterval(()=>{ if(CURRENT_USER&&CURRENT_USER.role==='admin') pollPendingRequests(); }, 60000);
 </script>
 </body>
 </html>
