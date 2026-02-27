@@ -316,8 +316,8 @@
             <option value="Yes">Yes ✅</option>
         </select>
         <div id="chitPickedNameDiv" style="display:none;">
-            <label class="form-label-small">Picked By (Name)</label>
-            <input type="text" id="pChitPickedBy" class="form-input" placeholder="Member who picked chit">
+            <label class="form-label-small">Chit Picked Value</label>
+            <input type="text" id="pChitPickedBy" class="form-input" placeholder="Enter chit picked value">
         </div>
         <button class="btn-save" onclick="savePayment()">✓ Sync Payment</button>
         <button class="btn-cancel" onclick="closeModal('paymentModal')">Cancel</button>
@@ -358,8 +358,8 @@
             <option value="Yes">Yes ✅</option>
         </select>
         <div id="epChitPickedNameDiv" style="display:none;">
-            <label class="form-label-small">Picked By (Name)</label>
-            <input type="text" id="epChitPickedBy" class="form-input" placeholder="Member who picked chit">
+            <label class="form-label-small">Chit Picked Value</label>
+            <input type="text" id="epChitPickedBy" class="form-input" placeholder="Enter chit picked value">
         </div>
         <button class="btn-save" onclick="saveEditPayment()">✓ Update Payment</button>
         <button class="btn-danger-full" onclick="deletePayment()">🗑 Delete Payment</button>
@@ -681,7 +681,7 @@ async function loadMemberLedger(){
                 <td style="color:#f59e0b;">${fmtAmt(p.balance)}</td>
                 <td style="color:var(--text-dim);font-size:0.6rem;">${p.paidBy||'—'}</td>
                 <td>${cp
-                    ?`<div><span class="chit-yes-badge">✅ Picked</span><div style="color:#34d399;font-weight:800;font-size:0.72rem;margin-top:3px;">${fmtAmt(chitPickedAmt)}</div>${p.chitPickedBy?`<div style="font-size:0.58rem;color:var(--text-dim);">by ${p.chitPickedBy}</div>`:''}</div>`
+                    ?`<div><span class="chit-yes-badge">✅ Picked</span>${p.chitPickedBy?`<div style="font-size:0.58rem;color:var(--text-dim);margin-top:3px;">by ${p.chitPickedBy}</div>`:''}</div>`
                     :'<span class="chit-no">—</span>'}</td>
                 <td><button class="btn-edit-sm" onclick="openEditPayment('${p.id}')" style="font-size:0.6rem;padding:3px 7px;">✏️</button></td>
             </tr>`;
