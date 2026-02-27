@@ -132,10 +132,6 @@
         .badge-denied { background:rgba(239,68,68,.15); color:#f87171; border:1px solid rgba(239,68,68,.3); border-radius:5px; padding:2px 8px; font-size:0.62rem; font-weight:700; }
         /* Member-only view tweaks */
         body.member-mode .nav-bar { display:none !important; }
-        body.member-mode #homeTab .row.g-2 { display:none; }
-        body.member-mode #homeTab > .d-flex:first-of-type { display:none !important; }
-        body.member-mode #homeTab .d-flex.gap-2:last-of-type { display:none !important; }
-        body.member-mode .app-header .badge { display:none; }
         #pdf-template { position:absolute; left:-9999px; top:0; width:794px; visibility:hidden; pointer-events:none; background:white; }
         #pdf-template.rendering { visibility:visible; }
         .pdf-page { background:white; color:#111; padding:20px 30px; font-family:'Segoe UI',Arial,sans-serif; width:750px; }
@@ -176,7 +172,8 @@
 <body>
 
 <div class="container py-2">
-    <div class="app-header">
+    <!-- ADMIN HEADER (default) -->
+    <div id="adminHeader" class="app-header">
         <div class="brand">🏆 AK Chit Funds <small style="font-size:0.5em;color:#2ecc71;">☁ CLOUD</small></div>
         <div style="display:flex;align-items:center;gap:8px;">
             <span id="headerRoleBadge" class="badge text-warning border border-warning px-2">ADMIN</span>
@@ -187,26 +184,52 @@
         </div>
     </div>
 
+    <!-- MEMBER PROFILE HEADER (shown in member mode) -->
+    <div id="memberHeader" style="display:none;padding:16px 4px 0;">
+        <div style="background:linear-gradient(135deg,rgba(243,156,18,.18),rgba(243,156,18,.04));border:1px solid rgba(243,156,18,.3);border-radius:22px;padding:18px 18px 14px;">
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
+                <div id="memberHeaderAvatar" style="width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,#f39c12,#f57c00);color:black;display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:900;flex-shrink:0;box-shadow:0 4px 14px rgba(243,156,18,.35);"></div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-size:0.65rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px;">Welcome back 👋</div>
+                    <div id="memberHeaderName" style="font-size:1.15rem;font-weight:900;color:#f39c12;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                    <div id="memberHeaderPhone" style="font-size:0.72rem;color:var(--text-dim);margin-top:1px;"></div>
+                </div>
+                <button onclick="handleLogout()" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#f87171;border-radius:10px;padding:6px 11px;font-size:0.72rem;font-weight:700;cursor:pointer;flex-shrink:0;">⏻</button>
+            </div>
+            <!-- Member stats row -->
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+                <div style="background:rgba(0,0,0,.2);border-radius:12px;padding:10px 8px;text-align:center;">
+                    <div id="mhGroups" style="font-size:1rem;font-weight:800;color:#a5b4fc;">—</div>
+                    <div style="font-size:0.58rem;color:var(--text-dim);text-transform:uppercase;margin-top:2px;">My Groups</div>
+                </div>
+                <div style="background:rgba(0,0,0,.2);border-radius:12px;padding:10px 8px;text-align:center;">
+                    <div id="mhTotalPaid" style="font-size:0.85rem;font-weight:800;color:#34d399;">—</div>
+                    <div style="font-size:0.58rem;color:var(--text-dim);text-transform:uppercase;margin-top:2px;">Total Paid</div>
+                </div>
+                <div style="background:rgba(0,0,0,.2);border-radius:12px;padding:10px 8px;text-align:center;">
+                    <div id="mhBalance" style="font-size:0.85rem;font-weight:800;color:#f59e0b;">—</div>
+                    <div style="font-size:0.58rem;color:var(--text-dim);text-transform:uppercase;margin-top:2px;">Balance</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- HOME TAB -->
     <div id="homeTab" class="tab-content active">
-        <!-- Member welcome banner (hidden for admin) -->
-        <div id="memberWelcomeBanner" style="display:none;background:linear-gradient(135deg,rgba(243,156,18,.15),rgba(243,156,18,.05));border:1px solid rgba(243,156,18,.3);border-radius:16px;padding:14px 16px;margin-top:12px;margin-bottom:4px;">
-            <div style="font-size:0.72rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;">Welcome back</div>
-            <div id="memberWelcomeName" style="font-size:1.1rem;font-weight:800;color:#f39c12;"></div>
-            <div id="memberWelcomePhone" style="font-size:0.72rem;color:var(--text-dim);margin-top:2px;"></div>
-        </div>
-        <div class="row g-2 mt-3 text-center">
+        <!-- Admin-only stat cards -->
+        <div id="adminStatCards" class="row g-2 mt-3 text-center">
             <div class="col-4"><div class="stat-card"><span class="stat-num" id="memberCount">-</span><span class="stat-label">Members</span></div></div>
             <div class="col-4"><div class="stat-card"><span class="stat-num" id="groupCount">-</span><span class="stat-label">Groups</span></div></div>
             <div class="col-4"><div class="stat-card"><span class="stat-num text-success" id="todayColl">₹0</span><span class="stat-label">Today</span></div></div>
         </div>
-        <div style="display:flex;gap:8px;margin-top:12px;">
+        <!-- Admin-only action buttons -->
+        <div id="adminActionBtns" style="display:flex;gap:8px;margin-top:12px;">
             <button class="btn btn-warning w-100 py-3 fw-bold shadow" onclick="openPaymentModal()" style="border-radius:20px;">💳 Record Payment</button>
             <button onclick="resetPaymentForm();openModal('paymentModal');" title="Refresh Form" style="background:var(--card-bg);border:1px solid var(--border);color:#f39c12;border-radius:20px;padding:0 18px;font-size:1.2rem;cursor:pointer;flex-shrink:0;">🔄</button>
         </div>
 
-        <!-- MEMBER SEARCH -->
-        <div class="p-3 my-3" style="background:var(--card-bg);border-radius:20px;border:1px solid var(--border);">
+        <!-- MEMBER SEARCH (admin only) -->
+        <div id="adminMemberSearch" class="p-3 my-3" style="background:var(--card-bg);border-radius:20px;border:1px solid var(--border);">
             <div style="display:flex;gap:8px;align-items:flex-start;">
                 <div style="position:relative;flex:1;">
                     <input type="text" id="summarySearch" class="form-input" style="margin-bottom:0;" placeholder="🔍 Search Member for Summary / PDF..." oninput="filterSearch('summarySearch','summaryList','summaryView')">
@@ -218,8 +241,13 @@
             <div id="ledgerData"></div>
         </div>
 
-        <!-- QUICK ACTION BUTTONS -->
-        <div class="d-flex gap-2">
+        <!-- MEMBER-ONLY ledger (shown instead of search when member logs in) -->
+        <div id="memberLedgerArea" style="display:none;margin-top:12px;">
+            <div id="memberLedgerData"></div>
+        </div>
+
+        <!-- QUICK ACTION BUTTONS (admin only) -->
+        <div id="adminQuickBtns" class="d-flex gap-2">
             <button class="btn btn-outline-warning w-100 py-3 fw-bold" onclick="openAddMember()">👤 Create Member</button>
             <button class="btn btn-outline-success w-100 py-3 fw-bold" onclick="openAddGroup()">🏦 New Group</button>
         </div>
@@ -733,7 +761,12 @@ function filterSearch(inputId,listId,hiddenId){
 // MEMBER LEDGER — HOME TAB
 // ══════════════════════════════════════════
 async function loadMemberLedger(){
-    const mid=document.getElementById('summaryView').value;if(!mid)return;
+    // Privacy guard: members can only view their own ledger
+    const mid = CURRENT_USER && CURRENT_USER.role === 'member'
+        ? CURRENT_USER.memberId
+        : document.getElementById('summaryView').value;
+    if(!mid) return;
+
     const ms=await getCollection('members');const gs=await getCollection('groups');const ps=await getCollection('payments');
     const m=ms.find(x=>x.id===mid);if(!m)return;
     const mPays=ps.filter(p=>p.memberId===mid);
@@ -841,20 +874,32 @@ async function loadMemberLedger(){
         </div>`;
     }).join('');
 
-    document.getElementById('ledgerData').innerHTML=`
+    const isMember = CURRENT_USER && CURRENT_USER.role === 'member';
+    const ledgerHtml = `
         <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;padding-top:4px;">
             <div style="width:44px;height:44px;border-radius:12px;background:rgba(243,156,18,.15);border:2px solid rgba(243,156,18,.4);color:#f39c12;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;flex-shrink:0;">${ini(m.name)}</div>
             <div style="flex:1;">
                 <div style="font-size:1rem;font-weight:800;">${m.name}</div>
                 <div style="font-size:0.68rem;color:var(--text-dim);">${mPays.length} payments · ${memberGroups.length} group${memberGroups.length!==1?'s':''}</div>
             </div>
-            <div style="display:flex;gap:6px;">
+            ${!isMember?`<div style="display:flex;gap:6px;">
                 <button class="btn-edit-sm" onclick="openEditMember('${mid}')">✏️</button>
                 <button class="btn-pdf" onclick="generateMemberPDF('${mid}')">📄 PDF</button>
-            </div>
+            </div>`:`<button class="btn-pdf" onclick="generateMemberPDF('${mid}')">📄 PDF</button>`}
         </div>
         ${payTablesHtml||'<div style="text-align:center;color:var(--text-dim);padding:20px;">No payments yet</div>'}
     `;
+
+    if(isMember){
+        document.getElementById('memberLedgerData').innerHTML = ledgerHtml;
+        // Update member header stats
+        const myGroupCount = memberGroups.length;
+        document.getElementById('mhGroups').textContent = myGroupCount;
+        document.getElementById('mhTotalPaid').textContent = fmtAmt(totalPaid);
+        document.getElementById('mhBalance').textContent = fmtAmt(totalBal);
+    } else {
+        document.getElementById('ledgerData').innerHTML = ledgerHtml;
+    }
 }
 
 // ══════════════════════════════════════════
@@ -1792,31 +1837,44 @@ function applyUserSession(user){
     document.getElementById('logoutBtn').style.display='block';
 
     if(user.role === 'admin'){
+        document.getElementById('adminHeader').style.display='flex';
+        document.getElementById('memberHeader').style.display='none';
         document.getElementById('headerRoleBadge').textContent='ADMIN';
         document.getElementById('headerRoleBadge').style.display='inline';
         document.getElementById('accessReqBtn').style.display='inline-flex';
-        // Full admin access — normal app
+        document.getElementById('logoutBtn').style.display='block';
+        // Show all admin UI
+        document.getElementById('adminStatCards').style.display='';
+        document.getElementById('adminActionBtns').style.display='flex';
+        document.getElementById('adminMemberSearch').style.display='';
+        document.getElementById('memberLedgerArea').style.display='none';
+        document.getElementById('adminQuickBtns').style.display='flex';
         updateUI();
         pollPendingRequests();
     } else {
-        // Member mode
-        document.getElementById('headerRoleBadge').textContent='MEMBER';
-        document.getElementById('headerRoleBadge').className='badge text-success border border-success px-2';
-        document.getElementById('headerRoleBadge').style.display='inline';
-        document.body.classList.add('member-mode');
-        // Hide admin nav items
+        // Member mode — replace header, hide all admin UI
+        document.getElementById('adminHeader').style.display='none';
+        document.getElementById('memberHeader').style.display='block';
+        document.getElementById('logoutBtn').style.display='none'; // logout is in member header
+        // Populate member header
+        document.getElementById('memberHeaderAvatar').textContent = ini(user.name);
+        document.getElementById('memberHeaderName').textContent = user.name;
+        document.getElementById('memberHeaderPhone').textContent = `📱 +91 ${user.phone}`;
+        // Hide all admin-only blocks
+        document.getElementById('adminStatCards').style.display='none';
+        document.getElementById('adminActionBtns').style.display='none';
+        document.getElementById('adminMemberSearch').style.display='none';
+        document.getElementById('adminQuickBtns').style.display='none';
+        // Hide admin nav tabs + nav bar itself
         document.getElementById('navGroups').style.display='none';
         document.getElementById('navList').style.display='none';
         document.getElementById('navBackup').style.display='none';
-        // Show member welcome
-        document.getElementById('memberWelcomeBanner').style.display='block';
-        document.getElementById('memberWelcomeName').textContent = user.name;
-        document.getElementById('memberWelcomePhone').textContent = `📱 +91 ${user.phone}`;
-        // Auto-load this member's ledger
+        document.querySelector('.nav-bar').style.display='none';
+        // Show member ledger area
+        document.getElementById('memberLedgerArea').style.display='block';
+        // Load ONLY this member's own data
         document.getElementById('summaryView').value = user.memberId;
         loadMemberLedger();
-        // Hide search bar (member sees only their own data)
-        document.querySelector('#homeTab .p-3.my-3').querySelector('div[style*="display:flex"]').style.display='none';
     }
 }
 
@@ -1824,16 +1882,28 @@ function handleLogout(){
     sessionStorage.removeItem('akdf_session');
     CURRENT_USER = null;
     document.body.classList.remove('member-mode');
-    // Reset nav visibility
+    // Restore headers
+    document.getElementById('adminHeader').style.display='flex';
+    document.getElementById('memberHeader').style.display='none';
+    // Restore nav
     document.getElementById('navGroups').style.display='';
     document.getElementById('navList').style.display='';
     document.getElementById('navBackup').style.display='';
-    document.getElementById('memberWelcomeBanner').style.display='none';
+    document.querySelector('.nav-bar').style.display='';
+    // Restore admin UI blocks
+    document.getElementById('adminStatCards').style.display='';
+    document.getElementById('adminActionBtns').style.display='flex';
+    document.getElementById('adminMemberSearch').style.display='';
+    document.getElementById('memberLedgerArea').style.display='none';
+    document.getElementById('adminQuickBtns').style.display='flex';
+    // Reset header badges
     document.getElementById('logoutBtn').style.display='none';
     document.getElementById('accessReqBtn').style.display='none';
     document.getElementById('headerRoleBadge').textContent='ADMIN';
     document.getElementById('headerRoleBadge').className='badge text-warning border border-warning px-2';
+    // Clear ledger state
     document.getElementById('ledgerData').innerHTML='';
+    document.getElementById('memberLedgerData').innerHTML='';
     document.getElementById('summarySearch').value='';
     document.getElementById('summaryView').value='';
     // Show login
