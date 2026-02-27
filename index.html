@@ -107,21 +107,21 @@
         .selected-summary { font-size:0.68rem; color:#a5b4fc; margin-top:8px; font-weight:700; padding:6px 10px; background:rgba(99,102,241,0.12); border-radius:8px; }
 
         /* ══ PDF STYLES ══ */
-        /* FIX: Use position:fixed so the hidden element is always at viewport top-left,
-           preventing html2canvas from adding blank space equal to scroll offset */
-        #pdf-template { position:fixed; left:-9999px; top:0; width:794px; visibility:hidden; pointer-events:none; background:white; z-index:-1; }
+        /* FIX: position:fixed keeps element at viewport top regardless of scroll.
+           Width matches A4 at 96dpi (794px). overflow:hidden clips nothing. */
+        #pdf-template { position:fixed; left:-9999px; top:0; width:794px; max-width:794px; visibility:hidden; pointer-events:none; background:white; z-index:-1; overflow:hidden; }
         #pdf-template.rendering { visibility:visible; }
-        .pdf-page { background:white; color:#111; padding:20px 30px; font-family:'Segoe UI',Arial,sans-serif; width:750px; }
-        .pdf-header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:4px solid #f39c12; padding-bottom:14px; margin-bottom:20px; }
-        .pdf-brand { font-size:26px; font-weight:900; color:#f39c12; }
-        .pdf-brand-sub { font-size:11px; color:#888; margin-top:2px; }
-        .pdf-right-title { font-size:16px; font-weight:800; text-align:right; }
-        .pdf-right-sub { font-size:11px; color:#888; text-align:right; margin-top:3px; }
-        .pdf-member-box { background:#fffbf0; border:2px solid #f39c12; border-radius:12px; padding:16px 20px; margin-bottom:20px; }
-        .pdf-member-name { font-size:20px; font-weight:800; }
-        .pdf-member-sub { font-size:12px; color:#555; margin-top:4px; }
-        .pdf-stats-row { display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
-        .pdf-stat-box { flex:1; min-width:100px; border:1px solid #ddd; border-radius:8px; padding:10px; text-align:center; background:white; }
+        .pdf-page { background:white; color:#111; padding:16px 24px; font-family:'Segoe UI',Arial,sans-serif; width:794px; max-width:794px; box-sizing:border-box; overflow:hidden; }
+        .pdf-header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:4px solid #f39c12; padding-bottom:14px; margin-bottom:16px; }
+        .pdf-brand { font-size:22px; font-weight:900; color:#f39c12; }
+        .pdf-brand-sub { font-size:10px; color:#888; margin-top:2px; }
+        .pdf-right-title { font-size:15px; font-weight:800; text-align:right; }
+        .pdf-right-sub { font-size:10px; color:#888; text-align:right; margin-top:3px; }
+        .pdf-member-box { background:#fffbf0; border:2px solid #f39c12; border-radius:10px; padding:12px 16px; margin-bottom:16px; box-sizing:border-box; width:100%; }
+        .pdf-member-name { font-size:18px; font-weight:800; }
+        .pdf-member-sub { font-size:11px; color:#555; margin-top:3px; }
+        .pdf-stats-row { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; width:100%; }
+        .pdf-stat-box { flex:1; min-width:80px; border:1px solid #ddd; border-radius:8px; padding:8px 6px; text-align:center; background:white; box-sizing:border-box; }
         .pdf-stat-val { font-size:15px; font-weight:800; }
         .pdf-stat-lbl { font-size:9px; color:#888; text-transform:uppercase; letter-spacing:.4px; margin-top:2px; }
         .pdf-section-title { font-size:11px; font-weight:800; color:#888; text-transform:uppercase; letter-spacing:1px; margin:20px 0 8px; border-bottom:1px solid #eee; padding-bottom:6px; }
@@ -207,7 +207,7 @@
 </div>
 
 <!-- PDF TEMPLATE - off screen container (position:fixed keeps it at viewport top regardless of scroll) -->
-<div id="pdf-template"><div id="pdfContent" style="background:white;font-family:'Segoe UI',Arial,sans-serif;width:794px;color:#111;"></div></div>
+<div id="pdf-template"><div id="pdfContent" style="background:white;font-family:'Segoe UI',Arial,sans-serif;width:794px;max-width:794px;color:#111;box-sizing:border-box;overflow:hidden;"></div></div>
 
 <!-- ══════ MODALS ══════ -->
 
@@ -1216,7 +1216,7 @@ function renderPDF(filename){
         wrapper.classList.add('rendering');
 
         const opt={
-            margin:[8,8,8,8],
+            margin:[6,6,6,6],
             filename,
             image:{type:'jpeg',quality:0.97},
             html2canvas:{
@@ -1227,7 +1227,8 @@ function renderPDF(filename){
                 backgroundColor:'#ffffff',
                 scrollX:0,
                 scrollY:0,
-                windowWidth:850
+                windowWidth:794,
+                width:794
             },
             jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
             pagebreak:{mode:['avoid-all','css','legacy']}
@@ -1326,18 +1327,16 @@ async function generateMemberPDF(mid){
             <div><div class="pdf-right-title">MEMBER STATEMENT</div><div class="pdf-right-sub">Generated: ${today}</div></div>
         </div>
         <div class="pdf-member-box">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
-                <div>
-                    <div class="pdf-member-name">${m.name}</div>
-                    <div class="pdf-member-sub">📞 ${m.phone||'No phone'}</div>
-                    <div class="pdf-member-sub">📂 Groups: ${memberGroups.map(g=>g.name).join(', ')||'—'}</div>
-                </div>
-                <div class="pdf-stats-row">
-                    <div class="pdf-stat-box"><div class="pdf-stat-val" style="color:#065f46;">₹${totalPaid.toLocaleString('en-IN')}</div><div class="pdf-stat-lbl">Total Paid</div></div>
-                    <div class="pdf-stat-box"><div class="pdf-stat-val" style="color:#92400e;">₹${totalBal.toLocaleString('en-IN')}</div><div class="pdf-stat-lbl">Balance</div></div>
-                    <div class="pdf-stat-box"><div class="pdf-stat-val">${mPays.length}</div><div class="pdf-stat-lbl">Payments</div></div>
-                    <div class="pdf-stat-box"><div class="pdf-stat-val" style="color:#065f46;">${chitsPicked}</div><div class="pdf-stat-lbl">Chits Picked</div></div>
-                </div>
+            <div style="width:100%;box-sizing:border-box;">
+                <div class="pdf-member-name">${m.name}</div>
+                <div class="pdf-member-sub">📞 ${m.phone||'No phone'}</div>
+                <div class="pdf-member-sub">📂 Groups: ${memberGroups.map(g=>g.name).join(', ')||'—'}</div>
+            </div>
+            <div class="pdf-stats-row" style="margin-top:10px;">
+                <div class="pdf-stat-box"><div class="pdf-stat-val" style="color:#065f46;">₹${totalPaid.toLocaleString('en-IN')}</div><div class="pdf-stat-lbl">Total Paid</div></div>
+                <div class="pdf-stat-box"><div class="pdf-stat-val" style="color:#92400e;">₹${totalBal.toLocaleString('en-IN')}</div><div class="pdf-stat-lbl">Balance</div></div>
+                <div class="pdf-stat-box"><div class="pdf-stat-val">${mPays.length}</div><div class="pdf-stat-lbl">Payments</div></div>
+                <div class="pdf-stat-box"><div class="pdf-stat-val" style="color:#065f46;">${chitsPicked}</div><div class="pdf-stat-lbl">Chits Picked</div></div>
             </div>
         </div>
         <div class="pdf-section-title">Payment History — Group Wise</div>
@@ -1457,38 +1456,34 @@ async function generateGroupPDF(gid){
         </div>
 
         <div class="pdf-member-box">
-            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px;align-items:flex-start;">
-                <div style="flex:1;min-width:200px;">
-                    <div class="pdf-member-name">📂 ${g.name}</div>
-                    <div class="pdf-member-sub">📅 Duration: <strong>${totalMonths} months</strong> &nbsp;|&nbsp; Start: <strong>${fmtDate(g.startDate||g.gStart||'')}</strong></div>
-                    <div class="pdf-member-sub">🗓 Monthly Due: <strong>${g.dueDay?`${g.dueDay}${['st','nd','rd'][((g.dueDay%100-11)%10)-1]||'th'} of every month`:'—'}</strong></div>
-                    <div class="pdf-member-sub">📊 Progress: Month <strong>${elapsed}/${totalMonths}</strong> &nbsp;·&nbsp; <strong>${left} months pending</strong></div>
-                    <div style="margin-top:10px;">
-                        <div class="pdf-progress-outer" style="height:10px;">
-                            <div class="pdf-progress-inner" style="width:${pct}%;"></div>
-                        </div>
-                        <div style="font-size:9px;color:#888;text-align:right;margin-top:2px;">${pct}% complete</div>
+            <div style="width:100%;box-sizing:border-box;">
+                <div class="pdf-member-name">📂 ${g.name}</div>
+                <div class="pdf-member-sub">📅 Duration: <strong>${totalMonths} months</strong> &nbsp;|&nbsp; Start: <strong>${fmtDate(g.startDate||g.gStart||'')}</strong></div>
+                <div class="pdf-member-sub">🗓 Monthly Due: <strong>${g.dueDay?`${g.dueDay}${['st','nd','rd'][((g.dueDay%100-11)%10)-1]||'th'} of every month`:'—'}</strong></div>
+                <div class="pdf-member-sub">📊 Progress: Month <strong>${elapsed}/${totalMonths}</strong> &nbsp;·&nbsp; <strong>${left} months pending</strong></div>
+                <div style="margin-top:8px;">
+                    <div class="pdf-progress-outer" style="height:8px;">
+                        <div class="pdf-progress-inner" style="width:${pct}%;"></div>
                     </div>
+                    <div style="font-size:9px;color:#888;text-align:right;margin-top:2px;">${pct}% complete</div>
                 </div>
-                <div>
-                    <div class="pdf-stats-row" style="gap:8px;">
-                        <div class="pdf-stat-box">
-                            <div class="pdf-stat-val" style="color:#065f46;">₹${totalPaid.toLocaleString('en-IN')}</div>
-                            <div class="pdf-stat-lbl">Total Collected</div>
-                        </div>
-                        <div class="pdf-stat-box">
-                            <div class="pdf-stat-val" style="color:#92400e;">₹${totalBal.toLocaleString('en-IN')}</div>
-                            <div class="pdf-stat-lbl">Total Balance</div>
-                        </div>
-                        <div class="pdf-stat-box">
-                            <div class="pdf-stat-val">${gMs.length}</div>
-                            <div class="pdf-stat-lbl">Members</div>
-                        </div>
-                        <div class="pdf-stat-box">
-                            <div class="pdf-stat-val" style="color:#065f46;">${totalPicked}</div>
-                            <div class="pdf-stat-lbl">Chits Picked</div>
-                        </div>
-                    </div>
+            </div>
+            <div class="pdf-stats-row" style="margin-top:12px;">
+                <div class="pdf-stat-box">
+                    <div class="pdf-stat-val" style="color:#065f46;">₹${totalPaid.toLocaleString('en-IN')}</div>
+                    <div class="pdf-stat-lbl">Total Collected</div>
+                </div>
+                <div class="pdf-stat-box">
+                    <div class="pdf-stat-val" style="color:#92400e;">₹${totalBal.toLocaleString('en-IN')}</div>
+                    <div class="pdf-stat-lbl">Total Balance</div>
+                </div>
+                <div class="pdf-stat-box">
+                    <div class="pdf-stat-val">${gMs.length}</div>
+                    <div class="pdf-stat-lbl">Members</div>
+                </div>
+                <div class="pdf-stat-box">
+                    <div class="pdf-stat-val" style="color:#065f46;">${totalPicked}</div>
+                    <div class="pdf-stat-lbl">Chits Picked</div>
                 </div>
             </div>
         </div>
