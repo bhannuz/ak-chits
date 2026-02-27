@@ -1203,79 +1203,69 @@ async function executeRestore(){
 }
 
 // ══════════════════════════════════════════
-// PDF RENDER HELPER — IFRAME ISOLATION
-// Renders into a completely isolated off-screen iframe so html2canvas
-// always captures from x:0,y:0 with no DOM position inheritance.
+// PDF RENDER — FINAL WORKING APPROACH
+// Use html2pdf .from(htmlString) — passes raw HTML so html2pdf builds
+// its own clean sandboxed worker at 0,0. No DOM position inheritance.
+// Content width 190mm exactly matches A4 usable area with 10mm margins.
 // ══════════════════════════════════════════
 function getPDFStyles(){
-    let css=`
-        *{box-sizing:border-box;}
-        body{background:white;font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:0;}
-        .pdf-page{background:white;color:#111;padding:16px 20px;width:794px;max-width:794px;font-family:'Segoe UI',Arial,sans-serif;}
-        .pdf-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:4px solid #f39c12;padding-bottom:12px;margin-bottom:14px;}
-        .pdf-brand{font-size:22px;font-weight:900;color:#f39c12;}
-        .pdf-brand-sub{font-size:10px;color:#888;margin-top:2px;}
-        .pdf-right-title{font-size:15px;font-weight:800;text-align:right;}
-        .pdf-right-sub{font-size:10px;color:#888;text-align:right;margin-top:3px;}
-        .pdf-member-box{background:#fffbf0;border:2px solid #f39c12;border-radius:10px;padding:12px 16px;margin-bottom:14px;width:100%;}
-        .pdf-member-name{font-size:18px;font-weight:800;}
-        .pdf-member-sub{font-size:11px;color:#555;margin-top:3px;}
-        .pdf-stats-row{display:flex;gap:8px;margin-top:10px;width:100%;}
-        .pdf-stat-box{flex:1;border:1px solid #ddd;border-radius:8px;padding:8px 6px;text-align:center;background:white;}
-        .pdf-stat-val{font-size:14px;font-weight:800;}
-        .pdf-stat-lbl{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-top:2px;}
-        .pdf-section-title{font-size:11px;font-weight:800;color:#888;text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px;border-bottom:1px solid #eee;padding-bottom:5px;}
-        .pdf-group-title{font-size:13px;font-weight:800;margin-bottom:5px;color:#111;}
-        .pdf-progress-outer{background:#eee;border-radius:5px;height:8px;margin-bottom:4px;overflow:hidden;}
-        .pdf-progress-inner{height:100%;background:linear-gradient(90deg,#f39c12,#f57c00);border-radius:5px;}
-        .pdf-table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:16px;table-layout:fixed;}
-        .pdf-table th{background:#f5f5f5;border:1px solid #ccc;padding:6px 8px;font-size:9px;text-transform:uppercase;color:#555;text-align:left;overflow:hidden;}
-        .pdf-table td{border:1px solid #ddd;padding:6px 8px;overflow:hidden;word-break:break-word;}
+    return `
+        *{box-sizing:border-box;margin:0;padding:0;}
+        body{background:#fff;font-family:Arial,sans-serif;font-size:11px;color:#111;}
+        .pdf-page{width:100%;background:#fff;padding:0;}
+        .pdf-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #f39c12;padding-bottom:10px;margin-bottom:12px;}
+        .pdf-brand{font-size:19px;font-weight:900;color:#f39c12;}
+        .pdf-brand-sub{font-size:9px;color:#888;margin-top:2px;}
+        .pdf-right-title{font-size:13px;font-weight:800;text-align:right;}
+        .pdf-right-sub{font-size:9px;color:#888;text-align:right;margin-top:2px;}
+        .pdf-member-box{background:#fffbf0;border:2px solid #f39c12;border-radius:8px;padding:10px 14px;margin-bottom:12px;width:100%;}
+        .pdf-member-name{font-size:15px;font-weight:800;}
+        .pdf-member-sub{font-size:10px;color:#555;margin-top:3px;}
+        .pdf-stats-row{display:flex;gap:6px;margin-top:8px;width:100%;}
+        .pdf-stat-box{flex:1;border:1px solid #ddd;border-radius:6px;padding:6px 4px;text-align:center;background:#fff;}
+        .pdf-stat-val{font-size:12px;font-weight:800;}
+        .pdf-stat-lbl{font-size:7px;color:#888;text-transform:uppercase;margin-top:1px;}
+        .pdf-section-title{font-size:9px;font-weight:800;color:#888;text-transform:uppercase;letter-spacing:.8px;margin:12px 0 6px;border-bottom:1px solid #eee;padding-bottom:4px;}
+        .pdf-group-title{font-size:11px;font-weight:800;margin-bottom:4px;color:#111;}
+        .pdf-progress-outer{background:#eee;border-radius:4px;height:6px;overflow:hidden;margin-bottom:3px;}
+        .pdf-progress-inner{height:100%;background:linear-gradient(90deg,#f39c12,#f57c00);}
+        .pdf-table{width:100%;border-collapse:collapse;font-size:9px;margin-bottom:12px;}
+        .pdf-table th{background:#f5f5f5;border:1px solid #ccc;padding:5px 6px;font-size:8px;text-transform:uppercase;color:#555;text-align:left;}
+        .pdf-table td{border:1px solid #ddd;padding:5px 6px;word-break:break-word;}
         .pdf-table tr:nth-child(even) td{background:#fafafa;}
-        .pdf-table tr.pdf-chit-row td{background:#f0fff8 !important;}
+        .pdf-table tr.pdf-chit-row td{background:#f0fff8!important;}
         .pdf-table tr.pdf-chit-row td:first-child{border-left:3px solid #10b981;}
-        .pdf-table tr.pdf-due-row td{background:#fff5f5 !important;color:#c0392b;font-style:italic;}
-        .pdf-table tr.pdf-multi-row td{background:#eef2ff !important;}
+        .pdf-table tr.pdf-multi-row td{background:#eef2ff!important;}
         .pdf-table tr.pdf-multi-row td:first-child{border-left:3px solid #818cf8;}
-        .pdf-chit-badge{background:#d1fae5;color:#065f46;border-radius:4px;padding:2px 5px;font-size:9px;font-weight:800;}
-        .pdf-multi-badge{background:#e0e7ff;color:#3730a3;border-radius:4px;padding:2px 5px;font-size:9px;font-weight:800;}
-        .pdf-total-row td{background:#fff8e1 !important;font-weight:800;border-top:2px solid #f39c12;}
-        .pdf-footer{margin-top:20px;border-top:1px solid #ddd;padding-top:10px;display:flex;justify-content:space-between;font-size:10px;color:#aaa;}
+        .pdf-chit-badge{background:#d1fae5;color:#065f46;border-radius:3px;padding:1px 4px;font-size:8px;font-weight:800;}
+        .pdf-multi-badge{background:#e0e7ff;color:#3730a3;border-radius:3px;padding:1px 4px;font-size:8px;font-weight:800;}
+        .pdf-total-row td{background:#fff8e1!important;font-weight:800;border-top:2px solid #f39c12;}
+        .pdf-footer{margin-top:14px;border-top:1px solid #ddd;padding-top:8px;display:flex;justify-content:space-between;font-size:8px;color:#aaa;}
     `;
-    return css;
 }
 
 function renderPDF(filename){
     return new Promise((resolve)=>{
-        const htmlContent=document.getElementById('pdfContent').innerHTML;
-        const fullHTML=`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${getPDFStyles()}</style></head><body><div id="root" style="width:794px;background:white;">${htmlContent}</div></body></html>`;
+        const inner=document.getElementById('pdfContent').innerHTML;
+        // Build a complete standalone HTML string — html2pdf renders this in its own worker
+        const htmlString=`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${getPDFStyles()}</style></head><body><div class="pdf-page">${inner}</div></body></html>`;
 
-        // Create fully isolated off-screen iframe — x:0,y:0 guaranteed
-        const iframe=document.createElement('iframe');
-        iframe.style.cssText='position:fixed;left:-9999px;top:0;width:794px;height:2px;border:none;';
-        document.body.appendChild(iframe);
-
-        iframe.onload=()=>{
-            const iDoc=iframe.contentDocument;
-            const target=iDoc.getElementById('root');
-            setTimeout(()=>{
-                const opt={
-                    margin:[8,8,8,8],
-                    filename,
-                    image:{type:'jpeg',quality:0.97},
-                    html2canvas:{scale:2,useCORS:true,logging:false,backgroundColor:'#ffffff',scrollX:0,scrollY:0,windowWidth:794},
-                    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
-                    pagebreak:{mode:['avoid-all','css','legacy']}
-                };
-                html2pdf().set(opt).from(target).save().then(()=>{
-                    document.body.removeChild(iframe);
-                    resolve();
-                }).catch(err=>{console.error(err);document.body.removeChild(iframe);resolve();});
-            },600);
+        const opt={
+            margin:10,
+            filename,
+            image:{type:'jpeg',quality:0.95},
+            html2canvas:{
+                scale:2,
+                useCORS:true,
+                logging:false,
+                backgroundColor:'#ffffff'
+            },
+            jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
         };
-        iframe.contentDocument.open();
-        iframe.contentDocument.write(fullHTML);
-        iframe.contentDocument.close();
+
+        html2pdf().set(opt).from(htmlString,'string').save()
+            .then(()=>resolve())
+            .catch(e=>{console.error(e);resolve();});
     });
 }
 
