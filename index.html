@@ -336,26 +336,9 @@
         <label class="form-label-small">Group</label>
         <select id="pGroup" class="form-input" onchange="onGroupChange()"><option value="">-- Select Member First --</option></select>
 
-        <!-- ── MULTI-MONTH SELECTOR ── -->
-        <label class="form-label-small">Number of Months Paying</label>
-        <div style="display:flex;gap:8px;margin-bottom:8px;">
-            <select id="pNumMonths" class="form-input" style="margin-bottom:0;flex:1;" onchange="onNumMonthsChange()">
-                <option value="1">1 Month (Normal)</option>
-                <option value="multi">Multiple Months (pick below) 📅</option>
-            </select>
-        </div>
-
-        <!-- Month picker grid — shown when "Multiple Months" is selected -->
-        <div id="multiMonthPreview" class="multi-month-preview">
-            <div class="multi-month-preview-title">📅 Select Months to Pay</div>
-            <div style="font-size:0.62rem;color:var(--text-dim);margin-bottom:8px;">✅ Green = already paid &nbsp;|&nbsp; Tick boxes to select months being paid now</div>
-            <div id="monthSelectorGrid" class="month-selector-grid"></div>
-            <div id="selectedSummary" class="selected-summary" style="display:none;"></div>
-        </div>
-
         <div class="row g-2">
             <div class="col-6">
-                <label class="form-label-small">Chit Amount <span id="perMonthLabel" style="color:#a5b4fc;font-size:0.65rem;"></span></label>
+                <label class="form-label-small">Chit Amount</label>
                 <input type="number" id="pChit" class="form-input" placeholder="₹ per month" oninput="calcBalance()">
             </div>
             <div class="col-6">
@@ -363,14 +346,6 @@
                 <input type="number" id="pPaid" class="form-input" placeholder="₹ total" oninput="calcBalance()">
             </div>
         </div>
-        <!-- Total chit reference -->
-        <div id="totalChitRef" style="display:none;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.25);border-radius:10px;padding:8px 12px;margin-bottom:12px;font-size:0.75rem;">
-            <span style="color:var(--text-dim);">Total Chit Value:</span>
-            <span id="totalChitVal" style="color:#a5b4fc;font-weight:700;margin-left:6px;"></span>
-            <span style="color:var(--text-dim);margin-left:12px;">Balance:</span>
-            <span id="totalBalVal" style="color:#f59e0b;font-weight:700;margin-left:6px;"></span>
-        </div>
-
         <label class="form-label-small">Paid By</label>
         <select id="pPaidBy" class="form-input">
             <option value="">-- Select Mode --</option>
@@ -530,6 +505,9 @@ async function getCollection(col){const s=await db.collection(col).get();return 
 function fmtDate(d){if(!d)return"—";const[y,m,day]=d.split("-");return`${day}/${m}/${y}`;}
 function fmtAmt(v){return'₹'+(parseFloat(v)||0).toLocaleString('en-IN');}
 function ini(n){return(n||'?').split(' ').map(x=>x[0]||'').join('').toUpperCase().slice(0,2)||'??';}
+function isAdmin(){ return CURRENT_USER && CURRENT_USER.role === 'admin'; }
+function guardAdmin(fn){ return function(...args){ if(!isAdmin()){ showToast('🚫 Access denied',false); return; } return fn(...args); }; }
+
 function openModal(id){document.getElementById(id).style.display='block';}
 function closeModal(id){document.getElementById(id).style.display='none';}
 
@@ -590,116 +568,16 @@ function getMonthSlot(dueDates, payDate){
     return dueDates.length-1;
 }
 
+
 // ══════════════════════════════════════════
-// MULTI-MONTH HELPERS
+// PAYMENT BALANCE CALC
 // ══════════════════════════════════════════
-// Returns set of already-paid month slot indices for a member in a group
-async function getPaidSlots(memberId, groupId, group){
-    const allDueDates=getGroupDueDates(group);
-    const ps=await getCollection('payments');
-    const mPays=ps.filter(p=>p.memberId===memberId&&p.groupId===groupId);
-    const paidSlots=new Set();
-    mPays.forEach(p=>{
-        if(Array.isArray(p.monthSlots)) p.monthSlots.forEach(s=>paidSlots.add(s));
-        else if(p.monthSlot!==undefined&&p.monthSlot!==null) paidSlots.add(p.monthSlot);
-        else {
-            // legacy: guess from date
-            const slot=getMonthSlot(allDueDates,p.date);
-            if(slot>=0) paidSlots.add(slot);
-        }
-    });
-    return {paidSlots, allDueDates};
-}
-
-// Get selected month slot indices from the checkbox grid
-function getSelectedMonthSlots(){
-    return Array.from(document.querySelectorAll('#monthSelectorGrid input[type=checkbox]:checked')).map(cb=>parseInt(cb.value));
-}
-
-async function onNumMonthsChange(){
-    const val=document.getElementById('pNumMonths').value;
-    const preview=document.getElementById('multiMonthPreview');
-    const perMonthLabel=document.getElementById('perMonthLabel');
-    document.getElementById('totalChitRef').style.display='none';
-
-    if(val==='1'){
-        preview.style.display='none';
-        perMonthLabel.textContent='';
-    } else {
-        perMonthLabel.textContent='(per month)';
-        preview.style.display='block';
-        await buildMonthSelectorGrid();
-    }
-    calcBalance();
-}
-
-async function buildMonthSelectorGrid(){
-    const mid=document.getElementById('pMember').value;
-    const gid=document.getElementById('pGroup').value;
-    const grid=document.getElementById('monthSelectorGrid');
-    const summary=document.getElementById('selectedSummary');
-    grid.innerHTML='<div style="color:var(--text-dim);font-size:0.72rem;padding:8px;">Select member & group first…</div>';
-    summary.style.display='none';
-    if(!mid||!gid) return;
-
-    const gs=await getCollection('groups');
-    const grp=gs.find(g=>g.id===gid);
-    if(!grp){grid.innerHTML='<div style="color:#f87171;font-size:0.72rem;">Group not found</div>';return;}
-
-    const {paidSlots,allDueDates}=await getPaidSlots(mid,gid,grp);
-    if(!allDueDates.length){grid.innerHTML='<div style="color:#f87171;font-size:0.72rem;">No due dates configured for this group</div>';return;}
-
-    const today=new Date().toISOString().split('T')[0];
-    grid.innerHTML=allDueDates.map((dd,i)=>{
-        const paid=paidSlots.has(i);
-        const isPast=dd<=today;
-        return`<label class="month-cb-item ${paid?'already-paid':''}" onclick="updateSelectedSummary()">
-            <input type="checkbox" value="${i}" ${paid?'disabled checked':''} onchange="updateSelectedSummary();calcBalance();">
-            <div>
-                <div style="font-size:0.65rem;font-weight:700;">${fmtDate(dd)}</div>
-                <div style="font-size:0.55rem;color:${paid?'#34d399':(isPast?'#f87171':'var(--text-dim)')}">${paid?'✅ Paid':(isPast?'⚠ Overdue':'Upcoming')}</div>
-            </div>
-        </label>`;
-    }).join('');
-    updateSelectedSummary();
-}
-
-function updateSelectedSummary(){
-    const slots=getSelectedMonthSlots();
-    // Filter out already-paid (disabled) ones — only count newly selected
-    const newlySelected=Array.from(document.querySelectorAll('#monthSelectorGrid input[type=checkbox]:checked:not(:disabled)')).map(cb=>parseInt(cb.value));
-    const summary=document.getElementById('selectedSummary');
-    if(newlySelected.length===0){
-        summary.style.display='none';
-    } else {
-        summary.style.display='block';
-        summary.textContent=`📅 ${newlySelected.length} month${newlySelected.length>1?'s':''} selected for payment`;
-    }
-    calcBalance();
-}
-
 function calcBalance(){
     const chit=parseFloat(document.getElementById('pChit').value)||0;
     const paid=parseFloat(document.getElementById('pPaid').value)||0;
-    const isMulti=document.getElementById('pNumMonths').value==='multi';
-
-    if(isMulti){
-        const newlySelected=Array.from(document.querySelectorAll('#monthSelectorGrid input[type=checkbox]:checked:not(:disabled)')).length;
-        const numMonths=Math.max(1,newlySelected);
-        const totalChit=chit*numMonths;
-        const bal=Math.max(0,totalChit-paid);
-        if(numMonths>1){
-            document.getElementById('totalChitRef').style.display='block';
-            document.getElementById('totalChitVal').textContent=`₹${totalChit.toLocaleString('en-IN')} (${numMonths} × ₹${chit.toLocaleString('en-IN')})`;
-            document.getElementById('totalBalVal').textContent=`₹${bal.toLocaleString('en-IN')}`;
-        } else {
-            document.getElementById('totalChitRef').style.display='none';
-        }
-    } else {
-        const bal=Math.max(0,chit-paid);
-        document.getElementById('totalChitRef').style.display='none';
-    }
+    // balance shown in paid field hint only — no display element needed now
 }
+
 // ══════════════════════════════════════════
 function switchTab(t){
     document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
@@ -906,7 +784,7 @@ async function loadMemberLedger(){
 // MEMBER CRUD
 // ══════════════════════════════════════════
 async function openAddMember(){
-    document.getElementById('editMemberId').value='';
+    if(!isAdmin()){showToast('🚫 Access denied',false);return;}
     document.getElementById('mName').value='';document.getElementById('mPhone').value='';
     document.getElementById('memberModalTitle').textContent='👤 Create Member';
     document.getElementById('deleteMemberArea').style.display='none';
@@ -920,6 +798,7 @@ async function openAddMember(){
 }
 
 async function openEditMember(mid){
+    if(!isAdmin()){showToast('🚫 Access denied',false);return;}
     const ms=await getCollection('members');const m=ms.find(x=>x.id===mid);if(!m)return;
     document.getElementById('editMemberId').value=m.id;
     document.getElementById('mName').value=m.name||'';
@@ -936,6 +815,7 @@ async function openEditMember(mid){
 }
 
 async function saveMember(){
+    if(!isAdmin()){showToast('🚫 Access denied',false);return;}
     const n=document.getElementById('mName').value.trim();
     const p=document.getElementById('mPhone').value.trim();
     const eid=document.getElementById('editMemberId').value;
@@ -970,7 +850,7 @@ function deleteMemberFromModal(){
 // GROUP CRUD
 // ══════════════════════════════════════════
 function openAddGroup(){
-    document.getElementById('editGroupId').value='';
+    if(!isAdmin()){showToast('🚫 Access denied',false);return;}
     document.getElementById('gName').value='';
     document.getElementById('gDuration').value='';
     document.getElementById('gDueDay').value='';
@@ -981,6 +861,7 @@ function openAddGroup(){
 }
 
 async function openEditGroup(gid){
+    if(!isAdmin()){showToast('🚫 Access denied',false);return;}
     const gs=await getCollection('groups');const g=gs.find(x=>x.id===gid);if(!g)return;
     document.getElementById('editGroupId').value=g.id;
     document.getElementById('gName').value=g.name||'';
@@ -993,6 +874,7 @@ async function openEditGroup(gid){
 }
 
 async function saveGroup(){
+    if(!isAdmin()){showToast('🚫 Access denied',false);return;}
     const name=document.getElementById('gName').value.trim();
     const duration=document.getElementById('gDuration').value;
     const dueDay=parseInt(document.getElementById('gDueDay').value)||null;
@@ -1018,7 +900,7 @@ function deleteGroupFromModal(){
 
 
 // ══════════════════════════════════════════
-// PAYMENT — MULTI-MONTH SUPPORT
+// PAYMENT FORM
 // ══════════════════════════════════════════
 function resetPaymentForm(){
     document.getElementById('pDate').value=new Date().toISOString().split('T')[0];
@@ -1026,24 +908,19 @@ function resetPaymentForm(){
     document.getElementById('pMember').value='';
     document.getElementById('pMemberList').style.display='none';
     document.getElementById('pGroup').innerHTML='<option value="">-- Select Member First --</option>';
-    document.getElementById('pNumMonths').value='1';
     document.getElementById('pChit').value='';
     document.getElementById('pPaid').value='';
     document.getElementById('pPaidBy').value='';
     document.getElementById('pChitPicked').value='No';
     document.getElementById('pChitPickedBy').value='';
     document.getElementById('chitPickedNameDiv').style.display='none';
-    document.getElementById('multiMonthPreview').style.display='none';
-    document.getElementById('totalChitRef').style.display='none';
-    document.getElementById('perMonthLabel').textContent='';
-    document.getElementById('monthSelectorGrid').innerHTML='';
-    document.getElementById('selectedSummary').style.display='none';
     const sel=document.getElementById('pChitPicked');
     [...sel.options].forEach(o=>o.disabled=false);
     sel.title='';
 }
 
 function openPaymentModal(){
+    if(!isAdmin()){showToast('🚫 Access denied',false);return;}
     resetPaymentForm();
     openModal('paymentModal');
 }
@@ -1059,8 +936,7 @@ async function linkGroupForPayment(){
 async function onGroupChange(){
     document.getElementById('pChit').value='';
     document.getElementById('pPaid').value='';
-    document.getElementById('totalChitRef').style.display='none';
-    // Check if member already picked chit
+    // Check if member already picked chit in this group
     const mid=document.getElementById('pMember').value;
     const gid=document.getElementById('pGroup').value;
     if(mid&&gid){
@@ -1077,13 +953,10 @@ async function onGroupChange(){
             sel.title='';
         }
     }
-    // Refresh month picker grid if multi-month mode is active
-    if(document.getElementById('pNumMonths').value==='multi'){
-        await buildMonthSelectorGrid();
-    }
 }
 
 async function savePayment(){
+    if(!isAdmin()){showToast('🚫 Access denied',false);return;}
     const mid=document.getElementById('pMember').value;
     const gid=document.getElementById('pGroup').value;
     const date=document.getElementById('pDate').value;
@@ -1092,7 +965,6 @@ async function savePayment(){
     const paidBy=document.getElementById('pPaidBy').value;
     const chitPicked=document.getElementById('pChitPicked').value;
     const chitPickedBy=document.getElementById('pChitPickedBy').value.trim();
-    const isMulti=document.getElementById('pNumMonths').value==='multi';
 
     if(!mid)return showToast('❌ Select a member',false);
     if(!gid)return showToast('❌ Select a group',false);
@@ -1105,40 +977,19 @@ async function savePayment(){
         if(alreadyPicked)return showToast('❌ This member already picked the chit',false);
     }
 
-    if(isMulti){
-        // Get ONLY the newly-selected (non-disabled) checkboxes
-        const monthSlots=Array.from(document.querySelectorAll('#monthSelectorGrid input[type=checkbox]:checked:not(:disabled)')).map(cb=>parseInt(cb.value));
-        if(monthSlots.length===0) return showToast('❌ Select at least one month in the picker',false);
-        const numMonths=monthSlots.length;
-        const totalChit=chitPerMonth*numMonths;
-        const balance=Math.max(0,totalChit-paid);
-        await db.collection('payments').add({
-            memberId:mid, groupId:gid, date,
-            chit:chitPerMonth, paid, balance, paidBy, chitPicked, chitPickedBy,
-            numMonths,
-            monthSlots,
-            monthSlot:monthSlots[0],   // first slot for sorting
-            paidPerMonth:paid/numMonths,
-            balPerMonth:balance/numMonths
-        });
-        showToast(`✅ ${numMonths}-month payment saved!`);
-    } else {
-        // Single month — determine slot from date
-        const gs=await getCollection('groups');
-        const grp=gs.find(g=>g.id===gid);
-        const dueDates=grp?getGroupDueDates(grp):[];
-        const slotIdx=getMonthSlot(dueDates,date);
-        const balance=Math.max(0,chitPerMonth-paid);
-        await db.collection('payments').add({
-            memberId:mid, groupId:gid, date,
-            chit:chitPerMonth, paid, balance, paidBy, chitPicked, chitPickedBy,
-            numMonths:1,
-            monthSlot:slotIdx>=0?slotIdx:null,
-            monthSlots:slotIdx>=0?[slotIdx]:[]
-        });
-        showToast('✅ Payment saved!');
-    }
-
+    const gs=await getCollection('groups');
+    const grp=gs.find(g=>g.id===gid);
+    const dueDates=grp?getGroupDueDates(grp):[];
+    const slotIdx=getMonthSlot(dueDates,date);
+    const balance=Math.max(0,chitPerMonth-paid);
+    await db.collection('payments').add({
+        memberId:mid, groupId:gid, date,
+        chit:chitPerMonth, paid, balance, paidBy, chitPicked, chitPickedBy,
+        numMonths:1,
+        monthSlot:slotIdx>=0?slotIdx:null,
+        monthSlots:slotIdx>=0?[slotIdx]:[]
+    });
+    showToast('✅ Payment saved!');
     closeModal('paymentModal');
     updateUI();
     if(document.getElementById('summaryView').value===mid) loadMemberLedger();
@@ -1148,6 +999,7 @@ async function savePayment(){
 // EDIT / DELETE EXISTING PAYMENT
 // ══════════════════════════════════════════
 async function openEditPayment(pid){
+    if(!isAdmin()){showToast('🚫 Access denied',false);return;}
     const ps=await getCollection('payments');
     const p=ps.find(x=>x.id===pid);if(!p)return;
     document.getElementById('epId').value=pid;
@@ -1192,6 +1044,7 @@ function epTogglePickedName(){
 }
 
 async function saveEditPayment(){
+    if(!isAdmin()){showToast('🚫 Access denied',false);return;}
     const pid=document.getElementById('epId').value;if(!pid)return;
     const date=document.getElementById('epDate').value;
     const chit=parseFloat(document.getElementById('epChit').value)||0;
@@ -1209,6 +1062,7 @@ async function saveEditPayment(){
 }
 
 async function deletePayment(){
+    if(!isAdmin()){showToast('🚫 Access denied',false);return;}
     const pid=document.getElementById('epId').value;if(!pid)return;
     showConfirm('🗑','Delete Payment?','This will permanently delete this payment record.',async()=>{
         await db.collection('payments').doc(pid).delete();
@@ -1353,6 +1207,7 @@ function toggleListGroup(id,header){
 // BACKUP / RESTORE
 // ══════════════════════════════════════════
 async function exportFullBackup(){
+    if(!isAdmin()){showToast('🚫 Access denied',false);return;}
     const d={m:await getCollection('members'),g:await getCollection('groups'),p:await getCollection('payments')};
     const a=document.createElement('a');
     a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:'application/json'}));
@@ -1361,6 +1216,7 @@ async function exportFullBackup(){
 }
 
 function confirmRestore(){
+    if(!isAdmin()){showToast('🚫 Access denied',false);return;}
     const file=document.getElementById('restoreFile').files[0];
     if(!file)return showToast('❌ Select a backup file first',false);
     showConfirm('🔄','Restore All Data?','This will overwrite ALL existing data.',()=>executeRestore());
