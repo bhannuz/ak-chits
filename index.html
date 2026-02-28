@@ -8,6 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root { --bg-dark:#0a0e1a; --card-bg:#141b2d; --input-bg:#1c253b; --accent-gold:linear-gradient(90deg,#ff9800,#f57c00); --text-main:#ffffff; --text-dim:#8e9aaf; --border:#252f48; }
         * { box-sizing:border-box; }
@@ -263,7 +264,8 @@
     <div id="backupTab" class="tab-content">
         <h5 class="mt-4 mb-3 text-warning text-center">💾 Data Management</h5>
         <div class="stat-card p-4">
-            <button class="btn btn-warning w-100 py-3 mb-3 fw-bold" onclick="exportFullBackup()">💾 Download JSON Backup</button>
+            <button class="btn btn-warning w-100 py-3 mb-2 fw-bold" onclick="exportFullBackup()">💾 Download JSON Backup</button>
+            <button class="btn btn-success w-100 py-3 mb-3 fw-bold" onclick="exportToExcel()">📊 Export to Excel (.xlsx)</button>
             <hr style="border-color:var(--border);">
             <p class="small mb-2" style="color:var(--text-dim);">Restore all data from backup file:</p>
             <input type="file" id="restoreFile" class="form-control mb-2 bg-dark text-white border-secondary" accept=".json">
@@ -1127,7 +1129,7 @@ async function renderGroupsTab(){
                     <div style="display:flex;gap:6px;align-items:center;">
                         <button onclick="generateGroupPDF('${g.id}');event.stopPropagation();" class="btn-pdf" style="padding:5px 10px;font-size:0.7rem;">📄 PDF</button>
                         <button onclick="openEditGroup('${g.id}');event.stopPropagation();" class="btn-edit-sm">✏️ Edit</button>
-                        <span class="chevron-icon open">▼</span>
+                        <span class="chevron-icon closed">▼</span>
                     </div>
                 </div>
                 <div class="row g-2 mt-2">
@@ -1139,7 +1141,7 @@ async function renderGroupsTab(){
                 <div class="prog-bar-outer mt-2"><div class="prog-bar-inner" style="width:${pct}%"></div></div>
                 <div class="prog-label" style="margin-top:3px;"><span>Month ${elapsed}/${totalMonths}</span><span>${left}/${totalMonths} months pending</span></div>
             </div>
-            <div class="group-body" id="${bodyId}" style="max-height:2000px;opacity:1;margin-top:12px;">
+            <div class="group-body" id="${bodyId}" style="max-height:0px;opacity:0;margin-top:0;">
                 ${gMs.length?`<div style="overflow-x:auto;"><table class="table-custom">
                     <thead><tr><th>#</th><th>Member</th><th>Paid</th><th>Balance</th><th>Months</th><th>Chit Picked Amt</th><th></th></tr></thead>
                     <tbody>${memberRows}</tbody>
@@ -1181,10 +1183,10 @@ async function renderListTab(){
             <span>${g.name}</span>
             <span style="display:flex;align-items:center;gap:8px;">
                 <span style="font-size:0.72rem;color:var(--text-dim);">${gMs.length} members</span>
-                <span class="list-chevron" style="font-size:0.8rem;color:var(--text-dim);transition:transform .25s;">▼</span>
+                <span class="list-chevron" style="font-size:0.8rem;color:var(--text-dim);transition:transform .25s;transform:rotate(-90deg);">▼</span>
             </span>
         </div>
-        <div id="${listId}" style="display:block;">
+        <div id="${listId}" style="display:none;">
             ${gMs.map((m,i)=>`<div style="padding:10px 20px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;gap:10px;">
                 <span style="width:28px;color:var(--text-dim);font-size:0.72rem;">${i+1}.</span>
                 <span style="flex:1;font-size:0.9rem;">${m.name}</span>
@@ -1213,6 +1215,94 @@ async function exportFullBackup(){
     a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:'application/json'}));
     a.download=`AK_Chit_Backup_${new Date().toISOString().split('T')[0]}.json`;
     a.click();showToast('✅ Backup downloaded!');
+}
+
+async function exportToExcel(){
+    if(!isAdmin()){showToast('🚫 Access denied',false);return;}
+    showToast('⏳ Generating Excel…',true);
+    const members=await getCollection('members');
+    const groups=await getCollection('groups');
+    const payments=await getCollection('payments');
+    const wb=XLSX.utils.book_new();
+    const today=new Date().toISOString().split('T')[0];
+
+    // ── Sheet 1: Members ──
+    const mRows=members.map(m=>({
+        'Name':m.name||'',
+        'Phone':m.phone||'',
+        'Groups':((m.groupIds||[]).map(gid=>{const g=groups.find(x=>x.id===gid);return g?g.name:gid;})).join(', '),
+    }));
+    const wsM=XLSX.utils.json_to_sheet(mRows.length?mRows:[{'Name':'','Phone':'','Groups':''}]);
+    wsM['!cols']=[{wch:28},{wch:16},{wch:40}];
+    XLSX.utils.book_append_sheet(wb,wsM,'Members');
+
+    // ── Sheet 2: Groups ──
+    const gRows=groups.map(g=>{
+        const gPays=payments.filter(p=>p.groupId===g.id);
+        const gMs=members.filter(m=>m.groupIds&&m.groupIds.includes(g.id));
+        return{
+            'Group Name':g.name||'',
+            'Duration (Months)':g.duration||g.gDuration||'',
+            'Start Date':g.startDate||g.gStart||'',
+            'Due Day':g.dueDay||'',
+            'Members':gMs.length,
+            'Total Collected':gPays.reduce((s,p)=>s+(parseFloat(p.paid)||0),0),
+            'Total Balance':gPays.reduce((s,p)=>s+(parseFloat(p.balance)||0),0),
+            'Chits Picked':gPays.filter(p=>p.chitPicked==='Yes').length,
+        };
+    });
+    const wsG=XLSX.utils.json_to_sheet(gRows.length?gRows:[{}]);
+    wsG['!cols']=[{wch:24},{wch:18},{wch:14},{wch:10},{wch:10},{wch:18},{wch:14},{wch:14}];
+    XLSX.utils.book_append_sheet(wb,wsG,'Groups');
+
+    // ── Sheet 3: All Payments ──
+    const pRows=payments.map(p=>{
+        const m=members.find(x=>x.id===p.memberId);
+        const g=groups.find(x=>x.id===p.groupId);
+        return{
+            'Date':p.date||'',
+            'Member':m?m.name:'Unknown',
+            'Phone':m?m.phone||'':'',
+            'Group':g?g.name:'Unknown',
+            'Chit/Month':parseFloat(p.chit)||0,
+            'Months':p.numMonths||1,
+            'Total Paid':parseFloat(p.paid)||0,
+            'Balance':parseFloat(p.balance)||0,
+            'Mode':p.paidBy||'',
+            'Chit Picked':p.chitPicked||'No',
+            'Chit Picked Value':p.chitPickedBy||'',
+        };
+    }).sort((a,b)=>a['Date'].localeCompare(b['Date']));
+    const wsP=XLSX.utils.json_to_sheet(pRows.length?pRows:[{}]);
+    wsP['!cols']=[{wch:12},{wch:24},{wch:14},{wch:20},{wch:12},{wch:8},{wch:12},{wch:12},{wch:14},{wch:12},{wch:18}];
+    XLSX.utils.book_append_sheet(wb,wsP,'All Payments');
+
+    // ── Sheet 4: Member Summary (one row per member per group) ──
+    const sumRows=[];
+    members.forEach(m=>{
+        (m.groupIds||[]).forEach(gid=>{
+            const g=groups.find(x=>x.id===gid);
+            const mp=payments.filter(p=>p.memberId===m.id&&p.groupId===gid);
+            const pickedPay=mp.find(p=>p.chitPicked==='Yes');
+            sumRows.push({
+                'Member':m.name||'',
+                'Phone':m.phone||'',
+                'Group':g?g.name:'',
+                'Months Paid':mp.reduce((s,p)=>s+(p.numMonths||1),0),
+                'Total Paid':mp.reduce((s,p)=>s+(parseFloat(p.paid)||0),0),
+                'Total Balance':mp.reduce((s,p)=>s+(parseFloat(p.balance)||0),0),
+                'Chit Picked':pickedPay?'Yes':'No',
+                'Chit Picked Value':pickedPay?pickedPay.chitPickedBy||'':'',
+                'Last Payment':mp.length?mp.sort((a,b)=>b.date.localeCompare(a.date))[0].date:'',
+            });
+        });
+    });
+    const wsS=XLSX.utils.json_to_sheet(sumRows.length?sumRows:[{}]);
+    wsS['!cols']=[{wch:24},{wch:14},{wch:20},{wch:12},{wch:12},{wch:14},{wch:12},{wch:18},{wch:14}];
+    XLSX.utils.book_append_sheet(wb,wsS,'Member Summary');
+
+    XLSX.writeFile(wb,`AKChitFunds_Export_${today}.xlsx`);
+    showToast('✅ Excel exported!');
 }
 
 function confirmRestore(){
@@ -1663,9 +1753,9 @@ async function checkAccessStatus(){
             const matched = members.find(m => (m.phone||'').replace(/\D/g,'').slice(-10) === phone);
             if(matched){
                 const user = {phone, role:'member', memberId: matched.id, name: matched.name};
-                CURRENT_USER = user;
                 sessionStorage.setItem('akdf_session', JSON.stringify(user));
-                applyUserSession(user);
+                showToast('✅ Access approved! Loading…', true);
+                setTimeout(()=>location.reload(), 800);
                 return;
             }
         } else if(req.status === 'denied'){
@@ -1676,11 +1766,42 @@ async function checkAccessStatus(){
     showToast('⏳ Still pending approval', true);
 }
 
+let _pendingPollTimer = null;
+
 function showLoginStep(stepId){
     ['loginStep1','loginStep2','loginStep3'].forEach(id=>{
         document.getElementById(id).classList.remove('active');
     });
     document.getElementById(stepId).classList.add('active');
+    // Start auto-poll when on pending screen
+    if(stepId === 'loginStep2'){
+        if(_pendingPollTimer) clearInterval(_pendingPollTimer);
+        _pendingPollTimer = setInterval(silentCheckStatus, 5000);
+    } else {
+        if(_pendingPollTimer){ clearInterval(_pendingPollTimer); _pendingPollTimer=null; }
+    }
+}
+
+async function silentCheckStatus(){
+    const phone = document.getElementById('loginPhone').value.trim();
+    if(!phone) return;
+    const reqs = await db.collection('accessRequests').where('phone','==',phone).get().catch(()=>({docs:[]}));
+    if(!reqs.docs || reqs.docs.length===0) return;
+    const req = reqs.docs[0].data();
+    if(req.status === 'approved'){
+        if(_pendingPollTimer){ clearInterval(_pendingPollTimer); _pendingPollTimer=null; }
+        const members = await getCollection('members');
+        const matched = members.find(m => (m.phone||'').replace(/\D/g,'').slice(-10) === phone);
+        if(matched){
+            const user = {phone, role:'member', memberId: matched.id, name: matched.name};
+            sessionStorage.setItem('akdf_session', JSON.stringify(user));
+            showToast('✅ Access approved! Loading…', true);
+            setTimeout(()=>location.reload(), 1000);
+        }
+    } else if(req.status === 'denied'){
+        if(_pendingPollTimer){ clearInterval(_pendingPollTimer); _pendingPollTimer=null; }
+        showLoginStep('loginStep3');
+    }
 }
 
 function goBackToLogin(){
