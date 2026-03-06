@@ -7,7 +7,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root { --bg-dark:#0a0e1a; --card-bg:#141b2d; --input-bg:#1c253b; --accent-gold:linear-gradient(90deg,#ff9800,#f57c00); --text-main:#ffffff; --text-dim:#8e9aaf; --border:#252f48; }
@@ -129,155 +128,6 @@
         .badge-denied { background:rgba(239,68,68,.15); color:#f87171; border:1px solid rgba(239,68,68,.3); border-radius:5px; padding:2px 8px; font-size:0.62rem; font-weight:700; }
         body.member-mode .nav-bar { display:none !important; }
 
-        /* ══════════════════════════════════════
-           PDF TEMPLATE — CLIPPING FULLY FIXED
-           Key insight: html2canvas must capture from x=0,y=0.
-           We place the element at a fixed overlay during render.
-           ══════════════════════════════════════ */
-        #pdf-template {
-            display: none;  /* Hidden normally */
-            position: fixed;
-            left: 0;
-            top: 0;
-            width: 794px;
-            background: white;
-            overflow: visible;
-            z-index: -1;
-            pointer-events: none;
-        }
-        #pdf-template.rendering {
-            display: block;
-        }
-        #pdfContent {
-            background: white;
-            font-family: 'Segoe UI', Arial, sans-serif;
-            width: 794px;
-            color: #111;
-            padding: 0;
-            margin: 0;
-            box-sizing: border-box;
-        }
-        .pdf-page {
-            background: white;
-            color: #111;
-            padding: 28px 32px 28px 32px;
-            font-family: 'Segoe UI', Arial, sans-serif;
-            width: 794px;
-            box-sizing: border-box;
-        }
-        .pdf-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            border-bottom: 4px solid #f39c12;
-            padding-bottom: 12px;
-            margin-bottom: 16px;
-            page-break-inside: avoid;
-        }
-        .pdf-brand { font-size: 24px; font-weight: 900; color: #f39c12; }
-        .pdf-brand-sub { font-size: 10px; color: #888; margin-top: 2px; }
-        .pdf-right-title { font-size: 15px; font-weight: 800; text-align: right; }
-        .pdf-right-sub { font-size: 10px; color: #888; text-align: right; margin-top: 3px; }
-        .pdf-member-box {
-            background: #fffbf0;
-            border: 2px solid #f39c12;
-            border-radius: 10px;
-            padding: 14px 18px;
-            margin-bottom: 16px;
-            page-break-inside: avoid;
-        }
-        .pdf-member-name { font-size: 18px; font-weight: 800; }
-        .pdf-member-sub { font-size: 11px; color: #555; margin-top: 4px; }
-        .pdf-stats-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-        .pdf-stat-box {
-            flex: 1;
-            min-width: 90px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 8px;
-            text-align: center;
-            background: white;
-        }
-        .pdf-stat-val { font-size: 14px; font-weight: 800; }
-        .pdf-stat-lbl { font-size: 9px; color: #888; text-transform: uppercase; letter-spacing: .4px; margin-top: 2px; }
-        .pdf-section-title {
-            font-size: 10px;
-            font-weight: 800;
-            color: #888;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin: 16px 0 8px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 5px;
-            page-break-after: avoid;
-        }
-        .pdf-group-block {
-            margin-bottom: 20px;
-            page-break-inside: avoid;
-        }
-        .pdf-group-title {
-            font-size: 12px;
-            font-weight: 800;
-            margin-bottom: 5px;
-            color: #111;
-            page-break-after: avoid;
-        }
-        .pdf-progress-outer { background: #eee; border-radius: 4px; height: 7px; margin-bottom: 4px; overflow: hidden; }
-        .pdf-progress-inner { height: 100%; background: linear-gradient(90deg, #f39c12, #f57c00); border-radius: 4px; }
-
-        /* ── FIXED TABLE STYLES ── */
-        .pdf-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 10px;
-            margin-bottom: 16px;
-            table-layout: fixed;
-        }
-        .pdf-table th {
-            background: #f5f5f5;
-            border: 1px solid #ccc;
-            padding: 6px 7px;
-            font-size: 8.5px;
-            text-transform: uppercase;
-            color: #555;
-            text-align: left;
-            page-break-after: avoid;
-        }
-        .pdf-table td {
-            border: 1px solid #ddd;
-            padding: 6px 7px;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-        }
-        .pdf-table thead { display: table-header-group; }
-        .pdf-table tbody { display: table-row-group; }
-        .pdf-table tr { page-break-inside: avoid; }
-        .pdf-table tr:nth-child(even) td { background: #fafafa; }
-        .pdf-table tr.pdf-chit-row td { background: #f0fff8 !important; }
-        .pdf-table tr.pdf-chit-row td:first-child { border-left: 3px solid #10b981; }
-        .pdf-table tr.pdf-due-row td { background: #fff5f5 !important; color: #c0392b; font-style: italic; }
-        .pdf-table tr.pdf-partial-row td { background: #fffbeb !important; }
-        .pdf-table tr.pdf-multi-row td { background: #eef2ff !important; }
-        .pdf-table tr.pdf-multi-row td:first-child { border-left: 3px solid #818cf8; }
-        .pdf-chit-badge { background: #d1fae5; color: #065f46; border-radius: 4px; padding: 2px 5px; font-size: 8px; font-weight: 800; white-space: nowrap; }
-        .pdf-due-badge { background: #fee2e2; color: #b91c1c; border-radius: 4px; padding: 2px 5px; font-size: 8px; font-weight: 800; }
-        .pdf-partial-badge { background: #fef3c7; color: #92400e; border-radius: 4px; padding: 2px 5px; font-size: 8px; font-weight: 800; }
-        .pdf-multi-badge { background: #e0e7ff; color: #3730a3; border-radius: 4px; padding: 2px 5px; font-size: 8px; font-weight: 800; white-space: nowrap; }
-        .pdf-total-row td { background: #fff8e1 !important; font-weight: 800; border-top: 2px solid #f39c12; }
-        .pdf-footer {
-            margin-top: 20px;
-            border-top: 1px solid #ddd;
-            padding-top: 10px;
-            display: flex;
-            justify-content: space-between;
-            font-size: 9px;
-            color: #aaa;
-            page-break-inside: avoid;
-        }
-        /* Member detail block within group PDF */
-        .pdf-member-detail-block {
-            margin-bottom: 16px;
-            page-break-inside: avoid;
         }
         /* Column widths for member statement table */
         .pdf-table.member-table col.c-no    { width: 4%; }
@@ -405,9 +255,6 @@
         </div>
     </div>
 </div>
-
-<!-- PDF TEMPLATE - off screen container -->
-<div id="pdf-template"><div id="pdfContent"></div></div>
 
 <!-- ══════ MODALS ══════ -->
 
@@ -1517,96 +1364,125 @@ async function executeRestore(){
 }
 
 // ══════════════════════════════════════════
-// PDF RENDER — FIXED: proper scale, page breaks, column widths
+// PRINT / PDF — uses window.open + window.print()
+// No html2pdf, no canvas clipping, perfect output
 // ══════════════════════════════════════════
-function renderPDF(filename){
-    return new Promise((resolve)=>{
-        const wrapper=document.getElementById('pdf-template');
-        const content=document.getElementById('pdfContent');
+function printMemberStatement(htmlContent, memberName){
+    const win = window.open('', '_blank', 'width=900,height=700');
+    if(!win){ showToast('❌ Pop-up blocked. Allow pop-ups and try again.', false); return; }
+    win.document.write(`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Member Statement - ${memberName}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: white; color: #111; font-size: 11px; }
+  .page { width: 100%; padding: 24px 28px; }
 
-        // Fix left-clip: force tables to fixed layout
-        content.querySelectorAll('table').forEach(t=>{
-            t.style.tableLayout='fixed';
-            t.style.width='100%';
-        });
+  /* ── HEADER ── */
+  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #f39c12; padding-bottom: 10px; margin-bottom: 14px; }
+  .brand-name { font-size: 22px; font-weight: 900; color: #f39c12; }
+  .brand-sub { font-size: 9px; color: #888; margin-top: 2px; }
+  .doc-title { font-size: 15px; font-weight: 800; text-align: right; }
+  .doc-sub { font-size: 9px; color: #888; text-align: right; margin-top: 2px; }
 
-        // Show the element at position fixed top:0 left:0 for clean capture
-        wrapper.classList.add('rendering');
+  /* ── MEMBER INFO BOX ── */
+  .member-box { background: #fffbf0; border: 2px solid #f39c12; border-radius: 8px; padding: 12px 16px; margin-bottom: 14px; page-break-inside: avoid; }
+  .member-name { font-size: 17px; font-weight: 800; margin-bottom: 4px; }
+  .member-sub { font-size: 10px; color: #555; margin-top: 3px; }
+  .stats-row { display: flex; gap: 8px; margin-top: 10px; }
+  .stat-box { flex: 1; border: 1px solid #ddd; border-radius: 6px; padding: 7px; text-align: center; background: white; }
+  .stat-val { font-size: 13px; font-weight: 800; }
+  .stat-lbl { font-size: 8px; color: #888; text-transform: uppercase; letter-spacing: .4px; margin-top: 2px; }
 
-        // Use html2pdf's onclone to ensure the cloned document element
-        // starts at x=0 with no scroll offset
-        const opt={
-            margin:0,
-            filename,
-            image:{type:'jpeg',quality:0.95},
-            html2canvas:{
-                scale:1.5,
-                useCORS:true,
-                logging:false,
-                allowTaint:false,
-                backgroundColor:'#ffffff',
-                windowWidth:794,
-                scrollX:0,
-                scrollY:0,
-                onclone: function(clonedDoc){
-                    // In the cloned doc, make pdfContent a clean full-width block
-                    const el = clonedDoc.getElementById('pdfContent');
-                    const tmpl = clonedDoc.getElementById('pdf-template');
-                    if(el){
-                        el.style.cssText = 'background:white;width:794px;margin:0;padding:0;box-sizing:border-box;';
-                    }
-                    if(tmpl){
-                        tmpl.style.cssText = 'display:block;position:static;left:0;top:0;width:794px;background:white;';
-                    }
-                }
-            },
-            jsPDF:{
-                unit:'mm',
-                format:'a4',
-                orientation:'portrait',
-                compress:true
-            },
-            pagebreak:{
-                mode:'css',
-                avoid:['.pdf-member-box','.pdf-group-block','.pdf-member-detail-block','.pdf-header','.pdf-footer','thead']
-            }
-        };
+  /* ── SECTION TITLE ── */
+  .section-title { font-size: 9px; font-weight: 800; color: #888; text-transform: uppercase; letter-spacing: 1px; margin: 14px 0 6px; border-bottom: 1px solid #eee; padding-bottom: 4px; page-break-after: avoid; }
 
-        setTimeout(()=>{
-            html2pdf().set(opt).from(content).save().then(()=>{
-                wrapper.classList.remove('rendering');
-                resolve();
-            }).catch(err=>{
-                console.error('PDF error:',err);
-                wrapper.classList.remove('rendering');
-                resolve();
-            });
-        },400);
-    });
+  /* ── GROUP BLOCK ── */
+  .group-block { margin-bottom: 18px; page-break-inside: avoid; }
+  .group-title { font-size: 12px; font-weight: 800; margin-bottom: 4px; color: #111; }
+  .group-meta { font-size: 9px; color: #888; margin-bottom: 3px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .progress-outer { background: #eee; border-radius: 4px; height: 6px; margin-bottom: 3px; overflow: hidden; }
+  .progress-inner { height: 100%; background: linear-gradient(90deg, #f39c12, #f57c00); border-radius: 4px; }
+  .group-totals { font-size: 9px; color: #888; text-align: right; margin-bottom: 6px; }
+
+  /* ── TABLE ── */
+  table { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 4px; table-layout: fixed; }
+  thead { display: table-header-group; }
+  th { background: #f5f5f5; border: 1px solid #ccc; padding: 5px 6px; font-size: 8.5px; text-transform: uppercase; color: #555; text-align: left; font-weight: 700; page-break-after: avoid; }
+  td { border: 1px solid #e0e0e0; padding: 5px 6px; vertical-align: top; word-wrap: break-word; }
+  tr { page-break-inside: avoid; }
+  tr:nth-child(even) td { background: #fafafa; }
+  tr.chit-row td { background: #f0fff8 !important; }
+  tr.chit-row td:first-child { border-left: 3px solid #10b981; }
+  tr.multi-row td { background: #eef2ff !important; }
+  tr.multi-row td:first-child { border-left: 3px solid #818cf8; }
+  tr.total-row td { background: #fff8e1 !important; font-weight: 800; border-top: 2px solid #f39c12; }
+
+  /* Column widths */
+  col.c1 { width: 4%; }
+  col.c2 { width: 23%; }
+  col.c3 { width: 13%; }
+  col.c4 { width: 15%; }
+  col.c5 { width: 13%; }
+  col.c6 { width: 12%; }
+  col.c7 { width: 12%; }
+  col.c8 { width: 8%; }
+
+  /* Badges */
+  .badge-chit { background: #d1fae5; color: #065f46; border-radius: 3px; padding: 1px 5px; font-size: 8px; font-weight: 800; white-space: nowrap; }
+  .badge-multi { background: #e0e7ff; color: #3730a3; border-radius: 3px; padding: 1px 5px; font-size: 8px; font-weight: 800; white-space: nowrap; }
+
+  /* ── FOOTER ── */
+  .footer { margin-top: 18px; border-top: 1px solid #ddd; padding-top: 8px; display: flex; justify-content: space-between; font-size: 8.5px; color: #aaa; page-break-inside: avoid; }
+
+  /* ── PRINT SETTINGS ── */
+  @page { size: A4; margin: 10mm 10mm 10mm 10mm; }
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .no-print { display: none !important; }
+    .group-block { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="no-print" style="background:#1a1a2e;color:white;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;font-family:sans-serif;gap:12px;">
+  <span style="font-size:14px;font-weight:700;">🏆 AK Chit Funds — Member Statement</span>
+  <div style="display:flex;gap:10px;">
+    <button onclick="window.print()" style="background:linear-gradient(90deg,#f39c12,#f57c00);color:black;border:none;padding:9px 22px;border-radius:8px;font-weight:800;font-size:13px;cursor:pointer;">🖨️ Print / Save as PDF</button>
+    <button onclick="window.close()" style="background:rgba(255,255,255,.12);color:white;border:1px solid rgba(255,255,255,.3);padding:9px 16px;border-radius:8px;font-size:12px;cursor:pointer;">✕ Close</button>
+  </div>
+</div>
+${htmlContent}
+</body>
+</html>`);
+    win.document.close();
 }
 
 // ══════════════════════════════════════════
-// PDF — MEMBER STATEMENT (FIXED)
+// MEMBER STATEMENT — opens in new tab, prints cleanly
 // ══════════════════════════════════════════
 async function generateMemberPDF(mid){
-    showToast('⏳ Generating PDF…',true);
-    const ms=await getCollection('members');const gs=await getCollection('groups');const ps=await getCollection('payments');
-    const m=ms.find(x=>x.id===mid);if(!m)return;
+    showToast('⏳ Building statement…', true);
+    const ms=await getCollection('members');
+    const gs=await getCollection('groups');
+    const ps=await getCollection('payments');
+    const m=ms.find(x=>x.id===mid); if(!m) return;
     const mPays=ps.filter(p=>p.memberId===mid);
     const totalPaid=mPays.reduce((s,p)=>s+(parseFloat(p.paid)||0),0);
     const totalBal=mPays.reduce((s,p)=>s+(parseFloat(p.balance)||0),0);
     const chitsPicked=mPays.filter(p=>p.chitPicked==='Yes').length;
     const memberGroups=gs.filter(g=>m.groupIds&&m.groupIds.includes(g.id));
     const today=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
-
     const grouped={};
-    mPays.forEach(p=>{const gid=p.groupId||'unk';if(!grouped[gid])grouped[gid]=[];grouped[gid].push(p);});
+    mPays.forEach(p=>{ const gid=p.groupId||'unk'; if(!grouped[gid]) grouped[gid]=[]; grouped[gid].push(p); });
 
-    const groupSections=memberGroups.map(g=>{
+    const groupSections = memberGroups.map(g => {
         const pays=(grouped[g.id]||[]).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
         const totalMonths=parseInt(g.duration||g.gDuration)||21;
         let elapsed=0;
-        if(g.startDate||g.gStart){const _s=new Date(g.startDate||g.gStart),_n=new Date();elapsed=Math.max(0,Math.min(totalMonths,(_n.getFullYear()-_s.getFullYear())*12+(_n.getMonth()-_s.getMonth())+1));}
+        if(g.startDate||g.gStart){ const _s=new Date(g.startDate||g.gStart),_n=new Date(); elapsed=Math.max(0,Math.min(totalMonths,(_n.getFullYear()-_s.getFullYear())*12+(_n.getMonth()-_s.getMonth())+1)); }
         const left=Math.max(0,totalMonths-elapsed);
         const pct=Math.min(100,Math.round(elapsed/totalMonths*100));
         const gPaid=pays.reduce((s,p)=>s+(parseFloat(p.paid)||0),0);
@@ -1629,87 +1505,84 @@ async function generateMemberPDF(mid){
                 monthLabel=slotIdx>=0&&allDueDates[slotIdx]?fmtDate(allDueDates[slotIdx]):'—';
             }
             const chitDisp=isMulti
-                ?`₹${(parseFloat(p.chit)||0).toLocaleString('en-IN')}/mo × ${p.numMonths}`
-                :`₹${(parseFloat(p.chit)||0).toLocaleString('en-IN')}`;
-            return`<tr class="${cp?'pdf-chit-row':(isMulti?'pdf-multi-row':'')}">
+                ?`&#8377;${(parseFloat(p.chit)||0).toLocaleString('en-IN')}/mo &times; ${p.numMonths}`
+                :`&#8377;${(parseFloat(p.chit)||0).toLocaleString('en-IN')}`;
+            return `<tr class="${cp?'chit-row':(isMulti?'multi-row':'')}">
                 <td>${idx+1}</td>
-                <td>${monthLabel}${isMulti?`<br><span class="pdf-multi-badge">📅 ${p.numMonths}mo</span>`:''}</td>
+                <td>${monthLabel}${isMulti?` <span class="badge-multi">&#128197; ${p.numMonths}mo</span>`:''}</td>
                 <td>${fmtDate(p.date)}</td>
                 <td>${chitDisp}</td>
-                <td style="color:#065f46;font-weight:700;">₹${(parseFloat(p.paid)||0).toLocaleString('en-IN')}</td>
-                <td style="color:#92400e;font-weight:700;">₹${(parseFloat(p.balance)||0).toLocaleString('en-IN')}</td>
+                <td style="color:#065f46;font-weight:700;">&#8377;${(parseFloat(p.paid)||0).toLocaleString('en-IN')}</td>
+                <td style="color:${(parseFloat(p.balance)||0)>0?'#92400e':'#065f46'};font-weight:700;">&#8377;${(parseFloat(p.balance)||0).toLocaleString('en-IN')}</td>
                 <td>${p.paidBy||'—'}</td>
-                <td>${cp?`<span class="pdf-chit-badge">✅ YES</span>`:'—'}</td>
+                <td>${cp?`<span class="badge-chit">&#10003; YES</span>`:'—'}</td>
             </tr>`;
         }).join('');
 
-        return`<div class="pdf-group-block">
-            <div class="pdf-group-title">📂 ${g.name}</div>
-            <div style="display:flex;gap:10px;font-size:9px;color:#888;margin-bottom:4px;flex-wrap:wrap;">
-                <span>🗓 Start: <strong>${gStartDisp}</strong></span>
-                <span>📅 Due: <strong>${gDueDayDisp}</strong></span>
-                <span>Month ${elapsed}/${totalMonths} · <strong>${left} pending</strong></span>
-                <span>Months covered: <strong>${totalMonthsCovered}/${totalMonths}</strong></span>
+        return `<div class="group-block">
+            <div class="group-title">&#128194; ${g.name}</div>
+            <div class="group-meta">
+                <span>&#128197; Start: <strong>${gStartDisp}</strong></span>
+                <span>Due: <strong>${gDueDayDisp}</strong></span>
+                <span>Month ${elapsed}/${totalMonths} &nbsp;&bull;&nbsp; <strong>${left} pending</strong></span>
+                <span>Covered: <strong>${totalMonthsCovered}/${totalMonths} months</strong></span>
             </div>
-            <div class="pdf-progress-outer"><div class="pdf-progress-inner" style="width:${pct}%"></div></div>
-            <div style="font-size:9px;color:#888;text-align:right;margin-bottom:8px;">Paid: ₹${gPaid.toLocaleString('en-IN')} · Balance: ₹${gBal.toLocaleString('en-IN')}</div>
-            ${pays.length?`<table class="pdf-table member-table">
-                <colgroup>
-                    <col class="c-no"><col class="c-month"><col class="c-date">
-                    <col class="c-chit"><col class="c-paid"><col class="c-bal">
-                    <col class="c-mode"><col class="c-pick">
-                </colgroup>
+            <div class="progress-outer"><div class="progress-inner" style="width:${pct}%"></div></div>
+            <div class="group-totals">Paid: &#8377;${gPaid.toLocaleString('en-IN')} &nbsp;&bull;&nbsp; Balance: &#8377;${gBal.toLocaleString('en-IN')}</div>
+            ${pays.length ? `<table>
+                <colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5"><col class="c6"><col class="c7"><col class="c8"></colgroup>
                 <thead><tr><th>#</th><th>Month(s) Covered</th><th>Pay Date</th><th>Chit Amt</th><th>Paid</th><th>Balance</th><th>Mode</th><th>Chit?</th></tr></thead>
-                <tbody>${rows}
-                <tr class="pdf-total-row">
+                <tbody>
+                ${rows}
+                <tr class="total-row">
                     <td colspan="4"><strong>Total</strong></td>
-                    <td><strong>₹${gPaid.toLocaleString('en-IN')}</strong></td>
-                    <td><strong>₹${gBal.toLocaleString('en-IN')}</strong></td>
+                    <td><strong>&#8377;${gPaid.toLocaleString('en-IN')}</strong></td>
+                    <td><strong>&#8377;${gBal.toLocaleString('en-IN')}</strong></td>
                     <td colspan="2"></td>
                 </tr>
-                </tbody></table>`:`<p style="color:#888;font-size:10px;padding:4px 0;">No payments yet.</p>`}
+                </tbody>
+            </table>` : `<p style="color:#888;font-size:9px;padding:4px 0;">No payments yet.</p>`}
         </div>`;
     }).join('');
 
-    document.getElementById('pdfContent').innerHTML=`
-        <div class="pdf-page">
-        <div class="pdf-header">
-            <div><div class="pdf-brand">🏆 AK CHIT FUNDS</div><div class="pdf-brand-sub">Chit Fund Management · Admin Report</div></div>
-            <div><div class="pdf-right-title">MEMBER STATEMENT</div><div class="pdf-right-sub">Generated: ${today}</div></div>
+    const html = `<div class="page">
+        <div class="header">
+            <div><div class="brand-name">&#127942; AK CHIT FUNDS</div><div class="brand-sub">Chit Fund Management &bull; Member Statement</div></div>
+            <div><div class="doc-title">MEMBER STATEMENT</div><div class="doc-sub">Generated: ${today}</div></div>
         </div>
-        <div class="pdf-member-box">
+        <div class="member-box">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
                 <div>
-                    <div class="pdf-member-name">${m.name}</div>
-                    <div class="pdf-member-sub">📞 ${m.phone||'No phone'}</div>
-                    <div class="pdf-member-sub">📂 Groups: ${memberGroups.map(g=>g.name).join(', ')||'—'}</div>
+                    <div class="member-name">${m.name}</div>
+                    <div class="member-sub">&#128222; ${m.phone||'No phone'}</div>
+                    <div class="member-sub">&#128194; Groups: ${memberGroups.map(g=>g.name).join(', ')||'—'}</div>
                 </div>
-                <div>
-                    <div class="pdf-stats-row">
-                        <div class="pdf-stat-box"><div class="pdf-stat-val" style="color:#065f46;">₹${totalPaid.toLocaleString('en-IN')}</div><div class="pdf-stat-lbl">Total Paid</div></div>
-                        <div class="pdf-stat-box"><div class="pdf-stat-val" style="color:#92400e;">₹${totalBal.toLocaleString('en-IN')}</div><div class="pdf-stat-lbl">Balance</div></div>
-                        <div class="pdf-stat-box"><div class="pdf-stat-val">${mPays.length}</div><div class="pdf-stat-lbl">Payments</div></div>
-                        <div class="pdf-stat-box"><div class="pdf-stat-val" style="color:#065f46;">${chitsPicked}</div><div class="pdf-stat-lbl">Chits Picked</div></div>
-                    </div>
+                <div class="stats-row">
+                    <div class="stat-box"><div class="stat-val" style="color:#065f46;">&#8377;${totalPaid.toLocaleString('en-IN')}</div><div class="stat-lbl">Total Paid</div></div>
+                    <div class="stat-box"><div class="stat-val" style="color:#92400e;">&#8377;${totalBal.toLocaleString('en-IN')}</div><div class="stat-lbl">Balance</div></div>
+                    <div class="stat-box"><div class="stat-val">${mPays.length}</div><div class="stat-lbl">Payments</div></div>
+                    <div class="stat-box"><div class="stat-val" style="color:#065f46;">${chitsPicked}</div><div class="stat-lbl">Chits Picked</div></div>
                 </div>
             </div>
         </div>
-        <div class="pdf-section-title">Payment History — Group Wise</div>
+        <div class="section-title">Payment History &mdash; Group Wise</div>
         ${groupSections||'<p style="color:#888;font-size:10px;">No payments recorded.</p>'}
-        <div class="pdf-footer"><span>AK Chit Funds · Admin Portal</span><span>Member: ${m.name} · ${today}</span><span>CONFIDENTIAL</span></div>
-        </div>`;
+        <div class="footer">
+            <span>AK Chit Funds &bull; Admin Portal</span>
+            <span>Member: ${m.name} &bull; ${today}</span>
+            <span>CONFIDENTIAL</span>
+        </div>
+    </div>`;
 
-    await renderPDF(`AKChitFunds_${m.name.replace(/\s+/g,'_')}_Statement.pdf`);
-    showToast('✅ PDF Downloaded!',true);
+    printMemberStatement(html, m.name);
+    showToast('✅ Statement opened!', true);
 }
 
-// ══════════════════════════════════════════
-// PDF — GROUP REPORT (FIXED)
-// ══════════════════════════════════════════
+// generateGroupPDF kept for Groups tab — also uses window.open
 async function generateGroupPDF(gid){
-    showToast('⏳ Generating Group PDF…',true);
+    showToast('⏳ Building group report…', true);
     const gs=await getCollection('groups');const ms=await getCollection('members');const ps=await getCollection('payments');
-    const g=gs.find(x=>x.id===gid);if(!g){showToast('❌ Group not found',false);return;}
+    const g=gs.find(x=>x.id===gid); if(!g){showToast('❌ Group not found',false);return;}
     const gMs=ms.filter(m=>m.groupIds&&m.groupIds.includes(g.id));
     const gPays=ps.filter(p=>p.groupId===gid);
     const today=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
@@ -1722,7 +1595,6 @@ async function generateGroupPDF(gid){
     const left=Math.max(0,totalMonths-elapsed);const pct=Math.min(100,Math.round(elapsed/totalMonths*100));
     const allDueDates=getGroupDueDates(g);
 
-    // Member Summary table rows
     const summaryRows=gMs.map((m,i)=>{
         const mp=gPays.filter(p=>p.memberId===m.id);
         const mPaid=mp.reduce((s,p)=>s+(parseFloat(p.paid)||0),0);
@@ -1733,168 +1605,104 @@ async function generateGroupPDF(gid){
         return`<tr>
             <td>${i+1}</td>
             <td><strong>${m.name}</strong>${m.phone?`<br><span style="font-size:8px;color:#888;">${m.phone}</span>`:''}</td>
-            <td style="color:#065f46;font-weight:700;">₹${mPaid.toLocaleString('en-IN')}</td>
-            <td style="color:${mBal>0?'#92400e':'#065f46'};font-weight:700;">₹${mBal.toLocaleString('en-IN')}</td>
+            <td style="color:#065f46;font-weight:700;">&#8377;${mPaid.toLocaleString('en-IN')}</td>
+            <td style="color:${mBal>0?'#92400e':'#065f46'};font-weight:700;">&#8377;${mBal.toLocaleString('en-IN')}</td>
             <td>${mp.length} (${monthsCovered}/${totalMonths})</td>
             <td>${lastPay?fmtDate(lastPay.date):'—'}</td>
-            <td>${mPicked>0?`<span class="pdf-chit-badge">✅ ${mPicked}x</span>`:'—'}</td>
+            <td>${mPicked>0?`<span style="background:#d1fae5;color:#065f46;border-radius:3px;padding:1px 5px;font-size:8px;font-weight:800;">&#10003; ${mPicked}x</span>`:'—'}</td>
         </tr>`;
     }).join('');
 
-    // Per-member detailed payment history
-    const detailSections=gMs.map((m,mi)=>{
-        const mp=gPays.filter(p=>p.memberId===m.id).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-        const mPaid=mp.reduce((s,p)=>s+(parseFloat(p.paid)||0),0);
-        const mBal=mp.reduce((s,p)=>s+(parseFloat(p.balance)||0),0);
-        const monthsCovered=mp.reduce((s,p)=>s+(p.numMonths||1),0);
-
-        const rows=mp.map((p,idx)=>{
-            const cp=p.chitPicked==='Yes';
-            const isMulti=p.numMonths&&p.numMonths>1;
-            let monthLabel='—';
-            if(isMulti&&p.monthSlots&&p.monthSlots.length>0){
-                const f=allDueDates[p.monthSlots[0]]?fmtDate(allDueDates[p.monthSlots[0]]):'—';
-                const l=allDueDates[p.monthSlots[p.monthSlots.length-1]]?fmtDate(allDueDates[p.monthSlots[p.monthSlots.length-1]]):'—';
-                monthLabel=`${f} → ${l}`;
-            } else {
-                const slotIdx=p.monthSlot!==undefined?p.monthSlot:getMonthSlot(allDueDates,p.date);
-                monthLabel=slotIdx>=0&&allDueDates[slotIdx]?fmtDate(allDueDates[slotIdx]):'—';
-            }
-            const chitDisp=isMulti
-                ?`₹${(parseFloat(p.chit)||0).toLocaleString('en-IN')}/mo × ${p.numMonths}`
-                :`₹${(parseFloat(p.chit)||0).toLocaleString('en-IN')}`;
-            return`<tr class="${cp?'pdf-chit-row':(isMulti?'pdf-multi-row':'')}">
-                <td>${idx+1}</td>
-                <td>${monthLabel}${isMulti?`<br><span class="pdf-multi-badge">📅 ${p.numMonths}mo</span>`:''}</td>
-                <td>${fmtDate(p.date)}</td>
-                <td>${chitDisp}</td>
-                <td style="color:#065f46;font-weight:700;">₹${(parseFloat(p.paid)||0).toLocaleString('en-IN')}</td>
-                <td style="color:${(parseFloat(p.balance)||0)>0?'#92400e':'#065f46'};font-weight:700;">₹${(parseFloat(p.balance)||0).toLocaleString('en-IN')}</td>
-                <td>${p.paidBy||'—'}</td>
-                <td>${cp?`<span class="pdf-chit-badge">✅ YES</span>`:'—'}</td>
-            </tr>`;
-        }).join('');
-
-        return`<div class="pdf-member-detail-block">
-            <table style="width:100%;border-collapse:collapse;margin-bottom:4px;">
-                <tr>
-                    <td style="font-size:11px;font-weight:800;padding:5px 0;">${mi+1}. ${m.name}${m.phone?` <span style="font-size:9px;color:#888;font-weight:400;">· ${m.phone}</span>`:''}</td>
-                    <td style="text-align:right;font-size:9px;color:#555;">
-                        Paid: <strong style="color:#065f46;">₹${mPaid.toLocaleString('en-IN')}</strong> &nbsp;
-                        Bal: <strong style="color:${mBal>0?'#92400e':'#065f46'};">₹${mBal.toLocaleString('en-IN')}</strong> &nbsp;
-                        Months: <strong>${monthsCovered}/${totalMonths}</strong>
-                    </td>
-                </tr>
-            </table>
-            ${mp.length===0
-                ?`<p style="font-size:9px;color:#999;padding:4px 0;">No payments recorded.</p>`
-                :`<table class="pdf-table group-detail-table">
-                    <colgroup>
-                        <col class="c-no"><col class="c-month"><col class="c-date">
-                        <col class="c-chit"><col class="c-paid"><col class="c-bal">
-                        <col class="c-mode"><col class="c-pick">
-                    </colgroup>
-                    <thead><tr><th>#</th><th>Month(s) Covered</th><th>Pay Date</th><th>Chit Amt</th><th>Paid</th><th>Balance</th><th>Mode</th><th>Chit?</th></tr></thead>
-                    <tbody>
-                        ${rows}
-                        <tr class="pdf-total-row">
-                            <td colspan="4"><strong>Subtotal</strong></td>
-                            <td><strong>₹${mPaid.toLocaleString('en-IN')}</strong></td>
-                            <td><strong>₹${mBal.toLocaleString('en-IN')}</strong></td>
-                            <td colspan="2"></td>
-                        </tr>
-                    </tbody>
-                </table>`}
-        </div>`;
-    }).join('');
-
-    document.getElementById('pdfContent').innerHTML=`
-    <div class="pdf-page">
-        <div class="pdf-header">
-            <div>
-                <div class="pdf-brand">🏆 AK CHIT FUNDS</div>
-                <div class="pdf-brand-sub">Chit Fund Management · Group Report</div>
-            </div>
-            <div>
-                <div class="pdf-right-title">GROUP STATEMENT</div>
-                <div class="pdf-right-sub">Generated: ${today}</div>
-            </div>
-        </div>
-
-        <div class="pdf-member-box">
-            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;align-items:flex-start;">
-                <div style="flex:1;min-width:200px;">
-                    <div class="pdf-member-name">📂 ${g.name}</div>
-                    <div class="pdf-member-sub">📅 Duration: <strong>${totalMonths} months</strong> &nbsp;|&nbsp; Start: <strong>${fmtDate(g.startDate||g.gStart||'')}</strong></div>
-                    <div class="pdf-member-sub">🗓 Monthly Due: <strong>${g.dueDay?`${g.dueDay}${['st','nd','rd'][((g.dueDay%100-11)%10)-1]||'th'} of every month`:'—'}</strong></div>
-                    <div class="pdf-member-sub">📊 Progress: Month <strong>${elapsed}/${totalMonths}</strong> &nbsp;·&nbsp; <strong>${left} months pending</strong></div>
-                    <div style="margin-top:8px;">
-                        <div class="pdf-progress-outer" style="height:8px;">
-                            <div class="pdf-progress-inner" style="width:${pct}%;"></div>
-                        </div>
-                        <div style="font-size:8px;color:#888;text-align:right;margin-top:2px;">${pct}% complete</div>
-                    </div>
-                </div>
-                <div>
-                    <div class="pdf-stats-row">
-                        <div class="pdf-stat-box">
-                            <div class="pdf-stat-val" style="color:#065f46;">₹${totalPaid.toLocaleString('en-IN')}</div>
-                            <div class="pdf-stat-lbl">Total Collected</div>
-                        </div>
-                        <div class="pdf-stat-box">
-                            <div class="pdf-stat-val" style="color:#92400e;">₹${totalBal.toLocaleString('en-IN')}</div>
-                            <div class="pdf-stat-lbl">Total Balance</div>
-                        </div>
-                        <div class="pdf-stat-box">
-                            <div class="pdf-stat-val">${gMs.length}</div>
-                            <div class="pdf-stat-lbl">Members</div>
-                        </div>
-                        <div class="pdf-stat-box">
-                            <div class="pdf-stat-val" style="color:#065f46;">${totalPicked}</div>
-                            <div class="pdf-stat-lbl">Chits Picked</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="pdf-section-title">👥 Member Summary (${gMs.length} Members)</div>
-        <table class="pdf-table group-summary-table">
-            <colgroup>
-                <col class="c-no"><col class="c-name"><col class="c-paid">
-                <col class="c-bal"><col class="c-pays"><col class="c-last"><col class="c-pick">
-            </colgroup>
-            <thead>
-                <tr>
-                    <th>#</th><th>Member Name</th><th>Total Paid</th>
-                    <th>Balance</th><th>Payments (Months)</th><th>Last Payment</th><th>Chit Picked</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${summaryRows||`<tr><td colspan="7" style="text-align:center;color:#888;padding:10px;">No members</td></tr>`}
-                <tr class="pdf-total-row">
-                    <td colspan="2"><strong>GRAND TOTAL (${gMs.length} members)</strong></td>
-                    <td><strong style="color:#065f46;">₹${totalPaid.toLocaleString('en-IN')}</strong></td>
-                    <td><strong style="color:${totalBal>0?'#92400e':'#065f46'};">₹${totalBal.toLocaleString('en-IN')}</strong></td>
-                    <td><strong>${gPays.length} entries</strong></td>
-                    <td colspan="2"><strong>${totalPicked} chit${totalPicked!==1?'s':''} picked</strong></td>
-                </tr>
-            </tbody>
-        </table>
-
-        <div class="pdf-section-title">📋 Detailed Payment History — Member Wise</div>
-        ${detailSections||'<p style="color:#888;font-size:10px;">No payment records found.</p>'}
-
-        <div class="pdf-footer">
-            <span>AK Chit Funds · Admin Portal</span>
-            <span>Group: <strong>${g.name}</strong> · ${today}</span>
-            <span>CONFIDENTIAL</span>
-        </div>
-    </div>`;
-
-    await renderPDF(`AKChitFunds_Group_${g.name.replace(/\s+/g,'_')}_Report.pdf`);
-    showToast('✅ Group PDF Downloaded!',true);
+    const win=window.open('','_blank','width=900,height=700');
+    if(!win){showToast('❌ Pop-up blocked. Allow pop-ups and try again.',false);return;}
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Group Report - ${g.name}</title>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'Segoe UI',Arial,sans-serif; background:white; color:#111; font-size:11px; }
+.page { width:100%; padding:24px 28px; }
+.header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:3px solid #f39c12; padding-bottom:10px; margin-bottom:14px; }
+.brand-name { font-size:22px; font-weight:900; color:#f39c12; }
+.brand-sub { font-size:9px; color:#888; margin-top:2px; }
+.doc-title { font-size:15px; font-weight:800; text-align:right; }
+.doc-sub { font-size:9px; color:#888; text-align:right; margin-top:2px; }
+.info-box { background:#fffbf0; border:2px solid #f39c12; border-radius:8px; padding:12px 16px; margin-bottom:14px; page-break-inside:avoid; }
+.stats-row { display:flex; gap:8px; margin-top:10px; }
+.stat-box { flex:1; border:1px solid #ddd; border-radius:6px; padding:7px; text-align:center; background:white; }
+.stat-val { font-size:13px; font-weight:800; }
+.stat-lbl { font-size:8px; color:#888; text-transform:uppercase; margin-top:2px; }
+.progress-outer { background:#eee; border-radius:4px; height:6px; overflow:hidden; margin:8px 0 3px; }
+.progress-inner { height:100%; background:linear-gradient(90deg,#f39c12,#f57c00); border-radius:4px; }
+.section-title { font-size:9px; font-weight:800; color:#888; text-transform:uppercase; letter-spacing:1px; margin:14px 0 6px; border-bottom:1px solid #eee; padding-bottom:4px; page-break-after:avoid; }
+.member-block { margin-bottom:14px; page-break-inside:avoid; }
+table { width:100%; border-collapse:collapse; font-size:10px; margin-bottom:4px; table-layout:fixed; }
+thead { display:table-header-group; }
+th { background:#f5f5f5; border:1px solid #ccc; padding:5px 6px; font-size:8.5px; text-transform:uppercase; color:#555; text-align:left; font-weight:700; }
+td { border:1px solid #e0e0e0; padding:5px 6px; vertical-align:top; word-wrap:break-word; }
+tr { page-break-inside:avoid; }
+tr:nth-child(even) td { background:#fafafa; }
+tr.chit-row td { background:#f0fff8 !important; }
+tr.total-row td { background:#fff8e1 !important; font-weight:800; border-top:2px solid #f39c12; }
+.footer { margin-top:18px; border-top:1px solid #ddd; padding-top:8px; display:flex; justify-content:space-between; font-size:8.5px; color:#aaa; }
+@page { size:A4; margin:10mm 10mm 10mm 10mm; }
+@media print { body { -webkit-print-color-adjust:exact; print-color-adjust:exact; } .no-print { display:none !important; } }
+</style></head><body>
+<div class="no-print" style="background:#1a1a2e;color:white;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;font-family:sans-serif;gap:12px;">
+  <span style="font-size:14px;font-weight:700;">&#127942; AK Chit Funds — Group Report: ${g.name}</span>
+  <div style="display:flex;gap:10px;">
+    <button onclick="window.print()" style="background:linear-gradient(90deg,#f39c12,#f57c00);color:black;border:none;padding:9px 22px;border-radius:8px;font-weight:800;font-size:13px;cursor:pointer;">&#128424; Print / Save as PDF</button>
+    <button onclick="window.close()" style="background:rgba(255,255,255,.12);color:white;border:1px solid rgba(255,255,255,.3);padding:9px 16px;border-radius:8px;font-size:12px;cursor:pointer;">&#10005; Close</button>
+  </div>
+</div>
+<div class="page">
+  <div class="header">
+    <div><div class="brand-name">&#127942; AK CHIT FUNDS</div><div class="brand-sub">Chit Fund Management &bull; Group Report</div></div>
+    <div><div class="doc-title">GROUP STATEMENT</div><div class="doc-sub">Generated: ${today}</div></div>
+  </div>
+  <div class="info-box">
+    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:flex-start;">
+      <div>
+        <div style="font-size:16px;font-weight:800;margin-bottom:4px;">&#128194; ${g.name}</div>
+        <div style="font-size:10px;color:#555;margin-top:3px;">Duration: <strong>${totalMonths} months</strong> &bull; Start: <strong>${fmtDate(g.startDate||g.gStart||'')}</strong></div>
+        <div style="font-size:10px;color:#555;margin-top:3px;">Due: <strong>${g.dueDay?`${g.dueDay}${['st','nd','rd'][((g.dueDay%100-11)%10)-1]||'th'} of every month`:'—'}</strong></div>
+        <div style="font-size:10px;color:#555;margin-top:3px;">Month <strong>${elapsed}/${totalMonths}</strong> &bull; <strong>${left} pending</strong></div>
+        <div class="progress-outer"><div class="progress-inner" style="width:${pct}%"></div></div>
+        <div style="font-size:8px;color:#888;text-align:right;">${pct}% complete</div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-box"><div class="stat-val" style="color:#065f46;">&#8377;${totalPaid.toLocaleString('en-IN')}</div><div class="stat-lbl">Collected</div></div>
+        <div class="stat-box"><div class="stat-val" style="color:#92400e;">&#8377;${totalBal.toLocaleString('en-IN')}</div><div class="stat-lbl">Balance</div></div>
+        <div class="stat-box"><div class="stat-val">${gMs.length}</div><div class="stat-lbl">Members</div></div>
+        <div class="stat-box"><div class="stat-val" style="color:#065f46;">${totalPicked}</div><div class="stat-lbl">Picked</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="section-title">Member Summary (${gMs.length} Members)</div>
+  <table style="margin-bottom:16px;">
+    <colgroup><col style="width:4%"><col style="width:25%"><col style="width:14%"><col style="width:13%"><col style="width:18%"><col style="width:14%"><col style="width:12%"></colgroup>
+    <thead><tr><th>#</th><th>Member</th><th>Total Paid</th><th>Balance</th><th>Payments (Months)</th><th>Last Payment</th><th>Chit Picked</th></tr></thead>
+    <tbody>
+      ${summaryRows||'<tr><td colspan="7" style="text-align:center;color:#888;padding:10px;">No members</td></tr>'}
+      <tr class="total-row">
+        <td colspan="2"><strong>GRAND TOTAL (${gMs.length} members)</strong></td>
+        <td><strong style="color:#065f46;">&#8377;${totalPaid.toLocaleString('en-IN')}</strong></td>
+        <td><strong style="color:${totalBal>0?'#92400e':'#065f46'};">&#8377;${totalBal.toLocaleString('en-IN')}</strong></td>
+        <td><strong>${gPays.length} entries</strong></td>
+        <td colspan="2"><strong>${totalPicked} chit${totalPicked!==1?'s':''} picked</strong></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="footer">
+    <span>AK Chit Funds &bull; Admin Portal</span>
+    <span>Group: <strong>${g.name}</strong> &bull; ${today}</span>
+    <span>CONFIDENTIAL</span>
+  </div>
+</div>
+</body></html>`);
+    win.document.close();
+    showToast('✅ Group report opened!', true);
 }
+
+
 
 // ══════════════════════════════════════════
 // AUTH SYSTEM
