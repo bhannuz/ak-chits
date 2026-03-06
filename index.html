@@ -46,14 +46,12 @@
         .table-custom tr.due-row { background:rgba(239,68,68,0.07); }
         .table-custom tr.due-row td { color:#f87171; font-style:italic; }
         .table-custom tr.partial-row { background:rgba(245,158,11,0.07); }
-        /* Multi-month highlight */
         .table-custom tr.multi-month-row { background:rgba(99,102,241,0.09); }
         .table-custom tr.multi-month-row td:first-child { border-left:3px solid #818cf8; }
         .due-badge { display:inline-block; background:rgba(239,68,68,0.15); color:#f87171; border:1px solid rgba(239,68,68,0.3); border-radius:4px; padding:1px 6px; font-size:0.6rem; font-weight:700; }
         .partial-badge { display:inline-block; background:rgba(245,158,11,0.2); color:#fbbf24; border:1px solid rgba(245,158,11,0.4); border-radius:4px; padding:1px 6px; font-size:0.6rem; font-weight:700; }
         .chit-yes-badge { display:inline-block; background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.4); border-radius:5px; padding:2px 7px; font-size:0.6rem; font-weight:800; }
         .chit-no { color:var(--text-dim); font-size:0.65rem; }
-        /* Multi-month badge */
         .multi-month-badge { display:inline-flex; align-items:center; gap:3px; background:rgba(99,102,241,0.18); color:#a5b4fc; border:1px solid rgba(99,102,241,0.4); border-radius:5px; padding:2px 7px; font-size:0.6rem; font-weight:800; }
 
         /* AUTOCOMPLETE */
@@ -100,7 +98,6 @@
         .multi-month-preview { background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.25); border-radius:12px; padding:12px 14px; margin-bottom:12px; display:none; }
         .multi-month-preview-title { font-size:0.68rem; color:#a5b4fc; font-weight:700; text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
         .multi-month-chip { display:inline-flex; align-items:center; background:rgba(99,102,241,0.2); border:1px solid rgba(99,102,241,0.35); border-radius:6px; padding:3px 9px; font-size:0.68rem; color:#c7d2fe; margin:2px; font-weight:600; }
-        /* Month selector checkboxes */
         .month-selector-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; max-height:220px; overflow-y:auto; }
         .month-cb-item { display:flex; align-items:center; gap:6px; background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:8px; padding:6px 8px; cursor:pointer; transition:all .15s; font-size:0.68rem; }
         .month-cb-item:hover { background:rgba(99,102,241,0.12); border-color:rgba(99,102,241,0.4); }
@@ -122,7 +119,6 @@
         .login-info-box { background:rgba(243,156,18,.08); border:1px solid rgba(243,156,18,.25); border-radius:12px; padding:12px 14px; font-size:0.78rem; color:#f39c12; margin-bottom:14px; }
         .pending-box { background:rgba(245,158,11,.08); border:1px solid rgba(245,158,11,.3); border-radius:16px; padding:20px; text-align:center; }
         .denied-box { background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.3); border-radius:16px; padding:20px; text-align:center; }
-        /* Access Requests panel (admin) */
         .req-card { background:var(--input-bg); border:1px solid var(--border); border-radius:12px; padding:12px 14px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
         .req-name { font-weight:700; font-size:0.85rem; }
         .req-phone { font-size:0.7rem; color:var(--text-dim); }
@@ -131,49 +127,188 @@
         .badge-pending { background:rgba(245,158,11,.2); color:#fbbf24; border:1px solid rgba(245,158,11,.4); border-radius:5px; padding:2px 8px; font-size:0.62rem; font-weight:700; }
         .badge-approved { background:rgba(16,185,129,.2); color:#34d399; border:1px solid rgba(16,185,129,.4); border-radius:5px; padding:2px 8px; font-size:0.62rem; font-weight:700; }
         .badge-denied { background:rgba(239,68,68,.15); color:#f87171; border:1px solid rgba(239,68,68,.3); border-radius:5px; padding:2px 8px; font-size:0.62rem; font-weight:700; }
-        /* Member-only view tweaks */
         body.member-mode .nav-bar { display:none !important; }
-        #pdf-template { position:absolute; left:-9999px; top:0; width:794px; visibility:hidden; pointer-events:none; background:white; }
-        #pdf-template.rendering { visibility:visible; }
-        .pdf-page { background:white; color:#111; padding:20px 30px; font-family:'Segoe UI',Arial,sans-serif; width:750px; }
-        .pdf-header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:4px solid #f39c12; padding-bottom:14px; margin-bottom:20px; }
-        .pdf-brand { font-size:26px; font-weight:900; color:#f39c12; }
-        .pdf-brand-sub { font-size:11px; color:#888; margin-top:2px; }
-        .pdf-right-title { font-size:16px; font-weight:800; text-align:right; }
-        .pdf-right-sub { font-size:11px; color:#888; text-align:right; margin-top:3px; }
-        .pdf-member-box { background:#fffbf0; border:2px solid #f39c12; border-radius:12px; padding:16px 20px; margin-bottom:20px; }
-        .pdf-member-name { font-size:20px; font-weight:800; }
-        .pdf-member-sub { font-size:12px; color:#555; margin-top:4px; }
-        .pdf-stats-row { display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
-        .pdf-stat-box { flex:1; min-width:100px; border:1px solid #ddd; border-radius:8px; padding:10px; text-align:center; background:white; }
-        .pdf-stat-val { font-size:15px; font-weight:800; }
-        .pdf-stat-lbl { font-size:9px; color:#888; text-transform:uppercase; letter-spacing:.4px; margin-top:2px; }
-        .pdf-section-title { font-size:11px; font-weight:800; color:#888; text-transform:uppercase; letter-spacing:1px; margin:20px 0 8px; border-bottom:1px solid #eee; padding-bottom:6px; }
-        .pdf-group-title { font-size:13px; font-weight:800; margin-bottom:6px; color:#111; }
-        .pdf-progress-outer { background:#eee; border-radius:5px; height:8px; margin-bottom:4px; overflow:hidden; }
-        .pdf-progress-inner { height:100%; background:linear-gradient(90deg,#f39c12,#f57c00); border-radius:5px; }
-        .pdf-table { width:100%; border-collapse:collapse; font-size:11px; margin-bottom:20px; }
-        .pdf-table th { background:#f5f5f5; border:1px solid #ccc; padding:7px 9px; font-size:9px; text-transform:uppercase; color:#555; text-align:left; }
-        .pdf-table td { border:1px solid #ddd; padding:7px 9px; }
-        .pdf-table tr:nth-child(even) td { background:#fafafa; }
-        .pdf-table tr.pdf-chit-row td { background:#f0fff8 !important; }
-        .pdf-table tr.pdf-chit-row td:first-child { border-left:3px solid #10b981; }
-        .pdf-table tr.pdf-due-row td { background:#fff5f5 !important; color:#c0392b; font-style:italic; }
-        .pdf-table tr.pdf-partial-row td { background:#fffbeb !important; }
-        .pdf-table tr.pdf-multi-row td { background:#eef2ff !important; }
-        .pdf-table tr.pdf-multi-row td:first-child { border-left:3px solid #818cf8; }
-        .pdf-chit-badge { background:#d1fae5; color:#065f46; border-radius:4px; padding:2px 6px; font-size:9px; font-weight:800; }
-        .pdf-due-badge { background:#fee2e2; color:#b91c1c; border-radius:4px; padding:2px 6px; font-size:9px; font-weight:800; }
-        .pdf-partial-badge { background:#fef3c7; color:#92400e; border-radius:4px; padding:2px 6px; font-size:9px; font-weight:800; }
-        .pdf-multi-badge { background:#e0e7ff; color:#3730a3; border-radius:4px; padding:2px 6px; font-size:9px; font-weight:800; }
-        .pdf-total-row td { background:#fff8e1 !important; font-weight:800; border-top:2px solid #f39c12; }
-        .pdf-footer { margin-top:24px; border-top:1px solid #ddd; padding-top:12px; display:flex; justify-content:space-between; font-size:10px; color:#aaa; }
+
+        /* ══════════════════════════════════════
+           PDF TEMPLATE STYLES — COMPLETELY FIXED
+           ══════════════════════════════════════ */
+        #pdf-template {
+            position: fixed;
+            left: -9999px;
+            top: 0;
+            width: 794px;
+            visibility: hidden;
+            pointer-events: none;
+            background: white;
+            overflow: visible;
+            z-index: -1;
+        }
+        #pdf-template.rendering {
+            visibility: visible;
+            z-index: -1;
+        }
+        #pdfContent {
+            background: white;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            width: 794px;
+            color: #111;
+            padding: 0;
+            margin: 0;
+        }
+        .pdf-page {
+            background: white;
+            color: #111;
+            padding: 20px 28px 20px 28px;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            width: 794px;
+            box-sizing: border-box;
+        }
+        .pdf-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 4px solid #f39c12;
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+            page-break-inside: avoid;
+        }
+        .pdf-brand { font-size: 24px; font-weight: 900; color: #f39c12; }
+        .pdf-brand-sub { font-size: 10px; color: #888; margin-top: 2px; }
+        .pdf-right-title { font-size: 15px; font-weight: 800; text-align: right; }
+        .pdf-right-sub { font-size: 10px; color: #888; text-align: right; margin-top: 3px; }
+        .pdf-member-box {
+            background: #fffbf0;
+            border: 2px solid #f39c12;
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-bottom: 16px;
+            page-break-inside: avoid;
+        }
+        .pdf-member-name { font-size: 18px; font-weight: 800; }
+        .pdf-member-sub { font-size: 11px; color: #555; margin-top: 4px; }
+        .pdf-stats-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+        .pdf-stat-box {
+            flex: 1;
+            min-width: 90px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 8px;
+            text-align: center;
+            background: white;
+        }
+        .pdf-stat-val { font-size: 14px; font-weight: 800; }
+        .pdf-stat-lbl { font-size: 9px; color: #888; text-transform: uppercase; letter-spacing: .4px; margin-top: 2px; }
+        .pdf-section-title {
+            font-size: 10px;
+            font-weight: 800;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 16px 0 8px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            page-break-after: avoid;
+        }
+        .pdf-group-block {
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+        }
+        .pdf-group-title {
+            font-size: 12px;
+            font-weight: 800;
+            margin-bottom: 5px;
+            color: #111;
+            page-break-after: avoid;
+        }
+        .pdf-progress-outer { background: #eee; border-radius: 4px; height: 7px; margin-bottom: 4px; overflow: hidden; }
+        .pdf-progress-inner { height: 100%; background: linear-gradient(90deg, #f39c12, #f57c00); border-radius: 4px; }
+
+        /* ── FIXED TABLE STYLES ── */
+        .pdf-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+            margin-bottom: 16px;
+            table-layout: fixed;
+        }
+        .pdf-table th {
+            background: #f5f5f5;
+            border: 1px solid #ccc;
+            padding: 6px 7px;
+            font-size: 8.5px;
+            text-transform: uppercase;
+            color: #555;
+            text-align: left;
+            page-break-after: avoid;
+        }
+        .pdf-table td {
+            border: 1px solid #ddd;
+            padding: 6px 7px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        .pdf-table thead { display: table-header-group; }
+        .pdf-table tbody { display: table-row-group; }
+        .pdf-table tr { page-break-inside: avoid; }
+        .pdf-table tr:nth-child(even) td { background: #fafafa; }
+        .pdf-table tr.pdf-chit-row td { background: #f0fff8 !important; }
+        .pdf-table tr.pdf-chit-row td:first-child { border-left: 3px solid #10b981; }
+        .pdf-table tr.pdf-due-row td { background: #fff5f5 !important; color: #c0392b; font-style: italic; }
+        .pdf-table tr.pdf-partial-row td { background: #fffbeb !important; }
+        .pdf-table tr.pdf-multi-row td { background: #eef2ff !important; }
+        .pdf-table tr.pdf-multi-row td:first-child { border-left: 3px solid #818cf8; }
+        .pdf-chit-badge { background: #d1fae5; color: #065f46; border-radius: 4px; padding: 2px 5px; font-size: 8px; font-weight: 800; white-space: nowrap; }
+        .pdf-due-badge { background: #fee2e2; color: #b91c1c; border-radius: 4px; padding: 2px 5px; font-size: 8px; font-weight: 800; }
+        .pdf-partial-badge { background: #fef3c7; color: #92400e; border-radius: 4px; padding: 2px 5px; font-size: 8px; font-weight: 800; }
+        .pdf-multi-badge { background: #e0e7ff; color: #3730a3; border-radius: 4px; padding: 2px 5px; font-size: 8px; font-weight: 800; white-space: nowrap; }
+        .pdf-total-row td { background: #fff8e1 !important; font-weight: 800; border-top: 2px solid #f39c12; }
+        .pdf-footer {
+            margin-top: 20px;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 9px;
+            color: #aaa;
+            page-break-inside: avoid;
+        }
+        /* Member detail block within group PDF */
+        .pdf-member-detail-block {
+            margin-bottom: 16px;
+            page-break-inside: avoid;
+        }
+        /* Column widths for member statement table */
+        .pdf-table.member-table col.c-no    { width: 4%; }
+        .pdf-table.member-table col.c-month { width: 22%; }
+        .pdf-table.member-table col.c-date  { width: 13%; }
+        .pdf-table.member-table col.c-chit  { width: 14%; }
+        .pdf-table.member-table col.c-paid  { width: 13%; }
+        .pdf-table.member-table col.c-bal   { width: 13%; }
+        .pdf-table.member-table col.c-mode  { width: 12%; }
+        .pdf-table.member-table col.c-pick  { width: 9%; }
+        /* Column widths for group summary table */
+        .pdf-table.group-summary-table col.c-no   { width: 4%; }
+        .pdf-table.group-summary-table col.c-name { width: 22%; }
+        .pdf-table.group-summary-table col.c-paid { width: 15%; }
+        .pdf-table.group-summary-table col.c-bal  { width: 15%; }
+        .pdf-table.group-summary-table col.c-pays { width: 18%; }
+        .pdf-table.group-summary-table col.c-last { width: 14%; }
+        .pdf-table.group-summary-table col.c-pick { width: 12%; }
+        /* Column widths for group detail table */
+        .pdf-table.group-detail-table col.c-no    { width: 4%; }
+        .pdf-table.group-detail-table col.c-month { width: 22%; }
+        .pdf-table.group-detail-table col.c-date  { width: 13%; }
+        .pdf-table.group-detail-table col.c-chit  { width: 14%; }
+        .pdf-table.group-detail-table col.c-paid  { width: 12%; }
+        .pdf-table.group-detail-table col.c-bal   { width: 12%; }
+        .pdf-table.group-detail-table col.c-mode  { width: 14%; }
+        .pdf-table.group-detail-table col.c-pick  { width: 9%; }
     </style>
 </head>
 <body>
 
 <div class="container py-2">
-    <!-- ADMIN HEADER (default) -->
+    <!-- ADMIN HEADER -->
     <div id="adminHeader" class="app-header">
         <div class="brand">🏆 AK Chit Funds <small style="font-size:0.5em;color:#2ecc71;">☁ CLOUD</small></div>
         <div style="display:flex;align-items:center;gap:8px;">
@@ -185,7 +320,7 @@
         </div>
     </div>
 
-    <!-- MEMBER PROFILE HEADER (shown in member mode) -->
+    <!-- MEMBER PROFILE HEADER -->
     <div id="memberHeader" style="display:none;padding:16px 4px 0;">
         <div style="background:linear-gradient(135deg,rgba(243,156,18,.18),rgba(243,156,18,.04));border:1px solid rgba(243,156,18,.3);border-radius:22px;padding:18px 18px 14px;">
             <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
@@ -197,7 +332,6 @@
                 </div>
                 <button onclick="handleLogout()" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#f87171;border-radius:10px;padding:6px 11px;font-size:0.72rem;font-weight:700;cursor:pointer;flex-shrink:0;">⏻</button>
             </div>
-            <!-- Member stats row -->
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
                 <div style="background:rgba(0,0,0,.2);border-radius:12px;padding:10px 8px;text-align:center;">
                     <div id="mhGroups" style="font-size:1rem;font-weight:800;color:#a5b4fc;">—</div>
@@ -217,19 +351,16 @@
 
     <!-- HOME TAB -->
     <div id="homeTab" class="tab-content active">
-        <!-- Admin-only stat cards -->
         <div id="adminStatCards" class="row g-2 mt-3 text-center">
             <div class="col-4"><div class="stat-card"><span class="stat-num" id="memberCount">-</span><span class="stat-label">Members</span></div></div>
             <div class="col-4"><div class="stat-card"><span class="stat-num" id="groupCount">-</span><span class="stat-label">Groups</span></div></div>
             <div class="col-4"><div class="stat-card"><span class="stat-num text-success" id="todayColl">₹0</span><span class="stat-label">Today</span></div></div>
         </div>
-        <!-- Admin-only action buttons -->
         <div id="adminActionBtns" style="display:flex;gap:8px;margin-top:12px;">
             <button class="btn btn-warning w-100 py-3 fw-bold shadow" onclick="openPaymentModal()" style="border-radius:20px;">💳 Record Payment</button>
             <button onclick="resetPaymentForm();openModal('paymentModal');" title="Refresh Form" style="background:var(--card-bg);border:1px solid var(--border);color:#f39c12;border-radius:20px;padding:0 18px;font-size:1.2rem;cursor:pointer;flex-shrink:0;">🔄</button>
         </div>
 
-        <!-- MEMBER SEARCH (admin only) -->
         <div id="adminMemberSearch" class="p-3 my-3" style="background:var(--card-bg);border-radius:20px;border:1px solid var(--border);">
             <div style="display:flex;gap:8px;align-items:flex-start;">
                 <div style="position:relative;flex:1;">
@@ -242,12 +373,10 @@
             <div id="ledgerData"></div>
         </div>
 
-        <!-- MEMBER-ONLY ledger (shown instead of search when member logs in) -->
         <div id="memberLedgerArea" style="display:none;margin-top:12px;">
             <div id="memberLedgerData"></div>
         </div>
 
-        <!-- QUICK ACTION BUTTONS (admin only) -->
         <div id="adminQuickBtns" class="d-flex gap-2">
             <button class="btn btn-outline-warning w-100 py-3 fw-bold" onclick="openAddMember()">👤 Create Member</button>
             <button class="btn btn-outline-success w-100 py-3 fw-bold" onclick="openAddGroup()">🏦 New Group</button>
@@ -276,7 +405,7 @@
 </div>
 
 <!-- PDF TEMPLATE - off screen container -->
-<div id="pdf-template"><div id="pdfContent" style="background:white;font-family:'Segoe UI',Arial,sans-serif;width:794px;color:#111;"></div></div>
+<div id="pdf-template"><div id="pdfContent"></div></div>
 
 <!-- ══════ MODALS ══════ -->
 
@@ -320,7 +449,7 @@
     </div>
 </div>
 
-<!-- PAYMENT MODAL — with multi-month support -->
+<!-- PAYMENT MODAL -->
 <div id="paymentModal" class="modal-overlay">
     <div class="modal-content-custom">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -338,14 +467,12 @@
         <label class="form-label-small">Group</label>
         <select id="pGroup" class="form-input" onchange="onGroupChange()"><option value="">-- Select Member First --</option></select>
 
-        <!-- ── MULTI-MONTH SELECTOR ── -->
         <label class="form-label-small">Payment Type</label>
         <select id="pNumMonths" class="form-input" onchange="onNumMonthsChange()">
             <option value="1">Single Month</option>
             <option value="multi">Multiple Months (past dues / bulk) 📅</option>
         </select>
 
-        <!-- Month picker grid — shown when "Multiple Months" is selected -->
         <div id="multiMonthPreview" class="multi-month-preview">
             <div class="multi-month-preview-title">📅 Select Months to Pay</div>
             <div style="font-size:0.62rem;color:var(--text-dim);margin-bottom:8px;">✅ Green = already paid &nbsp;|&nbsp; Tick the months being paid now</div>
@@ -363,7 +490,6 @@
                 <input type="number" id="pPaid" class="form-input" placeholder="₹ total" oninput="calcBalance()">
             </div>
         </div>
-        <!-- Total chit reference for multi-month -->
         <div id="totalChitRef" style="display:none;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.25);border-radius:10px;padding:8px 12px;margin-bottom:12px;font-size:0.75rem;">
             <span style="color:var(--text-dim);">Total Chit:</span>
             <span id="totalChitVal" style="color:#a5b4fc;font-weight:700;margin-left:6px;"></span>
@@ -398,7 +524,6 @@
             <button onclick="closeModal('editPaymentModal')" style="background:none;border:none;color:var(--text-dim);font-size:1.3rem;cursor:pointer;">✕</button>
         </div>
         <input type="hidden" id="epId">
-        <!-- Multi-month info display (read-only) -->
         <div id="epMultiMonthInfo" style="display:none;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);border-radius:10px;padding:10px 14px;margin-bottom:12px;">
             <div style="font-size:0.68rem;color:#a5b4fc;font-weight:700;margin-bottom:4px;">📅 MULTI-MONTH PAYMENT</div>
             <div id="epMultiMonthDetail" style="font-size:0.75rem;color:#c7d2fe;"></div>
@@ -452,8 +577,6 @@
             <div class="login-brand-title">AK Chit Funds</div>
             <div class="login-brand-sub">Enter your mobile number to continue</div>
         </div>
-
-        <!-- STEP 1: Enter phone -->
         <div id="loginStep1" class="login-step active">
             <label class="form-label-small">Mobile Number</label>
             <div class="login-phone-input">
@@ -463,8 +586,6 @@
             <div style="height:12px;"></div>
             <button class="btn-save" onclick="handleLoginSubmit()">🔐 Continue</button>
         </div>
-
-        <!-- STEP 2: Pending approval -->
         <div id="loginStep2" class="login-step">
             <div class="pending-box">
                 <div style="font-size:2rem;margin-bottom:10px;">⏳</div>
@@ -475,8 +596,6 @@
                 <button class="btn-cancel" onclick="goBackToLogin()">← Back</button>
             </div>
         </div>
-
-        <!-- STEP 3: Denied -->
         <div id="loginStep3" class="login-step">
             <div class="denied-box">
                 <div style="font-size:2rem;margin-bottom:10px;">🚫</div>
@@ -488,7 +607,7 @@
     </div>
 </div>
 
-<!-- ══════ ACCESS REQUESTS MODAL (admin) ══════ -->
+<!-- ACCESS REQUESTS MODAL -->
 <div id="accessModal" class="modal-overlay">
     <div class="modal-content-custom" style="max-width:500px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -592,7 +711,6 @@ function getMonthSlot(dueDates, payDate){
     return dueDates.length-1;
 }
 
-
 // ══════════════════════════════════════════
 // MULTI-MONTH HELPERS
 // ══════════════════════════════════════════
@@ -688,7 +806,6 @@ function calcBalance(){
     }
 }
 
-// ══════════════════════════════════════════
 function switchTab(t){
     document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
@@ -703,14 +820,10 @@ async function migrateData(){
     updateUI();
 }
 
-// ══════════════════════════════════════════
-// UPDATE UI
-// ══════════════════════════════════════════
 async function updateUI(){
     const m=await getCollection('members');const g=await getCollection('groups');const p=await getCollection('payments');
     ALL_MEMBERS=m;
     if(CURRENT_USER && CURRENT_USER.role==='member'){
-        // Member sees only their own group count and paid today
         const myPays=p.filter(x=>x.memberId===CURRENT_USER.memberId);
         const myGroups=new Set(myPays.map(x=>x.groupId));
         document.getElementById('memberCount').innerText='—';
@@ -727,9 +840,6 @@ async function updateUI(){
     if(document.getElementById('listTab').classList.contains('active'))renderListTab();
 }
 
-// ══════════════════════════════════════════
-// SEARCH AUTOCOMPLETE
-// ══════════════════════════════════════════
 function filterSearch(inputId,listId,hiddenId){
     const query=document.getElementById(inputId).value.toLowerCase();
     const list=document.getElementById(listId);
@@ -745,11 +855,7 @@ function filterSearch(inputId,listId,hiddenId){
     }else{list.style.display='none';}
 }
 
-// ══════════════════════════════════════════
-// MEMBER LEDGER — HOME TAB
-// ══════════════════════════════════════════
 async function loadMemberLedger(){
-    // Privacy guard: members can only view their own ledger
     const mid = CURRENT_USER && CURRENT_USER.role === 'member'
         ? CURRENT_USER.memberId
         : document.getElementById('summaryView').value;
@@ -778,19 +884,12 @@ async function loadMemberLedger(){
         const left=Math.max(0,totalMonths-elapsed);
         const gStartDisplay=fmtDate(grp.startDate||grp.gStart||'');
         const gDueDayOrd=grp.dueDay?`${grp.dueDay}${['st','nd','rd'][((grp.dueDay%100-11)%10)-1]||'th'}`:'—';
-
-        // Count multi-month payments
         const multiMonthCount=pays.filter(p=>p.numMonths&&p.numMonths>1).length;
-        // Chit picked info
-        const pickedPay=pays.find(p=>p.chitPicked==='Yes');
-        const pickedAmt=pickedPay?(parseFloat(pickedPay.chit)||0)*(parseInt(pickedPay.numMonths)||1):0;
-        const pickedBy=pickedPay&&pickedPay.chitPickedBy?pickedPay.chitPickedBy:'';
 
         const rows=pays.map((p,idx)=>{
             const cp=p.chitPicked==='Yes';
             const isMulti=p.numMonths&&p.numMonths>1;
             const months=p.monthSlots||[];
-            // Determine month label
             let monthLabel='—';
             if(isMulti && months.length>0){
                 const firstLabel=months[0]>=0&&allDueDates[months[0]]?fmtDate(allDueDates[months[0]]):'—';
@@ -802,7 +901,6 @@ async function loadMemberLedger(){
             }
 
             const rowClass=cp?'chit-picked':(isMulti?'multi-month-row':'');
-            const chitPickedAmt=cp?(parseFloat(p.chit)||0)*(parseInt(p.numMonths)||1):0;
             return`<tr class="${rowClass}">
                 <td style="color:var(--text-dim);font-weight:700;">${idx+1}</td>
                 <td style="color:#a5b4fc;font-weight:700;white-space:normal;min-width:90px;font-size:0.62rem;">${monthLabel}${isMulti?`<br><span class="multi-month-badge">📅 ${p.numMonths} months</span>`:''}</td>
@@ -880,9 +978,7 @@ async function loadMemberLedger(){
 
     if(isMember){
         document.getElementById('memberLedgerData').innerHTML = ledgerHtml;
-        // Update member header stats
-        const myGroupCount = memberGroups.length;
-        document.getElementById('mhGroups').textContent = myGroupCount;
+        document.getElementById('mhGroups').textContent = memberGroups.length;
         document.getElementById('mhTotalPaid').textContent = fmtAmt(totalPaid);
         document.getElementById('mhBalance').textContent = fmtAmt(totalBal);
     } else {
@@ -1007,7 +1103,6 @@ function deleteGroupFromModal(){
         closeModal('groupModal');showToast('🗑 Group deleted');updateUI();
     });
 }
-
 
 // ══════════════════════════════════════════
 // PAYMENT FORM
@@ -1145,13 +1240,10 @@ async function openEditPayment(pid){
     document.getElementById('epChitPickedBy').value=p.chitPickedBy||'';
     document.getElementById('epChitPickedNameDiv').style.display=p.chitPicked==='Yes'?'block':'none';
 
-    // Show multi-month info if applicable
     const infoBox=document.getElementById('epMultiMonthInfo');
     const detailEl=document.getElementById('epMultiMonthDetail');
     if(p.numMonths&&p.numMonths>1){
         infoBox.style.display='block';
-
-        // Get group for due dates
         const gs=await getCollection('groups');
         const grp=gs.find(g=>g.id===p.groupId);
         let slotLabels='';
@@ -1227,7 +1319,6 @@ async function renderGroupsTab(){
             const paid=mp.reduce((s,p)=>s+(parseFloat(p.paid)||0),0);
             const bal=mp.reduce((s,p)=>s+(parseFloat(p.balance)||0),0);
             const pickedPay=mp.find(p=>p.chitPicked==='Yes');
-            // Chit picked amount = chit per month × numMonths for that payment record
             const pickedAmt=pickedPay?(parseFloat(pickedPay.chit)||0)*(parseInt(pickedPay.numMonths)||1):0;
             const pickedBy=pickedPay&&pickedPay.chitPickedBy?pickedPay.chitPickedBy:'';
             const monthsCovered=mp.reduce((s,p)=>s+(p.numMonths||1),0);
@@ -1357,75 +1448,36 @@ async function exportToExcel(){
     const wb=XLSX.utils.book_new();
     const today=new Date().toISOString().split('T')[0];
 
-    // ── Sheet 1: Members ──
-    const mRows=members.map(m=>({
-        'Name':m.name||'',
-        'Phone':m.phone||'',
-        'Groups':((m.groupIds||[]).map(gid=>{const g=groups.find(x=>x.id===gid);return g?g.name:gid;})).join(', '),
-    }));
+    const mRows=members.map(m=>({'Name':m.name||'','Phone':m.phone||'','Groups':((m.groupIds||[]).map(gid=>{const g=groups.find(x=>x.id===gid);return g?g.name:gid;})).join(', ')}));
     const wsM=XLSX.utils.json_to_sheet(mRows.length?mRows:[{'Name':'','Phone':'','Groups':''}]);
     wsM['!cols']=[{wch:28},{wch:16},{wch:40}];
     XLSX.utils.book_append_sheet(wb,wsM,'Members');
 
-    // ── Sheet 2: Groups ──
     const gRows=groups.map(g=>{
         const gPays=payments.filter(p=>p.groupId===g.id);
         const gMs=members.filter(m=>m.groupIds&&m.groupIds.includes(g.id));
-        return{
-            'Group Name':g.name||'',
-            'Duration (Months)':g.duration||g.gDuration||'',
-            'Start Date':g.startDate||g.gStart||'',
-            'Due Day':g.dueDay||'',
-            'Members':gMs.length,
-            'Total Collected':gPays.reduce((s,p)=>s+(parseFloat(p.paid)||0),0),
-            'Total Balance':gPays.reduce((s,p)=>s+(parseFloat(p.balance)||0),0),
-            'Chits Picked':gPays.filter(p=>p.chitPicked==='Yes').length,
-        };
+        return{'Group Name':g.name||'','Duration (Months)':g.duration||g.gDuration||'','Start Date':g.startDate||g.gStart||'','Due Day':g.dueDay||'','Members':gMs.length,'Total Collected':gPays.reduce((s,p)=>s+(parseFloat(p.paid)||0),0),'Total Balance':gPays.reduce((s,p)=>s+(parseFloat(p.balance)||0),0),'Chits Picked':gPays.filter(p=>p.chitPicked==='Yes').length};
     });
     const wsG=XLSX.utils.json_to_sheet(gRows.length?gRows:[{}]);
     wsG['!cols']=[{wch:24},{wch:18},{wch:14},{wch:10},{wch:10},{wch:18},{wch:14},{wch:14}];
     XLSX.utils.book_append_sheet(wb,wsG,'Groups');
 
-    // ── Sheet 3: All Payments ──
     const pRows=payments.map(p=>{
         const m=members.find(x=>x.id===p.memberId);
         const g=groups.find(x=>x.id===p.groupId);
-        return{
-            'Date':p.date||'',
-            'Member':m?m.name:'Unknown',
-            'Phone':m?m.phone||'':'',
-            'Group':g?g.name:'Unknown',
-            'Chit/Month':parseFloat(p.chit)||0,
-            'Months':p.numMonths||1,
-            'Total Paid':parseFloat(p.paid)||0,
-            'Balance':parseFloat(p.balance)||0,
-            'Mode':p.paidBy||'',
-            'Chit Picked':p.chitPicked||'No',
-            'Chit Picked Value':p.chitPickedBy||'',
-        };
+        return{'Date':p.date||'','Member':m?m.name:'Unknown','Phone':m?m.phone||'':'','Group':g?g.name:'Unknown','Chit/Month':parseFloat(p.chit)||0,'Months':p.numMonths||1,'Total Paid':parseFloat(p.paid)||0,'Balance':parseFloat(p.balance)||0,'Mode':p.paidBy||'','Chit Picked':p.chitPicked||'No','Chit Picked Value':p.chitPickedBy||''};
     }).sort((a,b)=>a['Date'].localeCompare(b['Date']));
     const wsP=XLSX.utils.json_to_sheet(pRows.length?pRows:[{}]);
     wsP['!cols']=[{wch:12},{wch:24},{wch:14},{wch:20},{wch:12},{wch:8},{wch:12},{wch:12},{wch:14},{wch:12},{wch:18}];
     XLSX.utils.book_append_sheet(wb,wsP,'All Payments');
 
-    // ── Sheet 4: Member Summary (one row per member per group) ──
     const sumRows=[];
     members.forEach(m=>{
         (m.groupIds||[]).forEach(gid=>{
             const g=groups.find(x=>x.id===gid);
             const mp=payments.filter(p=>p.memberId===m.id&&p.groupId===gid);
             const pickedPay=mp.find(p=>p.chitPicked==='Yes');
-            sumRows.push({
-                'Member':m.name||'',
-                'Phone':m.phone||'',
-                'Group':g?g.name:'',
-                'Months Paid':mp.reduce((s,p)=>s+(p.numMonths||1),0),
-                'Total Paid':mp.reduce((s,p)=>s+(parseFloat(p.paid)||0),0),
-                'Total Balance':mp.reduce((s,p)=>s+(parseFloat(p.balance)||0),0),
-                'Chit Picked':pickedPay?'Yes':'No',
-                'Chit Picked Value':pickedPay?pickedPay.chitPickedBy||'':'',
-                'Last Payment':mp.length?mp.sort((a,b)=>b.date.localeCompare(a.date))[0].date:'',
-            });
+            sumRows.push({'Member':m.name||'','Phone':m.phone||'','Group':g?g.name:'','Months Paid':mp.reduce((s,p)=>s+(p.numMonths||1),0),'Total Paid':mp.reduce((s,p)=>s+(parseFloat(p.paid)||0),0),'Total Balance':mp.reduce((s,p)=>s+(parseFloat(p.balance)||0),0),'Chit Picked':pickedPay?'Yes':'No','Chit Picked Value':pickedPay?pickedPay.chitPickedBy||'':'','Last Payment':mp.length?mp.sort((a,b)=>b.date.localeCompare(a.date))[0].date:''});
         });
     });
     const wsS=XLSX.utils.json_to_sheet(sumRows.length?sumRows:[{}]);
@@ -1463,41 +1515,62 @@ async function executeRestore(){
 }
 
 // ══════════════════════════════════════════
-// PDF RENDER HELPER
+// PDF RENDER — FIXED: proper scale, page breaks, column widths
 // ══════════════════════════════════════════
 function renderPDF(filename){
     return new Promise((resolve)=>{
         const wrapper=document.getElementById('pdf-template');
         const content=document.getElementById('pdfContent');
         wrapper.classList.add('rendering');
-        wrapper.style.visibility='visible';
+
+        // Force all tables to use fixed layout before rendering
+        content.querySelectorAll('table').forEach(t=>{
+            t.style.tableLayout='fixed';
+            t.style.width='100%';
+        });
 
         const opt={
-            margin:[8,8,8,8],
+            margin:[12,10,12,10],
             filename,
-            image:{type:'jpeg',quality:0.97},
-            html2canvas:{scale:2,useCORS:true,logging:false,allowTaint:false,backgroundColor:'#ffffff'},
-            jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
-            pagebreak:{mode:['avoid-all','css','legacy']}
+            image:{type:'jpeg',quality:0.92},
+            html2canvas:{
+                scale:1.5,
+                useCORS:true,
+                logging:false,
+                allowTaint:false,
+                backgroundColor:'#ffffff',
+                windowWidth:794,
+                scrollY:0
+            },
+            jsPDF:{
+                unit:'mm',
+                format:'a4',
+                orientation:'portrait',
+                compress:true
+            },
+            pagebreak:{
+                mode:'css',
+                before:'.pdf-page-break-before',
+                after:'.pdf-page-break-after',
+                avoid:['.pdf-member-box','.pdf-group-block','.pdf-member-detail-block','.pdf-header','.pdf-footer','thead']
+            }
         };
 
         setTimeout(()=>{
             html2pdf().set(opt).from(content).save().then(()=>{
                 wrapper.classList.remove('rendering');
-                wrapper.style.visibility='hidden';
                 resolve();
             }).catch(err=>{
                 console.error('PDF error:',err);
                 wrapper.classList.remove('rendering');
-                wrapper.style.visibility='hidden';
                 resolve();
             });
-        },400);
+        },500);
     });
 }
 
 // ══════════════════════════════════════════
-// PDF — MEMBER STATEMENT
+// PDF — MEMBER STATEMENT (FIXED)
 // ══════════════════════════════════════════
 async function generateMemberPDF(mid){
     showToast('⏳ Generating PDF…',true);
@@ -1539,33 +1612,46 @@ async function generateMemberPDF(mid){
                 const slotIdx=p.monthSlot!==undefined?p.monthSlot:getMonthSlot(allDueDates,p.date);
                 monthLabel=slotIdx>=0&&allDueDates[slotIdx]?fmtDate(allDueDates[slotIdx]):'—';
             }
+            const chitDisp=isMulti
+                ?`₹${(parseFloat(p.chit)||0).toLocaleString('en-IN')}/mo × ${p.numMonths}`
+                :`₹${(parseFloat(p.chit)||0).toLocaleString('en-IN')}`;
             return`<tr class="${cp?'pdf-chit-row':(isMulti?'pdf-multi-row':'')}">
                 <td>${idx+1}</td>
-                <td style="font-weight:700;">${monthLabel}${isMulti?`<br><span class="pdf-multi-badge">📅 ${p.numMonths} months</span>`:''}</td>
+                <td>${monthLabel}${isMulti?`<br><span class="pdf-multi-badge">📅 ${p.numMonths}mo</span>`:''}</td>
                 <td>${fmtDate(p.date)}</td>
-                <td>₹${(parseFloat(p.chit)||0).toLocaleString('en-IN')}${isMulti?` × ${p.numMonths}`:''}</td>
+                <td>${chitDisp}</td>
                 <td style="color:#065f46;font-weight:700;">₹${(parseFloat(p.paid)||0).toLocaleString('en-IN')}</td>
                 <td style="color:#92400e;font-weight:700;">₹${(parseFloat(p.balance)||0).toLocaleString('en-IN')}</td>
                 <td>${p.paidBy||'—'}</td>
-                <td>${cp?`<span class="pdf-chit-badge">✅ PICKED</span>`:'—'}</td>
+                <td>${cp?`<span class="pdf-chit-badge">✅ YES</span>`:'—'}</td>
             </tr>`;
         }).join('');
 
-        return`<div style="margin-bottom:22px;">
+        return`<div class="pdf-group-block">
             <div class="pdf-group-title">📂 ${g.name}</div>
-            <div style="display:flex;gap:12px;font-size:10px;color:#888;margin-bottom:4px;flex-wrap:wrap;">
+            <div style="display:flex;gap:10px;font-size:9px;color:#888;margin-bottom:4px;flex-wrap:wrap;">
                 <span>🗓 Start: <strong>${gStartDisp}</strong></span>
                 <span>📅 Due: <strong>${gDueDayDisp}</strong></span>
                 <span>Month ${elapsed}/${totalMonths} · <strong>${left} pending</strong></span>
                 <span>Months covered: <strong>${totalMonthsCovered}/${totalMonths}</strong></span>
             </div>
             <div class="pdf-progress-outer"><div class="pdf-progress-inner" style="width:${pct}%"></div></div>
-            <div style="font-size:10px;color:#888;text-align:right;margin-bottom:10px;">Paid: ₹${gPaid.toLocaleString('en-IN')} · Balance: ₹${gBal.toLocaleString('en-IN')}</div>
-            ${pays.length?`<table class="pdf-table">
-                <thead><tr><th>#</th><th>Month(s) Covered</th><th>Pay Date</th><th>Chit/Mo</th><th>Total Paid</th><th>Balance</th><th>Mode</th><th>Chit?</th></tr></thead>
+            <div style="font-size:9px;color:#888;text-align:right;margin-bottom:8px;">Paid: ₹${gPaid.toLocaleString('en-IN')} · Balance: ₹${gBal.toLocaleString('en-IN')}</div>
+            ${pays.length?`<table class="pdf-table member-table">
+                <colgroup>
+                    <col class="c-no"><col class="c-month"><col class="c-date">
+                    <col class="c-chit"><col class="c-paid"><col class="c-bal">
+                    <col class="c-mode"><col class="c-pick">
+                </colgroup>
+                <thead><tr><th>#</th><th>Month(s) Covered</th><th>Pay Date</th><th>Chit Amt</th><th>Paid</th><th>Balance</th><th>Mode</th><th>Chit?</th></tr></thead>
                 <tbody>${rows}
-                <tr class="pdf-total-row"><td colspan="4"><strong>Total</strong></td><td><strong>₹${gPaid.toLocaleString('en-IN')}</strong></td><td><strong>₹${gBal.toLocaleString('en-IN')}</strong></td><td colspan="2"></td></tr>
-                </tbody></table>`:'<p style="color:#888;font-size:11px;">No payments yet.</p>'}
+                <tr class="pdf-total-row">
+                    <td colspan="4"><strong>Total</strong></td>
+                    <td><strong>₹${gPaid.toLocaleString('en-IN')}</strong></td>
+                    <td><strong>₹${gBal.toLocaleString('en-IN')}</strong></td>
+                    <td colspan="2"></td>
+                </tr>
+                </tbody></table>`:`<p style="color:#888;font-size:10px;padding:4px 0;">No payments yet.</p>`}
         </div>`;
     }).join('');
 
@@ -1576,22 +1662,24 @@ async function generateMemberPDF(mid){
             <div><div class="pdf-right-title">MEMBER STATEMENT</div><div class="pdf-right-sub">Generated: ${today}</div></div>
         </div>
         <div class="pdf-member-box">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
                 <div>
                     <div class="pdf-member-name">${m.name}</div>
                     <div class="pdf-member-sub">📞 ${m.phone||'No phone'}</div>
                     <div class="pdf-member-sub">📂 Groups: ${memberGroups.map(g=>g.name).join(', ')||'—'}</div>
                 </div>
-                <div class="pdf-stats-row">
-                    <div class="pdf-stat-box"><div class="pdf-stat-val" style="color:#065f46;">₹${totalPaid.toLocaleString('en-IN')}</div><div class="pdf-stat-lbl">Total Paid</div></div>
-                    <div class="pdf-stat-box"><div class="pdf-stat-val" style="color:#92400e;">₹${totalBal.toLocaleString('en-IN')}</div><div class="pdf-stat-lbl">Balance</div></div>
-                    <div class="pdf-stat-box"><div class="pdf-stat-val">${mPays.length}</div><div class="pdf-stat-lbl">Payments</div></div>
-                    <div class="pdf-stat-box"><div class="pdf-stat-val" style="color:#065f46;">${chitsPicked}</div><div class="pdf-stat-lbl">Chits Picked</div></div>
+                <div>
+                    <div class="pdf-stats-row">
+                        <div class="pdf-stat-box"><div class="pdf-stat-val" style="color:#065f46;">₹${totalPaid.toLocaleString('en-IN')}</div><div class="pdf-stat-lbl">Total Paid</div></div>
+                        <div class="pdf-stat-box"><div class="pdf-stat-val" style="color:#92400e;">₹${totalBal.toLocaleString('en-IN')}</div><div class="pdf-stat-lbl">Balance</div></div>
+                        <div class="pdf-stat-box"><div class="pdf-stat-val">${mPays.length}</div><div class="pdf-stat-lbl">Payments</div></div>
+                        <div class="pdf-stat-box"><div class="pdf-stat-val" style="color:#065f46;">${chitsPicked}</div><div class="pdf-stat-lbl">Chits Picked</div></div>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="pdf-section-title">Payment History — Group Wise</div>
-        ${groupSections||'<p style="color:#888;">No payments recorded.</p>'}
+        ${groupSections||'<p style="color:#888;font-size:10px;">No payments recorded.</p>'}
         <div class="pdf-footer"><span>AK Chit Funds · Admin Portal</span><span>Member: ${m.name} · ${today}</span><span>CONFIDENTIAL</span></div>
         </div>`;
 
@@ -1618,7 +1706,7 @@ async function generateGroupPDF(gid){
     const left=Math.max(0,totalMonths-elapsed);const pct=Math.min(100,Math.round(elapsed/totalMonths*100));
     const allDueDates=getGroupDueDates(g);
 
-    // ── Member Summary table
+    // Member Summary table rows
     const summaryRows=gMs.map((m,i)=>{
         const mp=gPays.filter(p=>p.memberId===m.id);
         const mPaid=mp.reduce((s,p)=>s+(parseFloat(p.paid)||0),0);
@@ -1628,16 +1716,16 @@ async function generateGroupPDF(gid){
         const lastPay=[...mp].sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0];
         return`<tr>
             <td>${i+1}</td>
-            <td><strong>${m.name}</strong>${m.phone?`<br><span style="font-size:9px;color:#888;">${m.phone}</span>`:''}</td>
+            <td><strong>${m.name}</strong>${m.phone?`<br><span style="font-size:8px;color:#888;">${m.phone}</span>`:''}</td>
             <td style="color:#065f46;font-weight:700;">₹${mPaid.toLocaleString('en-IN')}</td>
             <td style="color:${mBal>0?'#92400e':'#065f46'};font-weight:700;">₹${mBal.toLocaleString('en-IN')}</td>
-            <td>${mp.length} (${monthsCovered}/${totalMonths} mo.)</td>
+            <td>${mp.length} (${monthsCovered}/${totalMonths})</td>
             <td>${lastPay?fmtDate(lastPay.date):'—'}</td>
             <td>${mPicked>0?`<span class="pdf-chit-badge">✅ ${mPicked}x</span>`:'—'}</td>
         </tr>`;
     }).join('');
 
-    // ── Per-member detailed payment history
+    // Per-member detailed payment history
     const detailSections=gMs.map((m,mi)=>{
         const mp=gPays.filter(p=>p.memberId===m.id).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
         const mPaid=mp.reduce((s,p)=>s+(parseFloat(p.paid)||0),0);
@@ -1656,48 +1744,56 @@ async function generateGroupPDF(gid){
                 const slotIdx=p.monthSlot!==undefined?p.monthSlot:getMonthSlot(allDueDates,p.date);
                 monthLabel=slotIdx>=0&&allDueDates[slotIdx]?fmtDate(allDueDates[slotIdx]):'—';
             }
+            const chitDisp=isMulti
+                ?`₹${(parseFloat(p.chit)||0).toLocaleString('en-IN')}/mo × ${p.numMonths}`
+                :`₹${(parseFloat(p.chit)||0).toLocaleString('en-IN')}`;
             return`<tr class="${cp?'pdf-chit-row':(isMulti?'pdf-multi-row':'')}">
                 <td>${idx+1}</td>
-                <td>${monthLabel}${isMulti?`<br><span class="pdf-multi-badge">📅 ${p.numMonths} months</span>`:''}</td>
+                <td>${monthLabel}${isMulti?`<br><span class="pdf-multi-badge">📅 ${p.numMonths}mo</span>`:''}</td>
                 <td>${fmtDate(p.date)}</td>
-                <td>₹${(parseFloat(p.chit)||0).toLocaleString('en-IN')}${isMulti?` × ${p.numMonths}`:''}</td>
+                <td>${chitDisp}</td>
                 <td style="color:#065f46;font-weight:700;">₹${(parseFloat(p.paid)||0).toLocaleString('en-IN')}</td>
                 <td style="color:${(parseFloat(p.balance)||0)>0?'#92400e':'#065f46'};font-weight:700;">₹${(parseFloat(p.balance)||0).toLocaleString('en-IN')}</td>
                 <td>${p.paidBy||'—'}</td>
-                <td>${cp?`<span class="pdf-chit-badge">✅ PICKED</span>`:'—'}</td>
+                <td>${cp?`<span class="pdf-chit-badge">✅ YES</span>`:'—'}</td>
             </tr>`;
         }).join('');
 
-        return`<div style="margin-bottom:18px;page-break-inside:avoid;">
-            <table style="width:100%;border-collapse:collapse;margin-bottom:5px;">
+        return`<div class="pdf-member-detail-block">
+            <table style="width:100%;border-collapse:collapse;margin-bottom:4px;">
                 <tr>
-                    <td style="font-size:12px;font-weight:800;padding:6px 0;">${mi+1}. ${m.name}${m.phone?` <span style="font-size:10px;color:#888;font-weight:400;">· ${m.phone}</span>`:''}</td>
-                    <td style="text-align:right;font-size:10px;color:#555;">
+                    <td style="font-size:11px;font-weight:800;padding:5px 0;">${mi+1}. ${m.name}${m.phone?` <span style="font-size:9px;color:#888;font-weight:400;">· ${m.phone}</span>`:''}</td>
+                    <td style="text-align:right;font-size:9px;color:#555;">
                         Paid: <strong style="color:#065f46;">₹${mPaid.toLocaleString('en-IN')}</strong> &nbsp;
                         Bal: <strong style="color:${mBal>0?'#92400e':'#065f46'};">₹${mBal.toLocaleString('en-IN')}</strong> &nbsp;
                         Months: <strong>${monthsCovered}/${totalMonths}</strong>
                     </td>
                 </tr>
             </table>
-            ${mp.length===0?`<p style="font-size:10px;color:#999;padding:6px 0;">No payments recorded.</p>`:`
-            <table class="pdf-table">
-                <thead><tr><th>#</th><th>Month(s) Covered</th><th>Pay Date</th><th>Chit/Mo</th><th>Paid</th><th>Balance</th><th>Mode</th><th>Chit?</th></tr></thead>
-                <tbody>
-                    ${rows}
-                    <tr class="pdf-total-row">
-                        <td colspan="4"><strong>Subtotal</strong></td>
-                        <td><strong>₹${mPaid.toLocaleString('en-IN')}</strong></td>
-                        <td><strong>₹${mBal.toLocaleString('en-IN')}</strong></td>
-                        <td colspan="2"></td>
-                    </tr>
-                </tbody>
-            </table>`}
+            ${mp.length===0
+                ?`<p style="font-size:9px;color:#999;padding:4px 0;">No payments recorded.</p>`
+                :`<table class="pdf-table group-detail-table">
+                    <colgroup>
+                        <col class="c-no"><col class="c-month"><col class="c-date">
+                        <col class="c-chit"><col class="c-paid"><col class="c-bal">
+                        <col class="c-mode"><col class="c-pick">
+                    </colgroup>
+                    <thead><tr><th>#</th><th>Month(s) Covered</th><th>Pay Date</th><th>Chit Amt</th><th>Paid</th><th>Balance</th><th>Mode</th><th>Chit?</th></tr></thead>
+                    <tbody>
+                        ${rows}
+                        <tr class="pdf-total-row">
+                            <td colspan="4"><strong>Subtotal</strong></td>
+                            <td><strong>₹${mPaid.toLocaleString('en-IN')}</strong></td>
+                            <td><strong>₹${mBal.toLocaleString('en-IN')}</strong></td>
+                            <td colspan="2"></td>
+                        </tr>
+                    </tbody>
+                </table>`}
         </div>`;
     }).join('');
 
     document.getElementById('pdfContent').innerHTML=`
     <div class="pdf-page">
-        <!-- HEADER -->
         <div class="pdf-header">
             <div>
                 <div class="pdf-brand">🏆 AK CHIT FUNDS</div>
@@ -1709,23 +1805,22 @@ async function generateGroupPDF(gid){
             </div>
         </div>
 
-        <!-- GROUP INFO BOX -->
         <div class="pdf-member-box">
-            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px;align-items:flex-start;">
+            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;align-items:flex-start;">
                 <div style="flex:1;min-width:200px;">
                     <div class="pdf-member-name">📂 ${g.name}</div>
                     <div class="pdf-member-sub">📅 Duration: <strong>${totalMonths} months</strong> &nbsp;|&nbsp; Start: <strong>${fmtDate(g.startDate||g.gStart||'')}</strong></div>
                     <div class="pdf-member-sub">🗓 Monthly Due: <strong>${g.dueDay?`${g.dueDay}${['st','nd','rd'][((g.dueDay%100-11)%10)-1]||'th'} of every month`:'—'}</strong></div>
                     <div class="pdf-member-sub">📊 Progress: Month <strong>${elapsed}/${totalMonths}</strong> &nbsp;·&nbsp; <strong>${left} months pending</strong></div>
-                    <div style="margin-top:10px;">
-                        <div class="pdf-progress-outer" style="height:10px;">
+                    <div style="margin-top:8px;">
+                        <div class="pdf-progress-outer" style="height:8px;">
                             <div class="pdf-progress-inner" style="width:${pct}%;"></div>
                         </div>
-                        <div style="font-size:9px;color:#888;text-align:right;margin-top:2px;">${pct}% complete</div>
+                        <div style="font-size:8px;color:#888;text-align:right;margin-top:2px;">${pct}% complete</div>
                     </div>
                 </div>
                 <div>
-                    <div class="pdf-stats-row" style="gap:8px;">
+                    <div class="pdf-stats-row">
                         <div class="pdf-stat-box">
                             <div class="pdf-stat-val" style="color:#065f46;">₹${totalPaid.toLocaleString('en-IN')}</div>
                             <div class="pdf-stat-lbl">Total Collected</div>
@@ -1747,22 +1842,20 @@ async function generateGroupPDF(gid){
             </div>
         </div>
 
-        <!-- MEMBER SUMMARY TABLE -->
         <div class="pdf-section-title">👥 Member Summary (${gMs.length} Members)</div>
-        <table class="pdf-table" style="margin-bottom:20px;">
+        <table class="pdf-table group-summary-table">
+            <colgroup>
+                <col class="c-no"><col class="c-name"><col class="c-paid">
+                <col class="c-bal"><col class="c-pays"><col class="c-last"><col class="c-pick">
+            </colgroup>
             <thead>
                 <tr>
-                    <th>#</th>
-                    <th>Member Name</th>
-                    <th>Total Paid</th>
-                    <th>Balance</th>
-                    <th>Payments (Months)</th>
-                    <th>Last Payment</th>
-                    <th>Chit Picked</th>
+                    <th>#</th><th>Member Name</th><th>Total Paid</th>
+                    <th>Balance</th><th>Payments (Months)</th><th>Last Payment</th><th>Chit Picked</th>
                 </tr>
             </thead>
             <tbody>
-                ${summaryRows||`<tr><td colspan="7" style="text-align:center;color:#888;padding:12px;">No members in this group</td></tr>`}
+                ${summaryRows||`<tr><td colspan="7" style="text-align:center;color:#888;padding:10px;">No members</td></tr>`}
                 <tr class="pdf-total-row">
                     <td colspan="2"><strong>GRAND TOTAL (${gMs.length} members)</strong></td>
                     <td><strong style="color:#065f46;">₹${totalPaid.toLocaleString('en-IN')}</strong></td>
@@ -1773,11 +1866,9 @@ async function generateGroupPDF(gid){
             </tbody>
         </table>
 
-        <!-- DETAILED PAYMENT HISTORY -->
-        <div class="pdf-section-title" style="page-break-before:auto;">📋 Detailed Payment History — Member Wise</div>
-        ${detailSections||'<p style="color:#888;font-size:11px;">No payment records found.</p>'}
+        <div class="pdf-section-title">📋 Detailed Payment History — Member Wise</div>
+        ${detailSections||'<p style="color:#888;font-size:10px;">No payment records found.</p>'}
 
-        <!-- FOOTER -->
         <div class="pdf-footer">
             <span>AK Chit Funds · Admin Portal</span>
             <span>Group: <strong>${g.name}</strong> · ${today}</span>
@@ -1788,19 +1879,18 @@ async function generateGroupPDF(gid){
     await renderPDF(`AKChitFunds_Group_${g.name.replace(/\s+/g,'_')}_Report.pdf`);
     showToast('✅ Group PDF Downloaded!',true);
 }
+
 // ══════════════════════════════════════════
 // AUTH SYSTEM
 // ══════════════════════════════════════════
-const ADMIN_PHONE = '9876543210'; // ← Change this to your admin mobile number
-let CURRENT_USER = null; // {phone, role:'admin'|'member', memberId, name}
+const ADMIN_PHONE = '9876543210';
+let CURRENT_USER = null;
 
-// Session persistence via sessionStorage
 function saveSession(user){ sessionStorage.setItem('akcf_user', JSON.stringify(user)); }
 function loadSession(){ try{ return JSON.parse(sessionStorage.getItem('akdf_user'))||null; }catch(e){ return null; } }
 function clearSession(){ sessionStorage.removeItem('akdf_user'); sessionStorage.removeItem('akdf_user'); }
 
 async function initAuth(){
-    // Check existing session
     const saved = sessionStorage.getItem('akdf_session');
     if(saved){
         try{
@@ -1810,17 +1900,13 @@ async function initAuth(){
             return;
         }catch(e){}
     }
-    // Show login screen
     document.getElementById('loginScreen').style.display='flex';
 }
 
 async function handleLoginSubmit(){
     const phone = document.getElementById('loginPhone').value.trim();
     if(phone.length !== 10){ showToast('❌ Enter valid 10-digit mobile number', false); return; }
-
     showToast('⏳ Checking access…', true);
-
-    // Check if admin
     if(phone === ADMIN_PHONE){
         const user = {phone, role:'admin', name:'Admin'};
         CURRENT_USER = user;
@@ -1828,13 +1914,9 @@ async function handleLoginSubmit(){
         applyUserSession(user);
         return;
     }
-
-    // Check if this phone matches an approved member
     const members = await getCollection('members');
     const matched = members.find(m => (m.phone||'').replace(/\D/g,'').slice(-10) === phone);
-
     if(matched){
-        // Check access request status
         const reqs = await db.collection('accessRequests').where('phone','==',phone).get();
         if(!reqs.empty){
             const req = reqs.docs[0].data();
@@ -1848,13 +1930,11 @@ async function handleLoginSubmit(){
                 showLoginStep('loginStep3');
                 return;
             } else {
-                // Still pending
                 document.getElementById('pendingPhone').textContent = `+91 ${phone}`;
                 showLoginStep('loginStep2');
                 return;
             }
         } else {
-            // First time — create access request
             await db.collection('accessRequests').add({
                 phone, name: matched.name, memberId: matched.id,
                 status: 'pending', requestedAt: new Date().toISOString()
@@ -1865,7 +1945,6 @@ async function handleLoginSubmit(){
             return;
         }
     } else {
-        // Phone not found in members
         showToast('❌ Mobile number not registered. Contact admin.', false);
         return;
     }
@@ -1875,7 +1954,6 @@ async function checkAccessStatus(){
     const phone = document.getElementById('loginPhone').value.trim() ||
                   (CURRENT_USER && CURRENT_USER.phone) || '';
     if(!phone){ goBackToLogin(); return; }
-
     const reqs = await db.collection('accessRequests').where('phone','==',phone).get();
     if(!reqs.empty){
         const req = reqs.docs[0].data();
@@ -1904,7 +1982,6 @@ function showLoginStep(stepId){
         document.getElementById(id).classList.remove('active');
     });
     document.getElementById(stepId).classList.add('active');
-    // Start auto-poll when on pending screen
     if(stepId === 'loginStep2'){
         if(_pendingPollTimer) clearInterval(_pendingPollTimer);
         _pendingPollTimer = setInterval(silentCheckStatus, 5000);
@@ -1943,7 +2020,6 @@ function goBackToLogin(){
 function applyUserSession(user){
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('logoutBtn').style.display='block';
-
     if(user.role === 'admin'){
         document.getElementById('adminHeader').style.display='flex';
         document.getElementById('memberHeader').style.display='none';
@@ -1951,7 +2027,6 @@ function applyUserSession(user){
         document.getElementById('headerRoleBadge').style.display='inline';
         document.getElementById('accessReqBtn').style.display='inline-flex';
         document.getElementById('logoutBtn').style.display='block';
-        // Show all admin UI
         document.getElementById('adminStatCards').style.display='';
         document.getElementById('adminActionBtns').style.display='flex';
         document.getElementById('adminMemberSearch').style.display='';
@@ -1960,27 +2035,21 @@ function applyUserSession(user){
         updateUI();
         pollPendingRequests();
     } else {
-        // Member mode — replace header, hide all admin UI
         document.getElementById('adminHeader').style.display='none';
         document.getElementById('memberHeader').style.display='block';
-        document.getElementById('logoutBtn').style.display='none'; // logout is in member header
-        // Populate member header
+        document.getElementById('logoutBtn').style.display='none';
         document.getElementById('memberHeaderAvatar').textContent = ini(user.name);
         document.getElementById('memberHeaderName').textContent = user.name;
         document.getElementById('memberHeaderPhone').textContent = `📱 +91 ${user.phone}`;
-        // Hide all admin-only blocks
         document.getElementById('adminStatCards').style.display='none';
         document.getElementById('adminActionBtns').style.display='none';
         document.getElementById('adminMemberSearch').style.display='none';
         document.getElementById('adminQuickBtns').style.display='none';
-        // Hide admin nav tabs + nav bar itself
         document.getElementById('navGroups').style.display='none';
         document.getElementById('navList').style.display='none';
         document.getElementById('navBackup').style.display='none';
         document.querySelector('.nav-bar').style.display='none';
-        // Show member ledger area
         document.getElementById('memberLedgerArea').style.display='block';
-        // Load ONLY this member's own data
         document.getElementById('summaryView').value = user.memberId;
         loadMemberLedger();
     }
@@ -1990,37 +2059,31 @@ function handleLogout(){
     sessionStorage.removeItem('akdf_session');
     CURRENT_USER = null;
     document.body.classList.remove('member-mode');
-    // Restore headers
     document.getElementById('adminHeader').style.display='flex';
     document.getElementById('memberHeader').style.display='none';
-    // Restore nav
     document.getElementById('navGroups').style.display='';
     document.getElementById('navList').style.display='';
     document.getElementById('navBackup').style.display='';
     document.querySelector('.nav-bar').style.display='';
-    // Restore admin UI blocks
     document.getElementById('adminStatCards').style.display='';
     document.getElementById('adminActionBtns').style.display='flex';
     document.getElementById('adminMemberSearch').style.display='';
     document.getElementById('memberLedgerArea').style.display='none';
     document.getElementById('adminQuickBtns').style.display='flex';
-    // Reset header badges
     document.getElementById('logoutBtn').style.display='none';
     document.getElementById('accessReqBtn').style.display='none';
     document.getElementById('headerRoleBadge').textContent='ADMIN';
     document.getElementById('headerRoleBadge').className='badge text-warning border border-warning px-2';
-    // Clear ledger state
     document.getElementById('ledgerData').innerHTML='';
     document.getElementById('memberLedgerData').innerHTML='';
     document.getElementById('summarySearch').value='';
     document.getElementById('summaryView').value='';
-    // Show login
     showLoginStep('loginStep1');
     document.getElementById('loginPhone').value='';
     document.getElementById('loginScreen').style.display='flex';
 }
 
-// ── ACCESS REQUESTS PANEL (admin only) ──
+// ACCESS REQUESTS PANEL
 let _reqFilter = 'pending';
 async function openAccessRequests(){
     _reqFilter = 'pending';
@@ -2044,12 +2107,10 @@ async function renderAccessRequests(){
     const snap = await q.orderBy('requestedAt','desc').get().catch(()=> db.collection('accessRequests').get());
     const all = snap.docs.map(d=>({id:d.id,...d.data()}));
     const filtered = _reqFilter==='all' ? all : all.filter(r=>r.status===_reqFilter);
-
     if(!filtered.length){
         list.innerHTML=`<div style="text-align:center;color:var(--text-dim);padding:24px;font-size:0.85rem;">No ${_reqFilter==='all'?'':_reqFilter} requests</div>`;
         return;
     }
-
     list.innerHTML = filtered.map(r=>`
         <div class="req-card">
             <div style="flex:1;min-width:0;">
@@ -2100,9 +2161,7 @@ async function pollPendingRequests(){
 // ══════════════════════════════════════════
 document.getElementById('pDate').value=new Date().toISOString().split('T')[0];
 setTimeout(migrateData,800);
-// Start auth
 initAuth();
-// Poll pending requests every 60s when admin is logged in
 setInterval(()=>{ if(CURRENT_USER&&CURRENT_USER.role==='admin') pollPendingRequests(); }, 60000);
 </script>
 </body>
