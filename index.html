@@ -130,22 +130,21 @@
         body.member-mode .nav-bar { display:none !important; }
 
         /* ══════════════════════════════════════
-           PDF TEMPLATE STYLES — COMPLETELY FIXED
+           PDF TEMPLATE STYLES — LEFT-CLIP FIXED
            ══════════════════════════════════════ */
         #pdf-template {
-            position: fixed;
-            left: -9999px;
-            top: 0;
+            position: absolute;
+            left: 0;
+            top: -9999px;
             width: 794px;
             visibility: hidden;
             pointer-events: none;
             background: white;
             overflow: visible;
-            z-index: -1;
+            z-index: -9999;
         }
         #pdf-template.rendering {
             visibility: visible;
-            z-index: -1;
         }
         #pdfContent {
             background: white;
@@ -154,11 +153,13 @@
             color: #111;
             padding: 0;
             margin: 0;
+            box-sizing: border-box;
         }
         .pdf-page {
             background: white;
             color: #111;
-            padding: 20px 28px 20px 28px;
+            /* All spacing handled here — no pdf margin so nothing gets clipped */
+            padding: 28px 32px 28px 32px;
             font-family: 'Segoe UI', Arial, sans-serif;
             width: 794px;
             box-sizing: border-box;
@@ -1521,18 +1522,23 @@ function renderPDF(filename){
     return new Promise((resolve)=>{
         const wrapper=document.getElementById('pdf-template');
         const content=document.getElementById('pdfContent');
+
+        // Position at top-left so canvas capture starts at x=0 — prevents left-clip
+        wrapper.style.position='absolute';
+        wrapper.style.left='0';
+        wrapper.style.top='-9999px';
         wrapper.classList.add('rendering');
 
-        // Force all tables to use fixed layout before rendering
+        // Force all tables to fixed layout
         content.querySelectorAll('table').forEach(t=>{
             t.style.tableLayout='fixed';
             t.style.width='100%';
         });
 
         const opt={
-            margin:[12,10,12,10],
+            margin:0,   // Zero margin — all padding lives in .pdf-page, so nothing ever gets clipped
             filename,
-            image:{type:'jpeg',quality:0.92},
+            image:{type:'jpeg',quality:0.95},
             html2canvas:{
                 scale:1.5,
                 useCORS:true,
@@ -1540,6 +1546,8 @@ function renderPDF(filename){
                 allowTaint:false,
                 backgroundColor:'#ffffff',
                 windowWidth:794,
+                windowHeight:1123,
+                scrollX:0,
                 scrollY:0
             },
             jsPDF:{
@@ -1550,8 +1558,6 @@ function renderPDF(filename){
             },
             pagebreak:{
                 mode:'css',
-                before:'.pdf-page-break-before',
-                after:'.pdf-page-break-after',
                 avoid:['.pdf-member-box','.pdf-group-block','.pdf-member-detail-block','.pdf-header','.pdf-footer','thead']
             }
         };
@@ -1559,13 +1565,14 @@ function renderPDF(filename){
         setTimeout(()=>{
             html2pdf().set(opt).from(content).save().then(()=>{
                 wrapper.classList.remove('rendering');
+                wrapper.style.top='-9999px';
                 resolve();
             }).catch(err=>{
                 console.error('PDF error:',err);
                 wrapper.classList.remove('rendering');
                 resolve();
             });
-        },500);
+        },600);
     });
 }
 
