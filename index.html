@@ -1392,6 +1392,30 @@ async function executeRestore(){
 
 // ══════════════════════════════════════════
 
+
+// ── Mobile-safe PDF save
+// iOS Safari blocks programmatic download links — open as blob URL in new tab instead
+function savePDF(doc, filename){
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if(isMobile){
+        // Open blob URL in new tab — user can then use browser Share > Save to Files / Print
+        const blob = doc.output('blob');
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(()=> URL.revokeObjectURL(url), 10000);
+        showToast('📄 PDF opened — tap Share → Save to Files', true);
+    } else {
+        doc.save(filename);
+        showToast('✅ PDF Downloaded!', true);
+    }
+}
+
 // ══════════════════════════════════════════
 // PDF — jsPDF + autoTable (instant download)
 // ══════════════════════════════════════════
@@ -1682,8 +1706,7 @@ async function generateMemberPDF(mid){
         doc.text(`Page ${i} of ${totalPages}`, PW-MR, 290, {align:'right'});
     }
 
-    doc.save(`AKChitFunds_${m.name.replace(/\s+/g,'_')}_Statement.pdf`);
-    showToast('✅ PDF Downloaded!', true);
+    savePDF(doc, `AKChitFunds_${m.name.replace(/\s+/g,'_')}_Statement.pdf`);
 }
 
 async function generateGroupPDF(gid){
@@ -1821,8 +1844,7 @@ async function generateGroupPDF(gid){
         doc.text(`Page ${i} of ${totalPages}`,PW-MR,290,{align:'right'});
     }
 
-    doc.save(`AKChitFunds_Group_${g.name.replace(/\s+/g,'_')}_Report.pdf`);
-    showToast('✅ Group PDF Downloaded!', true);
+    savePDF(doc, `AKChitFunds_Group_${g.name.replace(/\s+/g,'_')}_Report.pdf`);
 }
 
 
