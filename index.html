@@ -1502,16 +1502,27 @@ async function renderListTab(){
             <input type="hidden" id="${durHiddenId}" value="${totalMonths}">
 
             <!-- Card Header -->
-            <div style="background:linear-gradient(135deg,rgba(243,156,18,.13),rgba(243,156,18,.04));border-bottom:1px solid var(--border);padding:14px 16px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
-                <div>
-                    <div style="font-size:0.95rem;font-weight:900;color:#f39c12;margin-bottom:5px;">📅 ${g.name}</div>
-                    <div style="display:flex;gap:5px;flex-wrap:wrap;">
-                        ${startDate?`<span style="font-size:0.6rem;background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);border-radius:5px;padding:2px 7px;color:#a5b4fc;">🗓 ${gStartDisp}</span>`:''}
-                        ${g.dueDay?`<span style="font-size:0.6rem;background:rgba(243,156,18,.12);border:1px solid rgba(243,156,18,.3);border-radius:5px;padding:2px 7px;color:#f39c12;">📅 Due: ${gDueDayOrd}</span>`:''}
-                        <span style="font-size:0.6rem;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:5px;padding:2px 7px;color:#34d399;">${totalMonths} months</span>
+            <div style="background:linear-gradient(135deg,rgba(243,156,18,.13),rgba(243,156,18,.04));border-bottom:1px solid var(--border);padding:14px 16px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                    <div style="font-size:0.95rem;font-weight:900;color:#f39c12;">📅 ${g.name}</div>
+                    <span style="font-size:0.6rem;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:5px;padding:2px 7px;color:#34d399;">${totalMonths} months</span>
+                </div>
+                <!-- Editable fields row -->
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+                    <div>
+                        <div style="font-size:0.55rem;color:var(--text-dim);font-weight:700;text-transform:uppercase;margin-bottom:3px;">👤 Member Name</div>
+                        <input id="cardMember_${gi}" type="text" placeholder="e.g. Ramesh Kumar" class="form-input" style="margin-bottom:0;padding:7px 9px;font-size:0.78rem;width:100%;box-sizing:border-box;">
+                    </div>
+                    <div>
+                        <div style="font-size:0.55rem;color:var(--text-dim);font-weight:700;text-transform:uppercase;margin-bottom:3px;">🗓 Start Date</div>
+                        <input id="cardStart_${gi}" type="date" class="form-input" value="${startDate}" style="margin-bottom:0;padding:7px 9px;font-size:0.78rem;width:100%;box-sizing:border-box;">
+                    </div>
+                    <div>
+                        <div style="font-size:0.55rem;color:var(--text-dim);font-weight:700;text-transform:uppercase;margin-bottom:3px;">📅 Due Day</div>
+                        <input id="cardDue_${gi}" type="number" min="1" max="31" class="form-input" value="${g.dueDay||''}" placeholder="e.g. 8" style="margin-bottom:0;padding:7px 9px;font-size:0.78rem;width:100%;box-sizing:border-box;">
                     </div>
                 </div>
-                <button onclick="printGroupSchedule('${g.id}')" style="background:linear-gradient(135deg,#f39c12,#f57c00);color:#000;border:none;padding:7px 14px;border-radius:8px;font-size:0.72rem;font-weight:800;cursor:pointer;flex-shrink:0;">🖨️ Print</button>
+                <button onclick="(()=>{const mn=document.getElementById('cardMember_${gi}').value.trim();const sd=document.getElementById('cardStart_${gi}').value;const dd=document.getElementById('cardDue_${gi}').value;printGroupSchedule('${g.id}',{memberName:mn,startDate:sd,dueDay:dd});})()" style="width:100%;background:linear-gradient(135deg,#f39c12,#f57c00);color:#000;border:none;padding:9px;border-radius:8px;font-size:0.78rem;font-weight:800;cursor:pointer;">🖨️ Preview & Print Schedule</button>
             </div>
 
             <!-- Summary stats (only if schedule exists) -->
@@ -1566,15 +1577,16 @@ async function renderListTab(){
     }).join('');
 }
 
-async function printGroupSchedule(gid){
+async function printGroupSchedule(gid, overrides={}){
     const gs=await getCollection('groups');
     const g=gs.find(x=>x.id===gid);
     if(!g){showToast('❌ Group not found',false);return;}
     const schedule=g.schedule||[];
     if(!schedule.length){showToast('❌ No schedule saved yet — fill in the editor and tap 💾 Save first.',false);return;}
     const totalMonths=parseInt(g.duration||g.gDuration)||schedule.length;
-    const startDate=g.startDate||g.gStart||'';
-    const dueDay=parseInt(g.dueDay)||1;
+    const startDate=overrides.startDate||g.startDate||g.gStart||'';
+    const dueDay=parseInt(overrides.dueDay||g.dueDay)||1;
+    const memberName=overrides.memberName||'';
     const today=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
     const base=startDate?new Date(startDate):null;
 
@@ -1635,14 +1647,8 @@ async function printGroupSchedule(gid){
         @media print{body>*:not(#printOverlay){display:none!important;}#printOverlay{position:fixed!important;top:0!important;left:0!important;width:100%!important;background:white!important;z-index:99999!important;}#gsContent .pbar{display:none!important;}@page{size:A4;margin:10mm;}}
     </style>
     <div class="pbar">
-        <div style="display:flex;flex-direction:column;gap:4px;flex:1;max-width:320px;">
-            <label style="font-size:11px;font-weight:700;color:#555;">👤 Prepared For (Member Name)</label>
-            <input id="gsPreparedFor" type="text" placeholder="e.g. Ramesh Kumar" style="border:2px solid #f39c12;border-radius:8px;padding:8px 12px;font-size:14px;font-weight:600;outline:none;width:100%;box-sizing:border-box;">
-        </div>
-        <div style="display:flex;gap:8px;align-items:flex-end;">
-            <button class="pbtn" onclick="gsPrint()">🖨️ Print / Save as PDF</button>
-            <button class="cbtn" onclick="closePrintStatement()">✕ Close</button>
-        </div>
+        <button class="pbtn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+        <button class="cbtn" onclick="closePrintStatement()">✕ Close</button>
     </div>
     <div class="hdr">
         <div><div class="brand">&#127942; AK CHIT FUNDS</div><div style="font-size:9px;color:#888;">Chit Fund Management &bull; Official Group Schedule</div></div>
@@ -1651,7 +1657,7 @@ async function printGroupSchedule(gid){
     <div class="info-box">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
             <div style="font-size:16px;font-weight:900;">&#128194; ${g.name}</div>
-            <div id="gsPreparedForDisplay" style="display:none;background:#fff8e1;border:1px solid #f5d060;border-radius:6px;padding:4px 10px;font-size:9px;font-weight:700;color:#92400e;white-space:nowrap;">&#128100; Prepared for: <span id="gsPreparedForName"></span></div>
+            ${memberName?`<div style="background:#fff8e1;border:1px solid #f5d060;border-radius:6px;padding:4px 10px;font-size:9px;font-weight:700;color:#92400e;white-space:nowrap;">&#128100; Prepared for: ${memberName}</div>`:''}
         </div>
         <div style="display:flex;gap:0;border:1px solid #e5c76b;border-radius:8px;overflow:hidden;">
             <div class="chip" style="flex:1;border:none;border-right:1px solid #e5c76b;border-radius:0;"><div class="chip-v">${totalMonths}</div><div class="chip-l">Duration (Months)</div></div>
@@ -1687,30 +1693,7 @@ async function printGroupSchedule(gid){
     if(!ov){ov=document.createElement('div');ov.id='printOverlay';ov.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:white;z-index:99999;overflow-y:auto;padding:16px;';document.body.appendChild(ov);}
     ov.innerHTML=printHTML;
     ov.style.display='block';
-    // Wire up name display live
-    const inp=document.getElementById('gsPreparedFor');
-    const disp=document.getElementById('gsPreparedForDisplay');
-    const nameSpan=document.getElementById('gsPreparedForName');
-    if(inp&&disp&&nameSpan){
-        inp.addEventListener('input',()=>{
-            const v=inp.value.trim();
-            nameSpan.textContent=v;
-            disp.style.display=v?'block':'none';
-        });
-    }
-    showToast('✅ Schedule ready — enter member name then Print',true);
-}
-
-function gsPrint(){
-    const inp=document.getElementById('gsPreparedFor');
-    const disp=document.getElementById('gsPreparedForDisplay');
-    const nameSpan=document.getElementById('gsPreparedForName');
-    if(inp&&disp&&nameSpan){
-        const v=inp.value.trim();
-        nameSpan.textContent=v;
-        disp.style.display=v?'block':'none';
-    }
-    window.print();
+    showToast('✅ Schedule ready — tap Print',true);
 }
 
 function toggleListGroup(id,header){
