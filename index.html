@@ -1481,16 +1481,22 @@ async function renderListTab(){
                 </div>`).join('')
             : '';
 
-        // View table rows
+        // Cumulative pay per row (sum of monthlyPay from month 1 up to and including this month)
+        // % Return = (Chit Payout / cumulative pay paid so far) * 100
+        let cumPay = 0;
         const tableRows = schedule.length ? schedule.map((r,i)=>{
             const mp=parseFloat(r.monthlyPay)||0;
             const cp=parseFloat(r.chitPayout)||0;
+            cumPay += mp;
+            const pct = cumPay>0 ? ((cp/cumPay)*100).toFixed(1) : '—';
+            const pctNum = cumPay>0 ? (cp/cumPay)*100 : 0;
+            const pctColor = pctNum>=100?'#34d399':pctNum>=80?'#f59e0b':'#f87171';
             return `<tr style="background:${i%2===0?'rgba(255,255,255,0.025)':'transparent'};">
                 <td style="text-align:center;font-weight:700;color:var(--text-dim);font-size:0.65rem;">${r.month||i+1}</td>
-                <td style="color:#c4b5fd;font-size:0.65rem;white-space:nowrap;">${getMonthLabel(i)}</td>
                 <td style="color:#a5b4fc;font-size:0.62rem;white-space:nowrap;">${getDueDateStr(i)}</td>
                 <td style="color:#34d399;font-weight:700;font-size:0.72rem;">₹${mp.toLocaleString('en-IN')}</td>
                 <td style="color:#f59e0b;font-weight:700;font-size:0.72rem;">₹${cp.toLocaleString('en-IN')}</td>
+                <td style="text-align:center;font-weight:800;font-size:0.72rem;color:${pctColor};">${pct}%</td>
             </tr>`;
         }).join('') : `<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:14px;font-size:0.72rem;">No schedule entries yet — use editor below to add.</td></tr>`;
 
@@ -1532,16 +1538,17 @@ async function renderListTab(){
                 <table class="table-custom" style="font-size:0.7rem;">
                     <thead><tr>
                         <th style="width:6%;text-align:center;">#</th>
-                        <th style="width:16%;">Month</th>
                         <th style="width:22%;">Due Date</th>
-                        <th style="width:28%;">Monthly Pay</th>
-                        <th style="width:28%;">Chit Payout</th>
+                        <th style="width:26%;">Monthly Pay</th>
+                        <th style="width:26%;">Chit Payout</th>
+                        <th style="width:20%;text-align:center;">% Return</th>
                     </tr></thead>
                     <tbody>${tableRows}</tbody>
                     ${schedule.length?`<tr style="background:rgba(243,156,18,0.08);font-weight:800;border-top:2px solid rgba(243,156,18,0.3);">
-                        <td colspan="3" style="color:#f39c12;font-size:0.65rem;padding:8px 5px;">TOTAL</td>
+                        <td colspan="2" style="color:#f39c12;font-size:0.65rem;padding:8px 5px;">TOTAL</td>
                         <td style="color:#34d399;font-size:0.72rem;">₹${totalPay.toLocaleString('en-IN')}</td>
                         <td style="color:#f59e0b;font-size:0.72rem;">₹${totalPrize.toLocaleString('en-IN')}</td>
+                        <td></td>
                     </tr>`:''}
                 </table>
             </div>
@@ -1596,14 +1603,23 @@ async function printGroupSchedule(gid){
     const startDisp=base?base.toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'}):'—';
     const memberListHtml=gMs.length?gMs.map((m,i)=>`<span style="display:inline-block;margin:2px 8px;font-size:9px;"><b>${i+1}.</b> ${m.name}${m.phone?` (${m.phone})`:''}</span>`).join(''):'—';
 
-    const tableRows=schedule.map((r,i)=>`<tr style="background:${i%2===0?'#f9fafb':'#fff'};">
-        <td style="text-align:center;color:#888;font-weight:700;">${r.month||i+1}</td>
-        <td style="font-weight:600;">${getMonthLabel(i)}</td>
-        <td>${getDueDateStr(i)}</td>
-        <td style="color:#065f46;font-weight:700;">&#8377;${(parseFloat(r.monthlyPay)||0).toLocaleString('en-IN')}</td>
-        <td style="color:#92400e;font-weight:700;">&#8377;${(parseFloat(r.chitPayout)||0).toLocaleString('en-IN')}</td>
-        <td style="text-align:center;color:#ccc;font-size:8px;">____________________</td>
-    </tr>`).join('');
+    let cumPayP=0;
+    const tableRows=schedule.map((r,i)=>{
+        const mp=parseFloat(r.monthlyPay)||0;
+        const cp=parseFloat(r.chitPayout)||0;
+        cumPayP+=mp;
+        const pct=cumPayP>0?((cp/cumPayP)*100).toFixed(1):'—';
+        const pctNum=cumPayP>0?(cp/cumPayP)*100:0;
+        const pctColor=pctNum>=100?'#065f46':pctNum>=80?'#92400e':'#991b1b';
+        return `<tr style="background:${i%2===0?'#f9fafb':'#fff'};">
+            <td style="text-align:center;color:#888;font-weight:700;">${r.month||i+1}</td>
+            <td>${getDueDateStr(i)}</td>
+            <td style="color:#065f46;font-weight:700;">&#8377;${mp.toLocaleString('en-IN')}</td>
+            <td style="color:#92400e;font-weight:700;">&#8377;${cp.toLocaleString('en-IN')}</td>
+            <td style="text-align:center;font-weight:800;color:${pctColor};">${pct}%</td>
+            <td style="text-align:center;color:#ccc;font-size:8px;">____________________</td>
+        </tr>`;
+    }).join('');
 
     const printHTML=`<div id="gsContent">
     <style>
@@ -1648,17 +1664,18 @@ async function printGroupSchedule(gid){
     <table>
         <thead><tr>
             <th style="width:5%;text-align:center;">Month #</th>
-            <th style="width:22%;">Month</th>
-            <th style="width:17%;">Due Date</th>
+            <th style="width:18%;">Due Date</th>
             <th style="width:22%;">Monthly Pay<br><span style="font-weight:400;font-size:7px;">(Amount each member pays)</span></th>
             <th style="width:22%;">Chit Payout<br><span style="font-weight:400;font-size:7px;">(Prize the winner receives)</span></th>
-            <th style="width:12%;text-align:center;">Chit Won By</th>
+            <th style="width:13%;text-align:center;">% Return<br><span style="font-weight:400;font-size:7px;">(if picked this month)</span></th>
+            <th style="width:20%;text-align:center;">Chit Won By</th>
         </tr></thead>
         <tbody>${tableRows}</tbody>
         <tfoot><tr>
-            <td colspan="3" style="text-align:right;padding-right:10px;font-size:8px;">GRAND TOTAL</td>
+            <td colspan="2" style="text-align:right;padding-right:10px;font-size:8px;">GRAND TOTAL</td>
             <td>&#8377;${totalPay.toLocaleString('en-IN')}</td>
             <td>&#8377;${totalPrize.toLocaleString('en-IN')}</td>
+            <td></td>
             <td></td>
         </tr></tfoot>
     </table>
