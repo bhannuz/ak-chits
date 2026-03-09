@@ -245,13 +245,94 @@
     <!-- LIST TAB -->
     <div id="listTab" class="tab-content">
         <div id="simpleListArea" class="mt-2"></div>
-        <!-- ── Chit Schedule Section ── -->
+        <!-- ── New Chit Planner ── -->
         <div style="display:flex;align-items:center;gap:10px;margin:20px 0 10px;">
             <div style="flex:1;height:1px;background:var(--border);"></div>
-            <div style="font-size:0.65rem;font-weight:800;color:#f39c12;text-transform:uppercase;letter-spacing:1px;white-space:nowrap;">📅 Chit Schedule Reports</div>
+            <div style="font-size:0.65rem;font-weight:800;color:#f39c12;text-transform:uppercase;letter-spacing:1px;white-space:nowrap;">📋 New Chit Planner</div>
             <div style="flex:1;height:1px;background:var(--border);"></div>
         </div>
-        <div id="scheduleListArea"></div>
+        <div id="newChitPlanner" style="background:var(--card-bg);border:1px solid var(--border);border-radius:18px;overflow:hidden;margin-bottom:16px;">
+
+            <!-- Planner Inputs -->
+            <div style="padding:16px;border-bottom:1px solid var(--border);">
+                <div style="font-size:0.7rem;font-weight:800;color:#f39c12;text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;">⚙️ Chit Parameters</div>
+
+                <!-- Row 1 -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                    <div>
+                        <div style="font-size:0.55rem;color:var(--text-dim);font-weight:700;text-transform:uppercase;margin-bottom:3px;">🏷️ Group Name</div>
+                        <input id="ncp_name" type="text" class="form-input" placeholder="e.g. Gold Chit 3L" style="margin-bottom:0;padding:8px 10px;font-size:0.82rem;">
+                    </div>
+                    <div>
+                        <div style="font-size:0.55rem;color:var(--text-dim);font-weight:700;text-transform:uppercase;margin-bottom:3px;">👤 Member Name (for print)</div>
+                        <input id="ncp_member" type="text" class="form-input" placeholder="e.g. Ramesh Kumar" style="margin-bottom:0;padding:8px 10px;font-size:0.82rem;">
+                    </div>
+                </div>
+
+                <!-- Row 2 -->
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
+                    <div>
+                        <div style="font-size:0.55rem;color:var(--text-dim);font-weight:700;text-transform:uppercase;margin-bottom:3px;">💰 Chit Amount (₹)</div>
+                        <input id="ncp_amount" type="number" class="form-input" placeholder="e.g. 300000" style="margin-bottom:0;padding:8px 10px;font-size:0.82rem;">
+                    </div>
+                    <div>
+                        <div style="font-size:0.55rem;color:var(--text-dim);font-weight:700;text-transform:uppercase;margin-bottom:3px;">👥 No. of Members</div>
+                        <input id="ncp_members" type="number" class="form-input" placeholder="e.g. 20" style="margin-bottom:0;padding:8px 10px;font-size:0.82rem;">
+                    </div>
+                    <div>
+                        <div style="font-size:0.55rem;color:var(--text-dim);font-weight:700;text-transform:uppercase;margin-bottom:3px;">📆 Duration (months)</div>
+                        <input id="ncp_duration" type="number" class="form-input" placeholder="e.g. 20" style="margin-bottom:0;padding:8px 10px;font-size:0.82rem;">
+                    </div>
+                </div>
+
+                <!-- Row 3 -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+                    <div>
+                        <div style="font-size:0.55rem;color:var(--text-dim);font-weight:700;text-transform:uppercase;margin-bottom:3px;">🗓️ Start Date</div>
+                        <input id="ncp_start" type="date" class="form-input" style="margin-bottom:0;padding:8px 10px;font-size:0.82rem;">
+                    </div>
+                    <div>
+                        <div style="font-size:0.55rem;color:var(--text-dim);font-weight:700;text-transform:uppercase;margin-bottom:3px;">📅 Due Day of Month</div>
+                        <input id="ncp_dueday" type="number" min="1" max="31" class="form-input" placeholder="e.g. 8" style="margin-bottom:0;padding:8px 10px;font-size:0.82rem;">
+                    </div>
+                </div>
+
+                <button onclick="ncpGenerate()" style="width:100%;background:linear-gradient(135deg,#6366f1,#4f46e5);color:white;border:none;padding:10px;border-radius:10px;font-size:0.82rem;font-weight:800;cursor:pointer;">⚡ Generate Schedule</button>
+            </div>
+
+            <!-- Schedule Table (hidden until generated) -->
+            <div id="ncp_tableWrap" style="display:none;">
+                <!-- Summary chips -->
+                <div id="ncp_chips" style="display:flex;gap:0;border-bottom:1px solid var(--border);"></div>
+
+                <!-- Editable schedule rows -->
+                <div style="padding:12px 14px 6px;">
+                    <div style="font-size:0.65rem;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">✏️ Edit Schedule (Monthly Pay &amp; Chit Payout per month)</div>
+                    <div style="display:flex;gap:4px;margin-bottom:4px;font-size:0.56rem;color:var(--text-dim);font-weight:700;text-transform:uppercase;padding:0 2px;">
+                        <span style="width:30px;text-align:center;">#</span>
+                        <span style="flex:1.2;">Due Date</span>
+                        <span style="flex:1;">Monthly Pay (₹)</span>
+                        <span style="flex:1;">Chit Payout (₹)</span>
+                        <span style="width:60px;text-align:center;">% Return</span>
+                    </div>
+                    <div id="ncp_rows" style="display:flex;flex-direction:column;gap:4px;max-height:320px;overflow-y:auto;"></div>
+                </div>
+
+                <!-- Total row -->
+                <div id="ncp_total" style="display:flex;align-items:center;gap:4px;padding:8px 14px;background:rgba(243,156,18,0.07);border-top:1px solid var(--border);font-size:0.72rem;font-weight:800;">
+                    <span style="width:30px;"></span>
+                    <span style="flex:1.2;color:#f39c12;">TOTAL</span>
+                    <span id="ncp_totalPay" style="flex:1;color:#34d399;"></span>
+                    <span id="ncp_totalPayout" style="flex:1;color:#f59e0b;"></span>
+                    <span style="width:60px;"></span>
+                </div>
+
+                <!-- Print button -->
+                <div style="padding:12px 14px;">
+                    <button onclick="ncpPrint()" style="width:100%;background:linear-gradient(135deg,#f39c12,#f57c00);color:#000;border:none;padding:10px;border-radius:10px;font-size:0.82rem;font-weight:800;cursor:pointer;">🖨️ Preview &amp; Print Schedule</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- BACKUP TAB -->
@@ -1371,54 +1452,6 @@ function toggleLedgerTable(id, header){
     if(chevron)chevron.style.transform=isOpen?'rotate(0deg)':'rotate(90deg)';
 }
 
-// ══════════════════════════════════════════
-// SCHEDULE EDITOR (List Tab)
-// ══════════════════════════════════════════
-function schedAddRow(containerId, monthlyPay='', chitPayout='', moNum=null){
-    const wrap = document.getElementById(containerId);
-    const idx = moNum !== null ? moNum : wrap.children.length + 1;
-    const div = document.createElement('div');
-    div.style.cssText = 'display:flex;gap:4px;align-items:center;';
-    div.innerHTML = `
-        <span style="width:30px;font-size:0.68rem;color:var(--text-dim);font-weight:700;text-align:center;flex-shrink:0;">${idx}</span>
-        <input type="number" class="sch-pay form-input" value="${monthlyPay}" placeholder="Monthly Pay ₹" style="flex:1;margin-bottom:0;padding:7px 8px;font-size:0.78rem;">
-        <input type="number" class="sch-chit form-input" value="${chitPayout}" placeholder="Chit Payout ₹" style="flex:1;margin-bottom:0;padding:7px 8px;font-size:0.78rem;">
-        <button type="button" onclick="this.closest('div').remove();schedReindex('${containerId}');" style="width:26px;height:34px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171;border-radius:6px;font-size:0.8rem;cursor:pointer;flex-shrink:0;padding:0;">✕</button>`;
-    wrap.appendChild(div);
-}
-
-function schedReindex(containerId){
-    document.querySelectorAll(`#${containerId} > div`).forEach((div,i)=>{
-        const s=div.querySelector('span'); if(s) s.textContent=i+1;
-    });
-}
-
-function schedAutoFill(containerId, durInputId){
-    const dur=parseInt(document.getElementById(durInputId).value)||0;
-    if(!dur){showToast('❌ Enter Duration first',false);return;}
-    document.getElementById(containerId).innerHTML='';
-    for(let i=1;i<=dur;i++) schedAddRow(containerId,'','',i);
-}
-
-function schedGetRows(containerId){
-    const rows=[];
-    document.querySelectorAll(`#${containerId} > div`).forEach((div,i)=>{
-        const pay=parseFloat(div.querySelector('.sch-pay').value)||0;
-        const chit=parseFloat(div.querySelector('.sch-chit').value)||0;
-        rows.push({month:i+1,monthlyPay:pay,chitPayout:chit});
-    });
-    return rows;
-}
-
-async function schedSave(gid, containerId){
-    const schedule = schedGetRows(containerId);
-    if(!schedule.length){showToast('❌ Add at least one month row',false);return;}
-    await db.collection('groups').doc(gid).update({schedule});
-    bustCache('groups');
-    showToast(`✅ Schedule saved — ${schedule.length} months!`);
-    renderListTab();
-}
-
 async function renderListTab(){
     const gs=await getCollection('groups');const ms=await getCollection('members');
 
@@ -1443,193 +1476,124 @@ async function renderListTab(){
         </div>`;
     }).join('')||'<div style="text-align:center;color:var(--text-dim);padding:40px;">No groups yet.</div>';
 
-    // ── Chit Schedule Section — one card per group with inline editor
-    document.getElementById('scheduleListArea').innerHTML = gs.map((g,gi)=>{
-        const schedule = g.schedule||[];
-        const startDate = g.startDate||g.gStart||'';
-        const dueDay = parseInt(g.dueDay)||1;
-        const base = startDate ? new Date(startDate) : null;
-        const totalMonths = parseInt(g.duration||g.gDuration)||schedule.length||0;
-        const rowsContainerId = `schedRows_${gi}`;
-        const durHiddenId = `schedDur_${gi}`;
 
-        function getDueDateStr(mo){
-            if(!base) return '—';
-            const d=new Date(base.getFullYear(),base.getMonth()+mo,1);
-            const maxDay=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
-            const day=Math.min(dueDay,maxDay);
-            return new Date(d.getFullYear(),d.getMonth(),day).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
-        }
-        function getMonthLabel(mo){
-            if(!base) return `Month ${mo+1}`;
-            return new Date(base.getFullYear(),base.getMonth()+mo,1).toLocaleDateString('en-IN',{month:'short',year:'numeric'});
-        }
 
-        const totalPay   = schedule.reduce((s,r)=>s+(parseFloat(r.monthlyPay)||0),0);
-        const totalPrize = schedule.reduce((s,r)=>s+(parseFloat(r.chitPayout)||0),0);
-        const gStartDisp = startDate ? new Date(startDate).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—';
-        const gDueDayOrd = g.dueDay ? `${g.dueDay}${['st','nd','rd'][((g.dueDay%100-11)%10)-1]||'th'}` : '—';
-
-        // Pre-filled editor rows HTML
-        const editorRowsHtml = schedule.length
-            ? schedule.map((r,i)=>`
-                <div style="display:flex;gap:4px;align-items:center;">
-                    <span style="width:30px;font-size:0.68rem;color:var(--text-dim);font-weight:700;text-align:center;flex-shrink:0;">${i+1}</span>
-                    <input type="number" class="sch-pay form-input" value="${r.monthlyPay||''}" placeholder="Monthly Pay ₹" style="flex:1;margin-bottom:0;padding:7px 8px;font-size:0.78rem;">
-                    <input type="number" class="sch-chit form-input" value="${r.chitPayout||''}" placeholder="Chit Payout ₹" style="flex:1;margin-bottom:0;padding:7px 8px;font-size:0.78rem;">
-                    <button type="button" onclick="this.closest('div').remove();schedReindex('${rowsContainerId}');" style="width:26px;height:34px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171;border-radius:6px;font-size:0.8rem;cursor:pointer;flex-shrink:0;padding:0;">✕</button>
-                </div>`).join('')
-            : '';
-
-        // % Return = (Chit Payout / Total Monthly Pay for full group) * 100
-        const tableRows = schedule.length ? schedule.map((r,i)=>{
-            const mp=parseFloat(r.monthlyPay)||0;
-            const cp=parseFloat(r.chitPayout)||0;
-            const pct = totalPay>0 ? ((cp/totalPay)*100).toFixed(1) : '—';
-            const pctNum = totalPay>0 ? (cp/totalPay)*100 : 0;
-            const pctColor = pctNum>=100?'#34d399':pctNum>=80?'#f59e0b':'#f87171';
-            return `<tr style="background:${i%2===0?'rgba(255,255,255,0.025)':'transparent'};">
-                <td style="text-align:center;font-weight:700;color:var(--text-dim);font-size:0.65rem;">${r.month||i+1}</td>
-                <td style="color:#a5b4fc;font-size:0.62rem;white-space:nowrap;">${getDueDateStr(i)}</td>
-                <td style="color:#34d399;font-weight:700;font-size:0.72rem;">₹${mp.toLocaleString('en-IN')}</td>
-                <td style="color:#f59e0b;font-weight:700;font-size:0.72rem;">₹${cp.toLocaleString('en-IN')}</td>
-                <td style="text-align:center;font-weight:800;font-size:0.72rem;color:${pctColor};">${pct}%</td>
-            </tr>`;
-        }).join('') : `<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:14px;font-size:0.72rem;">No schedule entries yet — use editor below to add.</td></tr>`;
-
-        return `
-        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:18px;margin-bottom:16px;overflow:hidden;">
-            <input type="hidden" id="${durHiddenId}" value="${totalMonths}">
-
-            <!-- Card Header -->
-            <div style="background:linear-gradient(135deg,rgba(243,156,18,.13),rgba(243,156,18,.04));border-bottom:1px solid var(--border);padding:14px 16px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                    <div style="font-size:0.95rem;font-weight:900;color:#f39c12;">📅 ${g.name}</div>
-                    <span style="font-size:0.6rem;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:5px;padding:2px 7px;color:#34d399;">${totalMonths} months</span>
-                </div>
-                <!-- Editable fields row -->
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
-                    <div>
-                        <div style="font-size:0.55rem;color:var(--text-dim);font-weight:700;text-transform:uppercase;margin-bottom:3px;">👤 Member Name</div>
-                        <input id="cardMember_${gi}" type="text" placeholder="e.g. Ramesh Kumar" class="form-input" style="margin-bottom:0;padding:7px 9px;font-size:0.78rem;width:100%;box-sizing:border-box;">
-                    </div>
-                    <div>
-                        <div style="font-size:0.55rem;color:var(--text-dim);font-weight:700;text-transform:uppercase;margin-bottom:3px;">🗓 Start Date</div>
-                        <input id="cardStart_${gi}" type="date" class="form-input" value="${startDate}" style="margin-bottom:0;padding:7px 9px;font-size:0.78rem;width:100%;box-sizing:border-box;">
-                    </div>
-                    <div>
-                        <div style="font-size:0.55rem;color:var(--text-dim);font-weight:700;text-transform:uppercase;margin-bottom:3px;">📅 Due Day</div>
-                        <input id="cardDue_${gi}" type="number" min="1" max="31" class="form-input" value="${g.dueDay||''}" placeholder="e.g. 8" style="margin-bottom:0;padding:7px 9px;font-size:0.78rem;width:100%;box-sizing:border-box;">
-                    </div>
-                </div>
-                <button onclick="(()=>{const mn=document.getElementById('cardMember_${gi}').value.trim();const sd=document.getElementById('cardStart_${gi}').value;const dd=document.getElementById('cardDue_${gi}').value;printGroupSchedule('${g.id}',{memberName:mn,startDate:sd,dueDay:dd});})()" style="width:100%;background:linear-gradient(135deg,#f39c12,#f57c00);color:#000;border:none;padding:9px;border-radius:8px;font-size:0.78rem;font-weight:800;cursor:pointer;">🖨️ Preview & Print Schedule</button>
-            </div>
-
-            <!-- Summary stats (only if schedule exists) -->
-            ${schedule.length?`<div style="display:grid;grid-template-columns:repeat(2,1fr);border-bottom:1px solid var(--border);">
-                <div style="padding:10px;text-align:center;border-right:1px solid var(--border);">
-                    <div style="font-size:0.58rem;color:var(--text-dim);text-transform:uppercase;margin-bottom:2px;">Months</div>
-                    <div style="font-size:0.9rem;font-weight:800;color:#a5b4fc;">${schedule.length}</div>
-                </div>
-                <div style="padding:10px;text-align:center;">
-                    <div style="font-size:0.58rem;color:var(--text-dim);text-transform:uppercase;margin-bottom:2px;">Total Pay</div>
-                    <div style="font-size:0.78rem;font-weight:800;color:#34d399;">₹${totalPay.toLocaleString('en-IN')}</div>
-                </div>
-            </div>`:''}
-
-            <!-- View Table -->
-            <div style="overflow-x:auto;">
-                <table class="table-custom" style="font-size:0.7rem;">
-                    <thead><tr>
-                        <th style="width:6%;text-align:center;">#</th>
-                        <th style="width:22%;">Due Date</th>
-                        <th style="width:26%;">Monthly Pay</th>
-                        <th style="width:26%;">Chit Payout</th>
-                        <th style="width:20%;text-align:center;">% Return</th>
-                    </tr></thead>
-                    <tbody>${tableRows}</tbody>
-                    ${schedule.length?`<tr style="background:rgba(243,156,18,0.08);font-weight:800;border-top:2px solid rgba(243,156,18,0.3);">
-                        <td colspan="2" style="color:#f39c12;font-size:0.65rem;padding:8px 5px;">TOTAL</td>
-                        <td style="color:#34d399;font-size:0.72rem;">₹${totalPay.toLocaleString('en-IN')}</td>
-                        <td></td>
-                        <td></td>
-                    </tr>`:''}
-                </table>
-            </div>
-
-            <!-- Inline Schedule Editor -->
-            <div style="border-top:1px solid var(--border);padding:14px 14px 16px;">
-                <div style="font-size:0.65rem;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;">✏️ Edit Schedule</div>
-                <div style="display:flex;gap:4px;margin-bottom:5px;font-size:0.58rem;color:var(--text-dim);font-weight:700;text-transform:uppercase;padding:0 2px;">
-                    <span style="width:30px;text-align:center;">#</span>
-                    <span style="flex:1;">Monthly Pay (₹)</span>
-                    <span style="flex:1;">Chit Payout (₹)</span>
-                    <span style="width:26px;"></span>
-                </div>
-                <div id="${rowsContainerId}" style="display:flex;flex-direction:column;gap:4px;max-height:300px;overflow-y:auto;">${editorRowsHtml}</div>
-                <div style="display:flex;gap:6px;margin-top:8px;">
-                    <button type="button" onclick="schedAddRow('${rowsContainerId}')" style="flex:1;background:rgba(243,156,18,.1);border:1px dashed rgba(243,156,18,.4);color:#f39c12;border-radius:8px;padding:7px;font-size:0.72rem;font-weight:700;cursor:pointer;">+ Month</button>
-                    <button type="button" onclick="schedAutoFill('${rowsContainerId}','${durHiddenId}')" style="flex:1;background:rgba(99,102,241,.1);border:1px dashed rgba(99,102,241,.4);color:#a5b4fc;border-radius:8px;padding:7px;font-size:0.72rem;font-weight:700;cursor:pointer;">⚡ Auto-fill ${totalMonths} rows</button>
-                    <button type="button" onclick="schedSave('${g.id}','${rowsContainerId}')" style="flex:1;background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;border-radius:8px;padding:7px;font-size:0.72rem;font-weight:800;cursor:pointer;">💾 Save</button>
-                </div>
-            </div>
-        </div>`;
-    }).join('');
+// ══════════════════════════════════════════
+// NEW CHIT PLANNER (standalone, no Firestore)
+// ══════════════════════════════════════════
+function ncpGetDueDate(base, monthIndex, dueDay){
+    if(!base) return '—';
+    const d = new Date(base.getFullYear(), base.getMonth() + monthIndex, 1);
+    const maxDay = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+    return new Date(d.getFullYear(), d.getMonth(), Math.min(dueDay, maxDay))
+        .toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
 }
 
-async function printGroupSchedule(gid, overrides={}){
-    const gs=await getCollection('groups');
-    const g=gs.find(x=>x.id===gid);
-    if(!g){showToast('❌ Group not found',false);return;}
-    const schedule=g.schedule||[];
-    if(!schedule.length){showToast('❌ No schedule saved yet — fill in the editor and tap 💾 Save first.',false);return;}
-    const totalMonths=parseInt(g.duration||g.gDuration)||schedule.length;
-    const startDate=overrides.startDate||g.startDate||g.gStart||'';
-    const dueDay=parseInt(overrides.dueDay||g.dueDay)||1;
-    const memberName=overrides.memberName||'';
-    const today=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
-    const base=startDate?new Date(startDate):null;
+function ncpUpdateTotalsAndPct(){
+    const rows = document.querySelectorAll('#ncp_rows .ncp-row');
+    let totalPay = 0;
+    rows.forEach(row => { totalPay += parseFloat(row.querySelector('.ncp-pay').value)||0; });
+    const totalPayout = Array.from(rows).reduce((s,row)=>s+(parseFloat(row.querySelector('.ncp-chit').value)||0),0);
+    const tpEl = document.getElementById('ncp_totalPay');
+    const tcEl = document.getElementById('ncp_totalPayout');
+    if(tpEl) tpEl.textContent = '₹'+totalPay.toLocaleString('en-IN');
+    if(tcEl) tcEl.textContent = '₹'+totalPayout.toLocaleString('en-IN');
+    rows.forEach(row => {
+        const cp = parseFloat(row.querySelector('.ncp-chit').value)||0;
+        const pct = totalPay>0 ? ((cp/totalPay)*100).toFixed(1) : '—';
+        const pctNum = totalPay>0 ? (cp/totalPay)*100 : 0;
+        const el = row.querySelector('.ncp-pct');
+        if(el){
+            el.textContent = pct!=='—' ? pct+'%' : '—';
+            el.style.color = pctNum>=100?'#34d399':pctNum>=80?'#f59e0b':'#f87171';
+        }
+    });
+}
 
-    function getDueDateStr(mo){
-        if(!base)return'—';
-        const d=new Date(base.getFullYear(),base.getMonth()+mo,1);
-        const maxDay=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
-        return new Date(d.getFullYear(),d.getMonth(),Math.min(dueDay,maxDay)).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+function ncpGenerate(){
+    const amount   = parseFloat(document.getElementById('ncp_amount').value)||0;
+    const members  = parseInt(document.getElementById('ncp_members').value)||0;
+    const duration = parseInt(document.getElementById('ncp_duration').value)||0;
+    const startVal = document.getElementById('ncp_start').value;
+    const dueDay   = parseInt(document.getElementById('ncp_dueday').value)||1;
+    if(!duration){ showToast('❌ Enter Duration (months)', false); return; }
+    if(!amount)  { showToast('❌ Enter Chit Amount', false); return; }
+    const base = startVal ? new Date(startVal) : null;
+    const monthlyPay = members>0 ? Math.round(amount/members) : 0;
+    const chips = [
+        ['Duration', duration+' mo'],
+        ['Members', members||'—'],
+        ['Chit Amt', amount?'₹'+amount.toLocaleString('en-IN'):'—'],
+        ['Monthly Pay', monthlyPay?'₹'+monthlyPay.toLocaleString('en-IN'):'—'],
+        ['Start', base?base.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'—'],
+        ['Due Day', dueDay],
+    ];
+    document.getElementById('ncp_chips').innerHTML = chips.map((c,i)=>`
+        <div style="flex:1;padding:8px 4px;text-align:center;${i<chips.length-1?'border-right:1px solid var(--border);':''}">
+            <div style="font-size:0.72rem;font-weight:800;color:#a5b4fc;">${c[1]}</div>
+            <div style="font-size:0.52rem;color:var(--text-dim);text-transform:uppercase;margin-top:1px;">${c[0]}</div>
+        </div>`).join('');
+    const rowsEl = document.getElementById('ncp_rows');
+    rowsEl.innerHTML = '';
+    for(let i=0;i<duration;i++){
+        const dueStr = ncpGetDueDate(base, i, dueDay);
+        const div = document.createElement('div');
+        div.className = 'ncp-row';
+        div.style.cssText = 'display:flex;gap:4px;align-items:center;';
+        div.innerHTML = `
+            <span style="width:30px;font-size:0.65rem;color:var(--text-dim);font-weight:700;text-align:center;flex-shrink:0;">${i+1}</span>
+            <span class="ncp-due" style="flex:1.2;font-size:0.62rem;color:#a5b4fc;white-space:nowrap;">${dueStr}</span>
+            <input type="number" class="ncp-pay form-input" value="${monthlyPay||''}" placeholder="Monthly Pay" style="flex:1;margin-bottom:0;padding:6px 7px;font-size:0.72rem;" oninput="ncpUpdateTotalsAndPct()">
+            <input type="number" class="ncp-chit form-input" value="" placeholder="Chit Payout" style="flex:1;margin-bottom:0;padding:6px 7px;font-size:0.72rem;" oninput="ncpUpdateTotalsAndPct()">
+            <span class="ncp-pct" style="width:60px;text-align:center;font-size:0.68rem;font-weight:800;color:var(--text-dim);">—</span>`;
+        rowsEl.appendChild(div);
     }
-    function getMonthLabel(mo){
-        if(!base)return`Month ${mo+1}`;
-        return new Date(base.getFullYear(),base.getMonth()+mo,1).toLocaleDateString('en-IN',{month:'long',year:'numeric'});
-    }
+    document.getElementById('ncp_tableWrap').style.display = 'block';
+    ncpUpdateTotalsAndPct();
+    showToast('✅ Schedule generated — fill in Chit Payout per month', true);
+}
 
-    const totalPay=schedule.reduce((s,r)=>s+(parseFloat(r.monthlyPay)||0),0);
-    const totalPrize=schedule.reduce((s,r)=>s+(parseFloat(r.chitPayout)||0),0);
-    const startDisp=base?base.toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'}):'—';
-
-
-    // % Return = (Chit Payout / Total Monthly Pay for full group) * 100
-    const tableRows=schedule.map((r,i)=>{
-        const mp=parseFloat(r.monthlyPay)||0;
-        const cp=parseFloat(r.chitPayout)||0;
-        const pct=totalPay>0?((cp/totalPay)*100).toFixed(1):'—';
-        const pctNum=totalPay>0?(cp/totalPay)*100:0;
-        const pctColor=pctNum>=100?'#065f46':pctNum>=80?'#92400e':'#991b1b';
+function ncpPrint(){
+    const name       = document.getElementById('ncp_name').value.trim() || 'New Chit Group';
+    const memberName = document.getElementById('ncp_member').value.trim();
+    const amount     = parseFloat(document.getElementById('ncp_amount').value)||0;
+    const members    = parseInt(document.getElementById('ncp_members').value)||0;
+    const duration   = parseInt(document.getElementById('ncp_duration').value)||0;
+    const startVal   = document.getElementById('ncp_start').value;
+    const dueDay     = parseInt(document.getElementById('ncp_dueday').value)||1;
+    const base       = startVal ? new Date(startVal) : null;
+    const startDisp  = base ? base.toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'}) : '—';
+    const today      = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
+    const monthlyPayBase = members>0 ? Math.round(amount/members) : 0;
+    const rows = document.querySelectorAll('#ncp_rows .ncp-row');
+    let totalPay=0;
+    const rowData=[];
+    rows.forEach((row,i)=>{
+        const mp = parseFloat(row.querySelector('.ncp-pay').value)||0;
+        const cp = parseFloat(row.querySelector('.ncp-chit').value)||0;
+        const due = row.querySelector('.ncp-due').textContent;
+        totalPay += mp;
+        rowData.push({i,mp,cp,due});
+    });
+    const tableRows = rowData.map(({i,mp,cp,due})=>{
+        const pct = totalPay>0 ? ((cp/totalPay)*100).toFixed(1) : '—';
+        const pctNum = totalPay>0 ? (cp/totalPay)*100 : 0;
+        const pctColor = pctNum>=100?'#065f46':pctNum>=80?'#92400e':'#991b1b';
         return `<tr style="background:${i%2===0?'#f9fafb':'#fff'};">
-            <td style="text-align:center;color:#888;font-weight:700;">${r.month||i+1}</td>
-            <td>${getDueDateStr(i)}</td>
+            <td style="text-align:center;color:#888;font-weight:700;">${i+1}</td>
+            <td>${due}</td>
             <td style="color:#065f46;font-weight:700;">&#8377;${mp.toLocaleString('en-IN')}</td>
-            <td style="color:#92400e;font-weight:700;">&#8377;${cp.toLocaleString('en-IN')}</td>
-            <td style="text-align:center;font-weight:800;color:${pctColor};">${pct}%</td>
+            <td style="color:#92400e;font-weight:700;">${cp?'&#8377;'+cp.toLocaleString('en-IN'):'—'}</td>
+            <td style="text-align:center;font-weight:800;color:${pctColor};">${pct!=='—'?pct+'%':'—'}</td>
             <td style="text-align:center;color:#ccc;font-size:8px;">____________________</td>
         </tr>`;
     }).join('');
-
     const printHTML=`<div id="gsContent">
     <style>
         #gsContent{font-family:Arial,sans-serif;color:#111;max-width:820px;margin:0 auto;padding:16px;}
         #gsContent .hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #f39c12;padding-bottom:10px;margin-bottom:14px;}
         #gsContent .brand{font-size:20px;font-weight:900;color:#f39c12;}
         #gsContent .info-box{background:#fffbf0;border:2px solid #f39c12;border-radius:8px;padding:12px 16px;margin-bottom:12px;}
-        #gsContent .info-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
         #gsContent .chip{background:#fff;padding:6px 10px;font-size:9px;text-align:center;}
         #gsContent .chip-v{font-size:13px;font-weight:800;margin-bottom:1px;}
         #gsContent .chip-l{font-size:8px;color:#888;text-transform:uppercase;}
@@ -1639,9 +1603,8 @@ async function printGroupSchedule(gid, overrides={}){
         #gsContent td{border:1px solid #e5e7eb;padding:6px 8px;}
         #gsContent tfoot td{background:#fff8e1;font-weight:800;border-top:2px solid #f39c12;}
         #gsContent .notice{background:#fffbe6;border:1px solid #f5d060;border-radius:6px;padding:10px 14px;font-size:8.5px;color:#555;margin-bottom:12px;line-height:1.6;}
-        #gsContent .members{padding:10px 14px;background:#f9f9f9;border-radius:6px;border:1px solid #eee;font-size:9px;margin-top:10px;}
         #gsContent .ftr{margin-top:14px;border-top:1px solid #ddd;padding-top:8px;display:flex;justify-content:space-between;font-size:8px;color:#aaa;}
-        #gsContent .pbar{display:flex;gap:16px;margin-bottom:16px;align-items:flex-end;flex-wrap:wrap;}
+        #gsContent .pbar{display:flex;gap:10px;margin-bottom:16px;align-items:center;}
         #gsContent .pbtn{background:linear-gradient(90deg,#f39c12,#f57c00);color:#000;border:none;padding:10px 24px;border-radius:10px;font-weight:800;font-size:14px;cursor:pointer;}
         #gsContent .cbtn{background:#eee;color:#333;border:none;padding:10px 18px;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;}
         @media print{body>*:not(#printOverlay){display:none!important;}#printOverlay{position:fixed!important;top:0!important;left:0!important;width:100%!important;background:white!important;z-index:99999!important;}#gsContent .pbar{display:none!important;}@page{size:A4;margin:10mm;}}
@@ -1656,17 +1619,18 @@ async function printGroupSchedule(gid, overrides={}){
     </div>
     <div class="info-box">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-            <div style="font-size:16px;font-weight:900;">&#128194; ${g.name}</div>
+            <div style="font-size:16px;font-weight:900;">&#128194; ${name}</div>
             ${memberName?`<div style="background:#fff8e1;border:1px solid #f5d060;border-radius:6px;padding:4px 10px;font-size:9px;font-weight:700;color:#92400e;white-space:nowrap;">&#128100; Prepared for: ${memberName}</div>`:''}
         </div>
         <div style="display:flex;gap:0;border:1px solid #e5c76b;border-radius:8px;overflow:hidden;">
-            <div class="chip" style="flex:1;border:none;border-right:1px solid #e5c76b;border-radius:0;"><div class="chip-v">${totalMonths}</div><div class="chip-l">Duration (Months)</div></div>
-            <div class="chip" style="flex:1;border:none;border-right:1px solid #e5c76b;border-radius:0;"><div class="chip-v">${g.dueDay||'—'}</div><div class="chip-l">Due Day / Month</div></div>
-            <div class="chip" style="flex:1;border:none;border-right:1px solid #e5c76b;border-radius:0;"><div class="chip-v">${startDisp}</div><div class="chip-l">Start Date</div></div>
-            <div class="chip" style="flex:1;border:none;border-radius:0;"><div class="chip-v" style="color:#065f46;">&#8377;${totalPay.toLocaleString('en-IN')}</div><div class="chip-l">Total Monthly Pay</div></div>
+            <div class="chip" style="flex:1;border-right:1px solid #e5c76b;"><div class="chip-v">${duration}</div><div class="chip-l">Duration (Months)</div></div>
+            <div class="chip" style="flex:1;border-right:1px solid #e5c76b;"><div class="chip-v">${members||'—'}</div><div class="chip-l">Members</div></div>
+            <div class="chip" style="flex:1;border-right:1px solid #e5c76b;"><div class="chip-v">${dueDay}</div><div class="chip-l">Due Day / Month</div></div>
+            <div class="chip" style="flex:1;border-right:1px solid #e5c76b;"><div class="chip-v">${startDisp}</div><div class="chip-l">Start Date</div></div>
+            <div class="chip" style="flex:1;"><div class="chip-v" style="color:#065f46;">&#8377;${totalPay.toLocaleString('en-IN')}</div><div class="chip-l">Total Monthly Pay</div></div>
         </div>
     </div>
-    <div class="notice">&#128161; <b>How this Chit Works:</b> This group runs for <b>${totalMonths} months</b>. Each month all members contribute their Monthly Pay. The pooled amount is auctioned — the member who bids the lowest prize wins the Chit Payout for that month. Monthly pay increases gradually to account for members who already received their prize. Every member wins once over the full cycle.</div>
+    <div class="notice">&#128161; <b>How this Chit Works:</b> This group runs for <b>${duration} months</b> with <b>${members||'?'} members</b>. Chit amount is <b>&#8377;${amount.toLocaleString('en-IN')}</b>. Each member pays approx <b>&#8377;${monthlyPayBase.toLocaleString('en-IN')}/month</b>. Monthly pay increases gradually. Every member wins once over the full cycle.</div>
     <table>
         <thead><tr>
             <th style="width:5%;text-align:center;">Month #</th>
@@ -1680,20 +1644,16 @@ async function printGroupSchedule(gid, overrides={}){
         <tfoot><tr>
             <td colspan="2" style="text-align:right;padding-right:10px;font-size:8px;">GRAND TOTAL</td>
             <td>&#8377;${totalPay.toLocaleString('en-IN')}</td>
-            <td></td>
-            <td></td>
-            <td></td>
+            <td></td><td></td><td></td>
         </tr></tfoot>
     </table>
-
-    <div class="ftr"><span>AK Chit Funds &bull; Admin Portal</span><span>${g.name} &bull; ${today}</span><span>CONFIDENTIAL</span></div>
+    <div class="ftr"><span>AK Chit Funds &bull; Admin Portal</span><span>${name} &bull; ${today}</span><span>CONFIDENTIAL</span></div>
     </div>`;
-
     let ov=document.getElementById('printOverlay');
     if(!ov){ov=document.createElement('div');ov.id='printOverlay';ov.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:white;z-index:99999;overflow-y:auto;padding:16px;';document.body.appendChild(ov);}
     ov.innerHTML=printHTML;
     ov.style.display='block';
-    showToast('✅ Schedule ready — tap Print',true);
+    showToast('✅ Ready — tap Print / Save as PDF',true);
 }
 
 function toggleListGroup(id,header){
