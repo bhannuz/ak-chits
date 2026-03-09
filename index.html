@@ -1481,15 +1481,12 @@ async function renderListTab(){
                 </div>`).join('')
             : '';
 
-        // Cumulative pay per row (sum of monthlyPay from month 1 up to and including this month)
-        // % Return = (Chit Payout / cumulative pay paid so far) * 100
-        let cumPay = 0;
+        // % Return = (Chit Payout / Total Monthly Pay for full group) * 100
         const tableRows = schedule.length ? schedule.map((r,i)=>{
             const mp=parseFloat(r.monthlyPay)||0;
             const cp=parseFloat(r.chitPayout)||0;
-            cumPay += mp;
-            const pct = cumPay>0 ? ((cp/cumPay)*100).toFixed(1) : '—';
-            const pctNum = cumPay>0 ? (cp/cumPay)*100 : 0;
+            const pct = totalPay>0 ? ((cp/totalPay)*100).toFixed(1) : '—';
+            const pctNum = totalPay>0 ? (cp/totalPay)*100 : 0;
             const pctColor = pctNum>=100?'#34d399':pctNum>=80?'#f59e0b':'#f87171';
             return `<tr style="background:${i%2===0?'rgba(255,255,255,0.025)':'transparent'};">
                 <td style="text-align:center;font-weight:700;color:var(--text-dim);font-size:0.65rem;">${r.month||i+1}</td>
@@ -1603,13 +1600,12 @@ async function printGroupSchedule(gid){
     const startDisp=base?base.toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'}):'—';
     const memberListHtml=gMs.length?gMs.map((m,i)=>`<span style="display:inline-block;margin:2px 8px;font-size:9px;"><b>${i+1}.</b> ${m.name}${m.phone?` (${m.phone})`:''}</span>`).join(''):'—';
 
-    let cumPayP=0;
+    // % Return = (Chit Payout / Total Monthly Pay for full group) * 100
     const tableRows=schedule.map((r,i)=>{
         const mp=parseFloat(r.monthlyPay)||0;
         const cp=parseFloat(r.chitPayout)||0;
-        cumPayP+=mp;
-        const pct=cumPayP>0?((cp/cumPayP)*100).toFixed(1):'—';
-        const pctNum=cumPayP>0?(cp/cumPayP)*100:0;
+        const pct=totalPay>0?((cp/totalPay)*100).toFixed(1):'—';
+        const pctNum=totalPay>0?(cp/totalPay)*100:0;
         const pctColor=pctNum>=100?'#065f46':pctNum>=80?'#92400e':'#991b1b';
         return `<tr style="background:${i%2===0?'#f9fafb':'#fff'};">
             <td style="text-align:center;color:#888;font-weight:700;">${r.month||i+1}</td>
