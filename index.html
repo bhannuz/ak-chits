@@ -1515,18 +1515,14 @@ async function renderListTab(){
             </div>
 
             <!-- Summary stats (only if schedule exists) -->
-            ${schedule.length?`<div style="display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--border);">
+            ${schedule.length?`<div style="display:grid;grid-template-columns:repeat(2,1fr);border-bottom:1px solid var(--border);">
                 <div style="padding:10px;text-align:center;border-right:1px solid var(--border);">
                     <div style="font-size:0.58rem;color:var(--text-dim);text-transform:uppercase;margin-bottom:2px;">Months</div>
                     <div style="font-size:0.9rem;font-weight:800;color:#a5b4fc;">${schedule.length}</div>
                 </div>
-                <div style="padding:10px;text-align:center;border-right:1px solid var(--border);">
+                <div style="padding:10px;text-align:center;">
                     <div style="font-size:0.58rem;color:var(--text-dim);text-transform:uppercase;margin-bottom:2px;">Total Pay</div>
                     <div style="font-size:0.78rem;font-weight:800;color:#34d399;">₹${totalPay.toLocaleString('en-IN')}</div>
-                </div>
-                <div style="padding:10px;text-align:center;">
-                    <div style="font-size:0.58rem;color:var(--text-dim);text-transform:uppercase;margin-bottom:2px;">Total Prize</div>
-                    <div style="font-size:0.78rem;font-weight:800;color:#f59e0b;">₹${totalPrize.toLocaleString('en-IN')}</div>
                 </div>
             </div>`:''}
 
@@ -1544,7 +1540,7 @@ async function renderListTab(){
                     ${schedule.length?`<tr style="background:rgba(243,156,18,0.08);font-weight:800;border-top:2px solid rgba(243,156,18,0.3);">
                         <td colspan="2" style="color:#f39c12;font-size:0.65rem;padding:8px 5px;">TOTAL</td>
                         <td style="color:#34d399;font-size:0.72rem;">₹${totalPay.toLocaleString('en-IN')}</td>
-                        <td style="color:#f59e0b;font-size:0.72rem;">₹${totalPrize.toLocaleString('en-IN')}</td>
+                        <td></td>
                         <td></td>
                     </tr>`:''}
                 </table>
@@ -1572,12 +1568,10 @@ async function renderListTab(){
 
 async function printGroupSchedule(gid){
     const gs=await getCollection('groups');
-    const ms=await getCollection('members');
     const g=gs.find(x=>x.id===gid);
     if(!g){showToast('❌ Group not found',false);return;}
     const schedule=g.schedule||[];
     if(!schedule.length){showToast('❌ No schedule saved yet — fill in the editor and tap 💾 Save first.',false);return;}
-    const gMs=ms.filter(m=>(m.enrollments||[]).some(e=>e.groupId===gid)||(m.groupIds||[]).includes(gid));
     const totalMonths=parseInt(g.duration||g.gDuration)||schedule.length;
     const startDate=g.startDate||g.gStart||'';
     const dueDay=parseInt(g.dueDay)||1;
@@ -1598,7 +1592,7 @@ async function printGroupSchedule(gid){
     const totalPay=schedule.reduce((s,r)=>s+(parseFloat(r.monthlyPay)||0),0);
     const totalPrize=schedule.reduce((s,r)=>s+(parseFloat(r.chitPayout)||0),0);
     const startDisp=base?base.toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'}):'—';
-    const memberListHtml=gMs.length?gMs.map((m,i)=>`<span style="display:inline-block;margin:2px 8px;font-size:9px;"><b>${i+1}.</b> ${m.name}${m.phone?` (${m.phone})`:''}</span>`).join(''):'—';
+
 
     // % Return = (Chit Payout / Total Monthly Pay for full group) * 100
     const tableRows=schedule.map((r,i)=>{
@@ -1649,11 +1643,9 @@ async function printGroupSchedule(gid){
         <div style="font-size:16px;font-weight:900;margin-bottom:8px;">&#128194; ${g.name}</div>
         <div class="info-grid">
             <div class="chip"><div class="chip-v">${totalMonths}</div><div class="chip-l">Duration (Months)</div></div>
-            <div class="chip"><div class="chip-v">${gMs.length}</div><div class="chip-l">Members</div></div>
             <div class="chip"><div class="chip-v">${g.dueDay||'—'}</div><div class="chip-l">Due Day / Month</div></div>
             <div class="chip"><div class="chip-v">${startDisp}</div><div class="chip-l">Start Date</div></div>
             <div class="chip"><div class="chip-v" style="color:#065f46;">&#8377;${totalPay.toLocaleString('en-IN')}</div><div class="chip-l">Total Monthly Pay</div></div>
-            <div class="chip"><div class="chip-v" style="color:#92400e;">&#8377;${totalPrize.toLocaleString('en-IN')}</div><div class="chip-l">Total Prize Pool</div></div>
         </div>
     </div>
     <div class="notice">&#128161; <b>How this Chit Works:</b> This group runs for <b>${totalMonths} months</b>. Each month all members contribute their Monthly Pay. The pooled amount is auctioned — the member who bids the lowest prize wins the Chit Payout for that month. Monthly pay increases gradually to account for members who already received their prize. Every member wins once over the full cycle.</div>
@@ -1670,12 +1662,12 @@ async function printGroupSchedule(gid){
         <tfoot><tr>
             <td colspan="2" style="text-align:right;padding-right:10px;font-size:8px;">GRAND TOTAL</td>
             <td>&#8377;${totalPay.toLocaleString('en-IN')}</td>
-            <td>&#8377;${totalPrize.toLocaleString('en-IN')}</td>
+            <td></td>
             <td></td>
             <td></td>
         </tr></tfoot>
     </table>
-    <div class="members"><b>GROUP MEMBERS (${gMs.length}):</b> ${memberListHtml}</div>
+
     <div class="ftr"><span>AK Chit Funds &bull; Admin Portal</span><span>${g.name} &bull; ${today}</span><span>CONFIDENTIAL</span></div>
     </div>`;
 
