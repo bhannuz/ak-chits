@@ -1947,9 +1947,9 @@ async function generateGroupPDF(gid){
 const ADMIN_PHONE = '9876543210';
 let CURRENT_USER = null;
 
-function saveSession(user){ sessionStorage.setItem('akcf_user', JSON.stringify(user)); }
-function loadSession(){ try{ return JSON.parse(sessionStorage.getItem('akdf_user'))||null; }catch(e){ return null; } }
-function clearSession(){ sessionStorage.removeItem('akdf_user'); sessionStorage.removeItem('akdf_user'); }
+function saveSession(user){ sessionStorage.setItem('akdf_session', JSON.stringify(user)); }
+function loadSession(){ try{ return JSON.parse(sessionStorage.getItem('akdf_session'))||null; }catch(e){ return null; } }
+function clearSession(){ sessionStorage.removeItem('akdf_session'); }
 
 async function initAuth(){
     const saved = sessionStorage.getItem('akdf_session');
