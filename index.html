@@ -1618,7 +1618,7 @@ async function printGroupSchedule(gid){
         #gsContent .brand{font-size:20px;font-weight:900;color:#f39c12;}
         #gsContent .info-box{background:#fffbf0;border:2px solid #f39c12;border-radius:8px;padding:12px 16px;margin-bottom:12px;}
         #gsContent .info-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
-        #gsContent .chip{background:#fff;border:1px solid #e5c76b;border-radius:5px;padding:5px 12px;font-size:9px;text-align:center;min-width:80px;}
+        #gsContent .chip{background:#fff;padding:6px 10px;font-size:9px;text-align:center;}
         #gsContent .chip-v{font-size:13px;font-weight:800;margin-bottom:1px;}
         #gsContent .chip-l{font-size:8px;color:#888;text-transform:uppercase;}
         #gsContent table{width:100%;border-collapse:collapse;font-size:9.5px;margin-bottom:10px;}
@@ -1629,23 +1629,35 @@ async function printGroupSchedule(gid){
         #gsContent .notice{background:#fffbe6;border:1px solid #f5d060;border-radius:6px;padding:10px 14px;font-size:8.5px;color:#555;margin-bottom:12px;line-height:1.6;}
         #gsContent .members{padding:10px 14px;background:#f9f9f9;border-radius:6px;border:1px solid #eee;font-size:9px;margin-top:10px;}
         #gsContent .ftr{margin-top:14px;border-top:1px solid #ddd;padding-top:8px;display:flex;justify-content:space-between;font-size:8px;color:#aaa;}
-        #gsContent .pbar{display:flex;gap:10px;margin-bottom:16px;}
+        #gsContent .pbar{display:flex;gap:16px;margin-bottom:16px;align-items:flex-end;flex-wrap:wrap;}
         #gsContent .pbtn{background:linear-gradient(90deg,#f39c12,#f57c00);color:#000;border:none;padding:10px 24px;border-radius:10px;font-weight:800;font-size:14px;cursor:pointer;}
         #gsContent .cbtn{background:#eee;color:#333;border:none;padding:10px 18px;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;}
         @media print{body>*:not(#printOverlay){display:none!important;}#printOverlay{position:fixed!important;top:0!important;left:0!important;width:100%!important;background:white!important;z-index:99999!important;}#gsContent .pbar{display:none!important;}@page{size:A4;margin:10mm;}}
     </style>
-    <div class="pbar"><button class="pbtn" onclick="window.print()">🖨️ Print / Save as PDF</button><button class="cbtn" onclick="closePrintStatement()">✕ Close</button></div>
+    <div class="pbar">
+        <div style="display:flex;flex-direction:column;gap:4px;flex:1;max-width:320px;">
+            <label style="font-size:11px;font-weight:700;color:#555;">👤 Prepared For (Member Name)</label>
+            <input id="gsPreparedFor" type="text" placeholder="e.g. Ramesh Kumar" style="border:2px solid #f39c12;border-radius:8px;padding:8px 12px;font-size:14px;font-weight:600;outline:none;width:100%;box-sizing:border-box;">
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-end;">
+            <button class="pbtn" onclick="gsPrint()">🖨️ Print / Save as PDF</button>
+            <button class="cbtn" onclick="closePrintStatement()">✕ Close</button>
+        </div>
+    </div>
     <div class="hdr">
         <div><div class="brand">&#127942; AK CHIT FUNDS</div><div style="font-size:9px;color:#888;">Chit Fund Management &bull; Official Group Schedule</div></div>
         <div style="text-align:right;"><div style="font-size:13px;font-weight:800;">CHIT SCHEDULE REPORT</div><div style="font-size:9px;color:#888;">Generated: ${today}</div></div>
     </div>
     <div class="info-box">
-        <div style="font-size:16px;font-weight:900;margin-bottom:8px;">&#128194; ${g.name}</div>
-        <div class="info-grid">
-            <div class="chip"><div class="chip-v">${totalMonths}</div><div class="chip-l">Duration (Months)</div></div>
-            <div class="chip"><div class="chip-v">${g.dueDay||'—'}</div><div class="chip-l">Due Day / Month</div></div>
-            <div class="chip"><div class="chip-v">${startDisp}</div><div class="chip-l">Start Date</div></div>
-            <div class="chip"><div class="chip-v" style="color:#065f46;">&#8377;${totalPay.toLocaleString('en-IN')}</div><div class="chip-l">Total Monthly Pay</div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <div style="font-size:16px;font-weight:900;">&#128194; ${g.name}</div>
+            <div id="gsPreparedForDisplay" style="display:none;background:#fff8e1;border:1px solid #f5d060;border-radius:6px;padding:4px 10px;font-size:9px;font-weight:700;color:#92400e;white-space:nowrap;">&#128100; Prepared for: <span id="gsPreparedForName"></span></div>
+        </div>
+        <div style="display:flex;gap:0;border:1px solid #e5c76b;border-radius:8px;overflow:hidden;">
+            <div class="chip" style="flex:1;border:none;border-right:1px solid #e5c76b;border-radius:0;"><div class="chip-v">${totalMonths}</div><div class="chip-l">Duration (Months)</div></div>
+            <div class="chip" style="flex:1;border:none;border-right:1px solid #e5c76b;border-radius:0;"><div class="chip-v">${g.dueDay||'—'}</div><div class="chip-l">Due Day / Month</div></div>
+            <div class="chip" style="flex:1;border:none;border-right:1px solid #e5c76b;border-radius:0;"><div class="chip-v">${startDisp}</div><div class="chip-l">Start Date</div></div>
+            <div class="chip" style="flex:1;border:none;border-radius:0;"><div class="chip-v" style="color:#065f46;">&#8377;${totalPay.toLocaleString('en-IN')}</div><div class="chip-l">Total Monthly Pay</div></div>
         </div>
     </div>
     <div class="notice">&#128161; <b>How this Chit Works:</b> This group runs for <b>${totalMonths} months</b>. Each month all members contribute their Monthly Pay. The pooled amount is auctioned — the member who bids the lowest prize wins the Chit Payout for that month. Monthly pay increases gradually to account for members who already received their prize. Every member wins once over the full cycle.</div>
@@ -1675,7 +1687,30 @@ async function printGroupSchedule(gid){
     if(!ov){ov=document.createElement('div');ov.id='printOverlay';ov.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:white;z-index:99999;overflow-y:auto;padding:16px;';document.body.appendChild(ov);}
     ov.innerHTML=printHTML;
     ov.style.display='block';
-    showToast('✅ Schedule ready — tap Print',true);
+    // Wire up name display live
+    const inp=document.getElementById('gsPreparedFor');
+    const disp=document.getElementById('gsPreparedForDisplay');
+    const nameSpan=document.getElementById('gsPreparedForName');
+    if(inp&&disp&&nameSpan){
+        inp.addEventListener('input',()=>{
+            const v=inp.value.trim();
+            nameSpan.textContent=v;
+            disp.style.display=v?'block':'none';
+        });
+    }
+    showToast('✅ Schedule ready — enter member name then Print',true);
+}
+
+function gsPrint(){
+    const inp=document.getElementById('gsPreparedFor');
+    const disp=document.getElementById('gsPreparedForDisplay');
+    const nameSpan=document.getElementById('gsPreparedForName');
+    if(inp&&disp&&nameSpan){
+        const v=inp.value.trim();
+        nameSpan.textContent=v;
+        disp.style.display=v?'block':'none';
+    }
+    window.print();
 }
 
 function toggleListGroup(id,header){
