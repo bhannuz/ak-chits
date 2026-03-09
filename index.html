@@ -87,7 +87,9 @@
         .btn-del-sm { background:rgba(239,68,68,.12); border:1px solid rgba(239,68,68,.35); color:#f87171; border-radius:7px; padding:4px 10px; font-size:0.68rem; font-weight:700; cursor:pointer; }
 
         /* GROUPS TAB COLLAPSIBLE */
-        .group-card { background:var(--card-bg); border:1px solid var(--border); border-radius:16px; padding:16px; margin-bottom:14px; overflow:hidden; }
+        .enrollment-row select, .enrollment-row input { font-size:0.82rem !important; }
+        .sched-chip { background:rgba(255,255,255,.06); border:1px solid var(--border); border-radius:5px; padding:2px 7px; font-size:0.6rem; font-weight:700; margin-right:3px; }
+                .group-card { background:var(--card-bg); border:1px solid var(--border); border-radius:16px; padding:16px; margin-bottom:14px; overflow:hidden; }
         .group-card-header { cursor:pointer; user-select:none; }
         .group-body { transition:max-height 0.3s ease, opacity 0.3s ease; overflow:hidden; }
         .group-body.collapsed { max-height:0 !important; opacity:0; }
@@ -269,8 +271,9 @@
         <input type="text" id="mName" class="form-input" placeholder="e.g. Rama Krishna">
         <label class="form-label-small">Phone Number</label>
         <input type="text" id="mPhone" class="form-input" placeholder="e.g. 9876543210">
-        <label class="form-label-small">Assign to Groups</label>
-        <div id="groupCheckboxes" class="group-checkbox-area"></div>
+        <label class="form-label-small">Group Enrollments <span style="color:var(--text-dim);font-size:0.65rem;">(same group multiple times allowed)</span></label>
+        <div id="enrollmentList" style="margin-bottom:8px;display:flex;flex-direction:column;gap:6px;"></div>
+        <button type="button" onclick="addEnrollmentRow()" style="background:rgba(243,156,18,.12);border:1px dashed rgba(243,156,18,.4);color:#f39c12;border-radius:10px;padding:8px;width:100%;font-size:0.8rem;font-weight:700;cursor:pointer;margin-bottom:12px;">+ Add Group Enrollment</button>
         <button class="btn-save" onclick="saveMember()">✓ Save Member</button>
         <div id="deleteMemberArea" style="display:none;">
             <button class="btn-danger-full" onclick="deleteMemberFromModal()">🗑 Delete Member</button>
@@ -292,6 +295,20 @@
         <input type="number" id="gDueDay" class="form-input" placeholder="e.g. 5 means 5th of every month" min="1" max="31">
         <label class="form-label-small">Start Date</label>
         <input type="date" id="gStart" class="form-input">
+        <label class="form-label-small">📅 Chit Schedule <span style="color:var(--text-dim);font-size:0.65rem;">(enter each month's amounts manually)</span></label>
+        <div id="scheduleEditorWrap" style="margin-bottom:12px;">
+            <div style="display:flex;gap:4px;align-items:center;margin-bottom:6px;font-size:0.6rem;color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:0 4px;">
+                <span style="width:32px;">#</span>
+                <span style="flex:1;">Monthly Pay (₹)</span>
+                <span style="flex:1;">Chit Payout (₹)</span>
+                <span style="width:28px;"></span>
+            </div>
+            <div id="scheduleRows" style="max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;"></div>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+                <button type="button" onclick="addScheduleRow()" style="flex:1;background:rgba(243,156,18,.1);border:1px dashed rgba(243,156,18,.4);color:#f39c12;border-radius:8px;padding:7px;font-size:0.78rem;font-weight:700;cursor:pointer;">+ Add Month</button>
+                <button type="button" onclick="autoFillSchedule()" style="flex:1;background:rgba(99,102,241,.1);border:1px dashed rgba(99,102,241,.4);color:#a5b4fc;border-radius:8px;padding:7px;font-size:0.78rem;font-weight:700;cursor:pointer;">⚡ Auto-fill from Duration</button>
+            </div>
+        </div>
         <button class="btn-save" onclick="saveGroup()">✓ Save Group</button>
         <div id="deleteGroupArea" style="display:none;">
             <button class="btn-danger-full" onclick="deleteGroupFromModal()">🗑 Delete Group</button>
@@ -315,8 +332,9 @@
             <input type="hidden" id="pMember">
             <div id="pMemberList" class="suggestions-list"></div>
         </div>
-        <label class="form-label-small">Group</label>
-        <select id="pGroup" class="form-input" onchange="onGroupChange()"><option value="">-- Select Member First --</option></select>
+        <label class="form-label-small">Group / Enrollment</label>
+        <select id="pGroup" class="form-input"><option value="">-- Select Member First --</option></select>
+        <input type="hidden" id="pEnrollmentId">
 
         <label class="form-label-small">Payment Type</label>
         <select id="pNumMonths" class="form-input" onchange="onNumMonthsChange()">
@@ -734,10 +752,20 @@ async function loadMemberLedger(){
     const mPays=ps.filter(p=>p.memberId===mid);
     const totalPaid=mPays.reduce((s,p)=>s+(parseFloat(p.paid)||0),0);
     const totalBal=mPays.reduce((s,p)=>s+(parseFloat(p.balance)||0),0);
+    // Support both legacy groupIds and new enrollments
+    let enrollments = m.enrollments;
+    if(!enrollments||!enrollments.length){
+        enrollments=(m.groupIds||[]).map(gid=>({enrollmentId:'',groupId:gid,label:''}));
+    }
     const memberGroups=gs.filter(g=>m.groupIds&&m.groupIds.includes(g.id));
 
-    const payTablesHtml=memberGroups.map((grp,gi)=>{
-        const pays=mPays.filter(p=>p.groupId===grp.id).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+    const payTablesHtml=enrollments.map((enr,gi)=>{
+        const grp=gs.find(g=>g.id===enr.groupId);if(!grp)return'';
+        // Match payments: if enrollmentId exists use it, else match by groupId (legacy)
+        const pays=mPays.filter(p=>{
+            if(enr.enrollmentId && p.enrollmentId) return p.enrollmentId===enr.enrollmentId;
+            return p.groupId===enr.groupId;
+        }).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
         const allDueDates=getGroupDueDates(grp);
         const tPaid=pays.reduce((s,p)=>s+(parseFloat(p.paid)||0),0);
         const tBal=pays.reduce((s,p)=>s+(parseFloat(p.balance)||0),0);
@@ -787,7 +815,7 @@ async function loadMemberLedger(){
         return`<div style="margin-bottom:12px;">
             <div style="background:#1c253b;border-radius:12px 12px 0 0;padding:10px 14px;border:1px solid var(--border);border-bottom:none;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
                 <div>
-                    <div style="font-size:0.8rem;font-weight:800;color:#f39c12;margin-bottom:4px;">📂 ${grp.name}</div>
+                    <div style="font-size:0.8rem;font-weight:800;color:#f39c12;margin-bottom:4px;">📂 ${grp.name}${enr.label?` <span style="font-size:0.65rem;background:rgba(243,156,18,.18);border:1px solid rgba(243,156,18,.35);border-radius:5px;padding:1px 6px;color:#f39c12;">${enr.label}</span>`:''}</div>
                     <div style="display:flex;gap:5px;flex-wrap:wrap;">
                         <span style="font-size:0.58rem;background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);border-radius:5px;padding:1px 6px;color:#a5b4fc;">🗓 Started: ${gStartDisplay}</span>
                         ${grp.dueDay?`<span style="font-size:0.58rem;background:rgba(243,156,18,.12);border:1px solid rgba(243,156,18,.3);border-radius:5px;padding:1px 6px;color:#f39c12;">📅 Due: ${gDueDayOrd}</span>`:''}
@@ -857,35 +885,64 @@ async function loadMemberLedger(){
 // ══════════════════════════════════════════
 // MEMBER CRUD
 // ══════════════════════════════════════════
+// ── Enrollment helper: generate unique ID
+function genEnrollId(){ return 'enr_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); }
+
+// ── Render enrollment rows inside the member modal
+let _enrollGroupOptions = [];
+
 async function openAddMember(){
     if(!isAdmin()){showToast('🚫 Access denied',false);return;}
-    document.getElementById('mName').value='';document.getElementById('mPhone').value='';
+    document.getElementById('mName').value='';
+    document.getElementById('mPhone').value='';
+    document.getElementById('editMemberId').value='';
     document.getElementById('memberModalTitle').textContent='👤 Create Member';
     document.getElementById('deleteMemberArea').style.display='none';
-    const gs=await getCollection('groups');
-    document.getElementById('groupCheckboxes').innerHTML=gs.map(g=>`
-        <div class="d-flex gap-2 align-items-center p-1">
-            <input type="checkbox" class="group-cb" value="${g.id}" style="accent-color:#f39c12;width:16px;height:16px;">
-            <span style="font-size:0.9rem;">${g.name}</span>
-        </div>`).join('');
+    _enrollGroupOptions = await getCollection('groups');
+    document.getElementById('enrollmentList').innerHTML='';
+    addEnrollmentRow(); // start with one empty row
     openModal('memberModal');
 }
 
 async function openEditMember(mid){
     if(!isAdmin()){showToast('🚫 Access denied',false);return;}
-    const ms=await getCollection('members');const m=ms.find(x=>x.id===mid);if(!m)return;
+    const ms=await getCollection('members');
+    const m=ms.find(x=>x.id===mid);if(!m)return;
     document.getElementById('editMemberId').value=m.id;
     document.getElementById('mName').value=m.name||'';
     document.getElementById('mPhone').value=m.phone||'';
     document.getElementById('memberModalTitle').textContent='✏️ Edit Member';
     document.getElementById('deleteMemberArea').style.display='block';
-    const gs=await getCollection('groups');
-    document.getElementById('groupCheckboxes').innerHTML=gs.map(g=>`
-        <div class="d-flex gap-2 align-items-center p-1">
-            <input type="checkbox" class="group-cb" value="${g.id}" ${m.groupIds&&m.groupIds.includes(g.id)?'checked':''} style="accent-color:#f39c12;width:16px;height:16px;">
-            <span style="font-size:0.9rem;">${g.name}</span>
-        </div>`).join('');
+    _enrollGroupOptions = await getCollection('groups');
+    const list = document.getElementById('enrollmentList');
+    list.innerHTML='';
+
+    // Support both old (groupIds array) and new (enrollments array) format
+    let enrollments = m.enrollments;
+    if(!enrollments || !enrollments.length){
+        // Migrate legacy groupIds
+        enrollments = (m.groupIds||[]).map(gid=>({enrollmentId: genEnrollId(), groupId: gid, label:''}));
+    }
+    enrollments.forEach(e=> addEnrollmentRow(e.groupId, e.label, e.enrollmentId));
     openModal('memberModal');
+}
+
+function addEnrollmentRow(groupId='', label='', enrollmentId=''){
+    const id = enrollmentId || genEnrollId();
+    const opts = _enrollGroupOptions.map(g=>`<option value="${g.id}" ${g.id===groupId?'selected':''}>${g.name}</option>`).join('');
+    const row = document.createElement('div');
+    row.className = 'enrollment-row';
+    row.dataset.enrollmentId = id;
+    row.style.cssText='display:flex;gap:6px;align-items:center;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:8px 10px;';
+    row.innerHTML=`
+        <select class="enr-group form-input" style="flex:2;margin-bottom:0;padding:8px 10px;font-size:0.82rem;">
+            <option value="">-- Select Group --</option>${opts}
+        </select>
+        <input type="text" class="enr-label form-input" placeholder="Label (optional, e.g. Round 2)" value="${label}"
+            style="flex:2;margin-bottom:0;padding:8px 10px;font-size:0.82rem;" title="Add a label to distinguish if same group enrolled twice">
+        <button type="button" onclick="this.closest('.enrollment-row').remove()"
+            style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171;border-radius:8px;padding:6px 10px;font-size:0.85rem;cursor:pointer;flex-shrink:0;">✕</button>`;
+    document.getElementById('enrollmentList').appendChild(row);
 }
 
 async function saveMember(){
@@ -893,13 +950,30 @@ async function saveMember(){
     const n=document.getElementById('mName').value.trim();
     const p=document.getElementById('mPhone').value.trim();
     const eid=document.getElementById('editMemberId').value;
-    const gids=Array.from(document.querySelectorAll('.group-cb:checked')).map(cb=>cb.value);
-    if(!n)return showToast('❌ Enter member name',false);
-    if(gids.length===0)return showToast('❌ Select at least one group',false);
-    if(eid)await db.collection('members').doc(eid).update({name:n,phone:p,groupIds:gids});
-    else await db.collection('members').add({name:n,phone:p,groupIds:gids});
+    if(!n) return showToast('❌ Enter member name',false);
+
+    // Collect enrollments from rows
+    const rows = document.querySelectorAll('.enrollment-row');
+    const enrollments = [];
+    const groupIds = []; // keep legacy field for backward compat
+    let valid = true;
+    rows.forEach(row=>{
+        const gid = row.querySelector('.enr-group').value;
+        const lbl = row.querySelector('.enr-label').value.trim();
+        const eid2 = row.dataset.enrollmentId;
+        if(!gid){ valid=false; return; }
+        enrollments.push({enrollmentId:eid2, groupId:gid, label:lbl});
+        if(!groupIds.includes(gid)) groupIds.push(gid);
+    });
+    if(!valid || enrollments.length===0) return showToast('❌ Select a group for each enrollment row',false);
+
+    const data = {name:n, phone:p, enrollments, groupIds};
+    if(eid) await db.collection('members').doc(eid).update(data);
+    else await db.collection('members').add(data);
     bustCache('members');
-    closeModal('memberModal');showToast(`✅ Member "${n}" saved!`);updateUI();
+    closeModal('memberModal');
+    showToast(`✅ Member "${n}" saved with ${enrollments.length} enrollment${enrollments.length!==1?'s':''}!`);
+    updateUI();
 }
 
 function deleteMemberFromModal(){
@@ -925,12 +999,58 @@ function deleteMemberFromModal(){
 // ══════════════════════════════════════════
 // GROUP CRUD
 // ══════════════════════════════════════════
+// ── Schedule Editor helpers
+function renderScheduleRows(schedule){
+    const wrap = document.getElementById('scheduleRows');
+    wrap.innerHTML = '';
+    (schedule||[]).forEach((row, i) => addScheduleRow(row.monthlyPay, row.chitPayout, i+1));
+}
+
+function addScheduleRow(monthlyPay='', chitPayout='', moNum=null){
+    const wrap = document.getElementById('scheduleRows');
+    const idx = moNum !== null ? moNum : wrap.children.length + 1;
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex;gap:4px;align-items:center;';
+    div.innerHTML = `
+        <span style="width:32px;font-size:0.72rem;color:var(--text-dim);font-weight:700;text-align:center;flex-shrink:0;">${idx}</span>
+        <input type="number" class="sch-pay form-input" value="${monthlyPay}" placeholder="₹ Monthly Pay" style="flex:1;margin-bottom:0;padding:8px 10px;font-size:0.8rem;">
+        <input type="number" class="sch-chit form-input" value="${chitPayout}" placeholder="₹ Chit Payout" style="flex:1;margin-bottom:0;padding:8px 10px;font-size:0.8rem;">
+        <button type="button" onclick="this.closest('div').remove();reindexScheduleRows();" style="width:28px;height:36px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171;border-radius:7px;font-size:0.85rem;cursor:pointer;flex-shrink:0;padding:0;">✕</button>`;
+    wrap.appendChild(div);
+}
+
+function reindexScheduleRows(){
+    document.querySelectorAll('#scheduleRows > div').forEach((div, i)=>{
+        const span = div.querySelector('span');
+        if(span) span.textContent = i+1;
+    });
+}
+
+function autoFillSchedule(){
+    const dur = parseInt(document.getElementById('gDuration').value)||0;
+    if(!dur){ showToast('❌ Enter Duration first', false); return; }
+    document.getElementById('scheduleRows').innerHTML = '';
+    for(let i=1;i<=dur;i++) addScheduleRow('', '', i);
+}
+
+function getScheduleFromEditor(){
+    const rows = [];
+    document.querySelectorAll('#scheduleRows > div').forEach((div, i)=>{
+        const pay = parseFloat(div.querySelector('.sch-pay').value)||0;
+        const chit = parseFloat(div.querySelector('.sch-chit').value)||0;
+        rows.push({month: i+1, monthlyPay: pay, chitPayout: chit});
+    });
+    return rows;
+}
+
 function openAddGroup(){
     if(!isAdmin()){showToast('🚫 Access denied',false);return;}
     document.getElementById('gName').value='';
     document.getElementById('gDuration').value='';
     document.getElementById('gDueDay').value='';
     document.getElementById('gStart').value='';
+    document.getElementById('editGroupId').value='';
+    document.getElementById('scheduleRows').innerHTML='';
     document.getElementById('groupModalTitle').textContent='🏦 New Group';
     document.getElementById('deleteGroupArea').style.display='none';
     openModal('groupModal');
@@ -944,6 +1064,14 @@ async function openEditGroup(gid){
     document.getElementById('gDuration').value=g.duration||g.gDuration||'';
     document.getElementById('gDueDay').value=g.dueDay||'';
     document.getElementById('gStart').value=g.startDate||g.gStart||'';
+    document.getElementById('scheduleRows').innerHTML='';
+    // Load existing schedule or auto-init
+    const sched = g.schedule||[];
+    if(sched.length){ renderScheduleRows(sched); }
+    else {
+        const dur = parseInt(g.duration||g.gDuration)||0;
+        for(let i=1;i<=dur;i++) addScheduleRow('','',i);
+    }
     document.getElementById('groupModalTitle').textContent='✏️ Edit Group';
     document.getElementById('deleteGroupArea').style.display='block';
     openModal('groupModal');
@@ -958,12 +1086,13 @@ async function saveGroup(){
     const eid=document.getElementById('editGroupId').value;
     if(!name)return showToast('❌ Enter group name',false);
     if(dueDay&&(dueDay<1||dueDay>31))return showToast('❌ Due Day must be 1–31',false);
-    const data={name,duration,startDate};
+    const schedule = getScheduleFromEditor();
+    const data={name,duration,startDate,schedule};
     if(dueDay) data.dueDay=dueDay;
     if(eid)await db.collection('groups').doc(eid).update(data);
     else await db.collection('groups').add(data);
     bustCache('groups');
-    closeModal('groupModal');showToast(`✅ Group "${name}" saved!`);updateUI();
+    closeModal('groupModal');showToast(`✅ Group "${name}" saved with ${schedule.length}-month schedule!`);updateUI();
 }
 
 function deleteGroupFromModal(){
@@ -1012,7 +1141,32 @@ async function linkGroupForPayment(){
     const mid=document.getElementById('pMember').value;
     const ms=await getCollection('members');const m=ms.find(x=>x.id===mid);if(!m)return;
     const gs=await getCollection('groups');
-    document.getElementById('pGroup').innerHTML=gs.filter(g=>m.groupIds&&m.groupIds.includes(g.id)).map(g=>`<option value="${g.id}">${g.name}</option>`).join('');
+
+    // Build options from enrollments (supports same group multiple times)
+    let opts='';
+    if(m.enrollments && m.enrollments.length){
+        opts = m.enrollments.map(e=>{
+            const g=gs.find(x=>x.id===e.groupId);
+            if(!g)return'';
+            const dispLabel = e.label ? ` (${e.label})` : '';
+            return `<option value="${e.groupId}" data-enrollment-id="${e.enrollmentId}">${g.name}${dispLabel}</option>`;
+        }).join('');
+    } else {
+        // Legacy fallback
+        opts = gs.filter(g=>m.groupIds&&m.groupIds.includes(g.id)).map(g=>`<option value="${g.id}">${g.name}</option>`).join('');
+    }
+    document.getElementById('pGroup').innerHTML = opts || '<option value="">No groups assigned</option>';
+
+    // Store enrollmentId on change
+    const sel = document.getElementById('pGroup');
+    sel.onchange = function(){
+        const chosen = sel.options[sel.selectedIndex];
+        document.getElementById('pEnrollmentId').value = chosen ? (chosen.dataset.enrollmentId||'') : '';
+        onGroupChange();
+    };
+    // Set initial enrollmentId
+    const first = sel.options[sel.selectedIndex];
+    document.getElementById('pEnrollmentId').value = first ? (first.dataset.enrollmentId||'') : '';
     await onGroupChange();
 }
 
@@ -1068,8 +1222,9 @@ async function savePayment(){
         const numMonths=monthSlots.length;
         const totalChit=chitPerMonth*numMonths;
         const balance=Math.max(0,totalChit-paid);
+        const enrollmentId1 = document.getElementById('pEnrollmentId').value||'';
         await db.collection('payments').add({
-            memberId:mid, groupId:gid, date,
+            memberId:mid, groupId:gid, enrollmentId:enrollmentId1, date,
             chit:chitPerMonth, paid, balance, paidBy, chitPicked, chitPickedBy,
             numMonths, monthSlots, monthSlot:monthSlots[0],
             paidPerMonth:paid/numMonths, balPerMonth:balance/numMonths
@@ -1082,8 +1237,9 @@ async function savePayment(){
         const dueDates=grp?getGroupDueDates(grp):[];
         const slotIdx=getMonthSlot(dueDates,date);
         const balance=Math.max(0,chitPerMonth-paid);
+        const enrollmentId2 = document.getElementById('pEnrollmentId').value||'';
         await db.collection('payments').add({
-            memberId:mid, groupId:gid, date,
+            memberId:mid, groupId:gid, enrollmentId:enrollmentId2, date,
             chit:chitPerMonth, paid, balance, paidBy, chitPicked, chitPickedBy,
             numMonths:1, monthSlot:slotIdx>=0?slotIdx:null,
             monthSlots:slotIdx>=0?[slotIdx]:[]
@@ -1180,7 +1336,7 @@ async function renderGroupsTab(){
     const gs=await getCollection('groups');const ms=await getCollection('members');const ps=await getCollection('payments');
     if(!gs.length){document.getElementById('groupListArea').innerHTML='<div style="text-align:center;color:var(--text-dim);padding:40px;">No groups yet.</div>';return;}
     document.getElementById('groupListArea').innerHTML=gs.map((g,gIdx)=>{
-        const gMs=ms.filter(m=>m.groupIds&&m.groupIds.includes(g.id));
+        const gMs=ms.filter(m=>(m.enrollments||[]).some(e=>e.groupId===g.id)||(m.groupIds||[]).includes(g.id));
         const gPays=ps.filter(p=>p.groupId===g.id);
         const tPaid=gPays.reduce((s,p)=>s+(parseFloat(p.paid)||0),0);
         const tBal=gPays.reduce((s,p)=>s+(parseFloat(p.balance)||0),0);
@@ -1244,9 +1400,229 @@ async function renderGroupsTab(){
                     <thead><tr><th>#</th><th>Member</th><th>Paid</th><th>Balance</th><th>Months</th><th>Chit Picked Amt</th><th></th></tr></thead>
                     <tbody>${memberRows}</tbody>
                 </table></div>`:'<div style="text-align:center;color:var(--text-dim);font-size:0.8rem;padding:10px;">No members yet</div>'}
+                ${buildGroupSchedule(g, gMs.length)}
             </div>
         </div>`;
     }).join('');
+}
+
+// ══════════════════════════════════════════
+// GROUP SCHEDULE REPORT
+// ══════════════════════════════════════════
+function buildGroupSchedule(g, memberCount){
+    const schedule = g.schedule||[];
+    const totalMonths = parseInt(g.duration||g.gDuration)||0;
+    const startDate = g.startDate||g.gStart||'';
+    const dueDay = parseInt(g.dueDay)||1;
+
+    if(!totalMonths||!startDate){
+        return `<div style="margin-top:12px;padding:10px 14px;border-top:1px solid var(--border);font-size:0.72rem;color:var(--text-dim);">
+            ℹ️ Set Duration &amp; Start Date in Edit Group, then add the monthly schedule to see the report.
+        </div>`;
+    }
+    if(!schedule.length){
+        return `<div style="margin-top:12px;padding:10px 14px;border-top:1px solid var(--border);font-size:0.72rem;color:var(--text-dim);">
+            ℹ️ No schedule entered yet. Click ✏️ Edit Group → fill in Monthly Pay &amp; Chit Payout for each month.
+        </div>`;
+    }
+
+    // Build due dates
+    const base = new Date(startDate);
+    function getDueDate(mo){ // mo is 0-indexed
+        const d = new Date(base.getFullYear(), base.getMonth()+mo, 1);
+        const maxDay = new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+        const day = Math.min(dueDay,maxDay);
+        return new Date(d.getFullYear(),d.getMonth(),day);
+    }
+
+    const totalMonthlyPay = schedule.reduce((s,r)=>s+(parseFloat(r.monthlyPay)||0),0);
+    const totalChitPayout = schedule.reduce((s,r)=>s+(parseFloat(r.chitPayout)||0),0);
+
+    const rows = schedule.map((r,i)=>{
+        const dd = getDueDate(i);
+        const dueDateStr = dd.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+        const monthLabel = dd.toLocaleDateString('en-IN',{month:'short',year:'numeric'});
+        const mp = parseFloat(r.monthlyPay)||0;
+        const cp = parseFloat(r.chitPayout)||0;
+        return `<tr style="background:${i%2===0?'rgba(255,255,255,0.025)':'transparent'};">
+            <td style="text-align:center;font-weight:700;color:var(--text-dim);font-size:0.68rem;">${r.month||i+1}</td>
+            <td style="color:#c4b5fd;font-size:0.68rem;">${monthLabel}</td>
+            <td style="color:#a5b4fc;font-size:0.65rem;">${dueDateStr}</td>
+            <td style="color:#34d399;font-weight:700;">₹${mp.toLocaleString('en-IN')}</td>
+            <td style="color:#f59e0b;font-weight:700;">₹${cp.toLocaleString('en-IN')}</td>
+        </tr>`;
+    }).join('');
+
+    return `<div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+            <div>
+                <div style="font-size:0.72rem;font-weight:800;color:#f39c12;text-transform:uppercase;letter-spacing:.6px;">📅 Chit Schedule Report</div>
+                <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px;">
+                    <span class="sched-chip" style="color:#a5b4fc;">${schedule.length} months</span>
+                    <span class="sched-chip" style="color:#34d399;">Pay total: ₹${totalMonthlyPay.toLocaleString('en-IN')}</span>
+                    <span class="sched-chip" style="color:#f59e0b;">Prize total: ₹${totalChitPayout.toLocaleString('en-IN')}</span>
+                </div>
+            </div>
+            <button onclick="printGroupSchedule('${g.id}')" style="background:linear-gradient(135deg,#f39c12,#f57c00);color:#000;border:none;padding:7px 14px;border-radius:8px;font-size:0.72rem;font-weight:800;cursor:pointer;flex-shrink:0;">🖨️ Print Schedule</button>
+        </div>
+        <div style="overflow-x:auto;">
+            <table class="table-custom" style="font-size:0.7rem;">
+                <thead><tr>
+                    <th style="width:5%;text-align:center;">#</th>
+                    <th style="width:18%;">Month</th>
+                    <th style="width:20%;">Due Date</th>
+                    <th style="width:28%;">Monthly Pay <span style="font-weight:400;color:var(--text-dim);">(collected)</span></th>
+                    <th style="width:29%;">Chit Payout <span style="font-weight:400;color:var(--text-dim);">(prize)</span></th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+                <tfoot><tr style="background:rgba(243,156,18,0.08);font-weight:800;border-top:2px solid rgba(243,156,18,0.3);">
+                    <td colspan="3" style="color:#f39c12;font-size:0.68rem;">TOTAL (${schedule.length} months)</td>
+                    <td style="color:#34d399;">₹${totalMonthlyPay.toLocaleString('en-IN')}</td>
+                    <td style="color:#f59e0b;">₹${totalChitPayout.toLocaleString('en-IN')}</td>
+                </tr></tfoot>
+            </table>
+        </div>
+    </div>`;
+}
+
+async function printGroupSchedule(gid){
+    const gs = await getCollection('groups');
+    const ms = await getCollection('members');
+    const g = gs.find(x=>x.id===gid);
+    if(!g){showToast('❌ Group not found',false);return;}
+
+    const schedule = g.schedule||[];
+    if(!schedule.length){showToast('❌ No schedule data. Edit Group to add schedule.',false);return;}
+
+    const gMs = ms.filter(m=>(m.enrollments||[]).some(e=>e.groupId===gid)||(m.groupIds||[]).includes(gid));
+    const totalMonths = parseInt(g.duration||g.gDuration)||schedule.length;
+    const startDate = g.startDate||g.gStart||'';
+    const dueDay = parseInt(g.dueDay)||1;
+    const today = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
+
+    const base = startDate ? new Date(startDate) : null;
+    function getDueDateStr(mo){
+        if(!base) return '—';
+        const d = new Date(base.getFullYear(),base.getMonth()+mo,1);
+        const maxDay = new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+        const day = Math.min(dueDay,maxDay);
+        return new Date(d.getFullYear(),d.getMonth(),day).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+    }
+    function getMonthLabel(mo){
+        if(!base) return `Month ${mo+1}`;
+        const d = new Date(base.getFullYear(),base.getMonth()+mo,1);
+        return d.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+    }
+
+    const totalMonthlyPay = schedule.reduce((s,r)=>s+(parseFloat(r.monthlyPay)||0),0);
+    const totalChitPayout = schedule.reduce((s,r)=>s+(parseFloat(r.chitPayout)||0),0);
+
+    const tableRows = schedule.map((r,i)=>`<tr style="background:${i%2===0?'#f9fafb':'#fff'};">
+        <td style="text-align:center;color:#888;font-weight:700;">${r.month||i+1}</td>
+        <td style="font-weight:600;">${getMonthLabel(i)}</td>
+        <td>${getDueDateStr(i)}</td>
+        <td style="color:#065f46;font-weight:700;">&#8377;${(parseFloat(r.monthlyPay)||0).toLocaleString('en-IN')}</td>
+        <td style="color:#92400e;font-weight:700;">&#8377;${(parseFloat(r.chitPayout)||0).toLocaleString('en-IN')}</td>
+        <td style="text-align:center;color:#bbb;">____________________</td>
+    </tr>`).join('');
+
+    const memberListHtml = gMs.length
+        ? gMs.map((m,i)=>`<span style="display:inline-block;margin:2px 8px;font-size:9px;"><b>${i+1}.</b> ${m.name}${m.phone?` (${m.phone})`:''}</span>`).join('')
+        : '—';
+
+    const startDisp = startDate ? new Date(startDate).toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'}) : '—';
+
+    const printHTML = `<div id="gsContent">
+    <style>
+        #gsContent{font-family:Arial,sans-serif;color:#111;max-width:820px;margin:0 auto;padding:16px;}
+        #gsContent .hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #f39c12;padding-bottom:10px;margin-bottom:14px;}
+        #gsContent .brand{font-size:20px;font-weight:900;color:#f39c12;}
+        #gsContent .brand-sub{font-size:9px;color:#888;}
+        #gsContent .info-box{background:#fffbf0;border:2px solid #f39c12;border-radius:8px;padding:12px 16px;margin-bottom:14px;}
+        #gsContent .info-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+        #gsContent .info-chip{background:#fff;border:1px solid #e5c76b;border-radius:5px;padding:5px 12px;font-size:9px;text-align:center;min-width:80px;}
+        #gsContent .info-chip-v{font-size:13px;font-weight:800;margin-bottom:1px;}
+        #gsContent .info-chip-l{font-size:8px;color:#888;text-transform:uppercase;}
+        #gsContent table{width:100%;border-collapse:collapse;font-size:9.5px;margin-bottom:10px;}
+        #gsContent thead tr{background:#fef3c7;}
+        #gsContent th{border:1px solid #d1a832;padding:6px 8px;font-size:8px;text-transform:uppercase;color:#555;font-weight:800;}
+        #gsContent td{border:1px solid #e5e7eb;padding:6px 8px;vertical-align:middle;}
+        #gsContent tfoot tr td{background:#fff8e1;font-weight:800;border-top:2px solid #f39c12;}
+        #gsContent .notice{background:#fffbe6;border:1px solid #f5d060;border-radius:6px;padding:10px 14px;font-size:8.5px;color:#555;margin-bottom:12px;line-height:1.6;}
+        #gsContent .members-section{margin-top:10px;padding:10px 14px;background:#f9f9f9;border-radius:6px;border:1px solid #eee;}
+        #gsContent .ftr{margin-top:14px;border-top:1px solid #ddd;padding-top:8px;display:flex;justify-content:space-between;font-size:8px;color:#aaa;}
+        #gsContent .print-bar{display:flex;gap:10px;margin-bottom:16px;}
+        #gsContent .print-btn{background:linear-gradient(90deg,#f39c12,#f57c00);color:#000;border:none;padding:10px 24px;border-radius:10px;font-weight:800;font-size:14px;cursor:pointer;}
+        #gsContent .close-btn{background:#eee;color:#333;border:none;padding:10px 18px;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;}
+        @media print{
+            body>*:not(#printOverlay){display:none!important;}
+            #printOverlay{position:fixed!important;top:0!important;left:0!important;width:100%!important;background:white!important;z-index:99999!important;}
+            #gsContent .print-bar{display:none!important;}
+            @page{size:A4;margin:10mm;}
+            #gsContent table{font-size:9px;}
+        }
+    </style>
+    <div class="print-bar">
+        <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+        <button class="close-btn" onclick="closePrintStatement()">✕ Close</button>
+    </div>
+    <div class="hdr">
+        <div>
+            <div class="brand">&#127942; AK CHIT FUNDS</div>
+            <div class="brand-sub">Chit Fund Management &bull; Official Group Schedule</div>
+        </div>
+        <div style="text-align:right;">
+            <div style="font-size:13px;font-weight:800;color:#111;">CHIT SCHEDULE REPORT</div>
+            <div style="font-size:9px;color:#888;">Generated: ${today}</div>
+        </div>
+    </div>
+    <div class="info-box">
+        <div style="font-size:16px;font-weight:900;margin-bottom:8px;">&#128194; ${g.name}</div>
+        <div class="info-grid">
+            <div class="info-chip"><div class="info-chip-v">${totalMonths}</div><div class="info-chip-l">Duration (Months)</div></div>
+            <div class="info-chip"><div class="info-chip-v">${gMs.length}</div><div class="info-chip-l">Members</div></div>
+            <div class="info-chip"><div class="info-chip-v">${g.dueDay||'—'}</div><div class="info-chip-l">Due Day / Month</div></div>
+            <div class="info-chip"><div class="info-chip-v">${startDisp}</div><div class="info-chip-l">Start Date</div></div>
+            <div class="info-chip"><div class="info-chip-v" style="color:#065f46;">&#8377;${totalMonthlyPay.toLocaleString('en-IN')}</div><div class="info-chip-l">Total Pay (all months)</div></div>
+            <div class="info-chip"><div class="info-chip-v" style="color:#92400e;">&#8377;${totalChitPayout.toLocaleString('en-IN')}</div><div class="info-chip-l">Total Prize (all months)</div></div>
+        </div>
+    </div>
+    <div class="notice">
+        &#128161; <b>How this Chit Works:</b> This group runs for <b>${totalMonths} months</b>. Each month, all members pay their monthly contribution (see "Monthly Pay" column). The total collected is then auctioned — the member who bids the lowest prize amount wins the chit payout for that month. Every member gets to win once during the ${totalMonths}-month cycle. Monthly pay increases slightly each month to account for those who have already received their prize.
+    </div>
+    <table>
+        <thead><tr>
+            <th style="width:5%;text-align:center;">Month #</th>
+            <th style="width:22%;">Month</th>
+            <th style="width:18%;">Due Date</th>
+            <th style="width:22%;">Monthly Pay<br><span style="font-weight:400;font-size:7px;">(Amount each member pays)</span></th>
+            <th style="width:22%;">Chit Payout<br><span style="font-weight:400;font-size:7px;">(Prize the winner receives)</span></th>
+            <th style="width:11%;text-align:center;">Chit Won By</th>
+        </tr></thead>
+        <tbody>${tableRows}</tbody>
+        <tfoot><tr>
+            <td colspan="3" style="text-align:right;padding-right:10px;font-size:8px;">GRAND TOTAL</td>
+            <td style="color:#065f46;">&#8377;${totalMonthlyPay.toLocaleString('en-IN')}</td>
+            <td style="color:#92400e;">&#8377;${totalChitPayout.toLocaleString('en-IN')}</td>
+            <td></td>
+        </tr></tfoot>
+    </table>
+    <div class="members-section">
+        <div style="font-size:9px;font-weight:800;margin-bottom:5px;color:#555;">GROUP MEMBERS (${gMs.length}):</div>
+        <div>${memberListHtml}</div>
+    </div>
+    <div class="ftr">
+        <span>AK Chit Funds &bull; Admin Portal</span>
+        <span>${g.name} &bull; ${today}</span>
+        <span>CONFIDENTIAL</span>
+    </div>
+    </div>`;
+
+    let overlay = document.getElementById('printOverlay');
+    if(!overlay){overlay=document.createElement('div');overlay.id='printOverlay';overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:white;z-index:99999;overflow-y:auto;padding:16px;';document.body.appendChild(overlay);}
+    overlay.innerHTML = printHTML;
+    overlay.style.display = 'block';
+    showToast('✅ Schedule ready — tap Print', true);
 }
 
 function toggleGroupCard(bodyId, header){
@@ -1275,7 +1651,7 @@ function toggleLedgerTable(id, header){
 async function renderListTab(){
     const gs=await getCollection('groups');const ms=await getCollection('members');
     document.getElementById('simpleListArea').innerHTML=gs.map((g,gi)=>{
-        const gMs=ms.filter(m=>m.groupIds&&m.groupIds.includes(g.id));
+        const gMs=ms.filter(m=>(m.enrollments||[]).some(e=>e.groupId===g.id)||(m.groupIds||[]).includes(g.id));
         const listId=`listGroup_${gi}`;
         return`<div class="list-group-header" onclick="toggleListGroup('${listId}',this)">
             <span>${g.name}</span>
@@ -1411,13 +1787,17 @@ async function printMemberStatement(mid){
     const totalPaid=mPays.reduce((s,p)=>s+(parseFloat(p.paid)||0),0);
     const totalBal=mPays.reduce((s,p)=>s+(parseFloat(p.balance)||0),0);
     const chitsPicked=mPays.filter(p=>p.chitPicked==='Yes').length;
+    let enrollments=m.enrollments;
+    if(!enrollments||!enrollments.length) enrollments=(m.groupIds||[]).map(gid=>({enrollmentId:'',groupId:gid,label:''}));
     const memberGroups=gs.filter(g=>m.groupIds&&m.groupIds.includes(g.id));
     const today=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
-    const grouped={};
-    mPays.forEach(p=>{const gid=p.groupId||'unk';if(!grouped[gid])grouped[gid]=[];grouped[gid].push(p);});
 
-    const groupSections = memberGroups.map(g=>{
-        const pays=(grouped[g.id]||[]).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+    const groupSections = enrollments.map(enr=>{
+        const g=gs.find(x=>x.id===enr.groupId);if(!g)return'';
+        const pays=mPays.filter(p=>{
+            if(enr.enrollmentId&&p.enrollmentId) return p.enrollmentId===enr.enrollmentId;
+            return p.groupId===enr.groupId;
+        }).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
         const totalMonths=parseInt(g.duration||g.gDuration)||21;
         let elapsed=0;
         if(g.startDate||g.gStart){const _s=new Date(g.startDate||g.gStart),_n=new Date();elapsed=Math.max(0,Math.min(totalMonths,(_n.getFullYear()-_s.getFullYear())*12+(_n.getMonth()-_s.getMonth())+1));}
@@ -1458,7 +1838,7 @@ async function printMemberStatement(mid){
         }).join('');
 
         return `<div class="grp-block">
-            <div class="grp-title">&#128194; ${g.name}</div>
+            <div class="grp-title">&#128194; ${g.name}${enr.label?' <span style="background:#fff3cd;color:#92400e;border-radius:3px;padding:1px 5px;font-size:9px;">'+enr.label+'</span>':''}</div>
             <div class="grp-meta">Start: <b>${gStartDisp}</b> &nbsp;|&nbsp; Due: <b>${gDueDayDisp}</b> &nbsp;|&nbsp; Month <b>${elapsed}/${totalMonths}</b> &nbsp;|&nbsp; Covered: <b>${totalMonthsCovered}/${totalMonths}</b> &nbsp;|&nbsp; <b>${left} pending</b></div>
             <div class="prog-outer"><div class="prog-inner" style="width:${pct}%"></div></div>
             <div class="grp-totals">Paid: <b style="color:#065f46;">Rs.${gPaid.toLocaleString('en-IN')}</b> &nbsp;&nbsp; Balance: <b style="color:#92400e;">Rs.${gBal.toLocaleString('en-IN')}</b></div>
@@ -1529,7 +1909,7 @@ async function printMemberStatement(mid){
                 <div>
                     <div class="mname">${m.name}</div>
                     <div class="msub">&#128222; ${m.phone||'—'}</div>
-                    <div class="msub">Groups: ${memberGroups.map(g=>g.name).join(', ')||'—'}</div>
+                    <div class="msub">Groups: ${enrollments.map(e=>{const g=gs.find(x=>x.id===e.groupId);return g?(g.name+(e.label?' ('+e.label+')':'')):'?';}).join(', ')||'—'}</div>
                 </div>
                 <div class="stats">
                     <div class="stat"><div class="stat-v" style="color:#065f46;">Rs.${totalPaid.toLocaleString('en-IN')}</div><div class="stat-l">Total Paid</div></div>
