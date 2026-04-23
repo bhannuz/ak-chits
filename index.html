@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartSplit — Secured Expense Manager</title>
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <title>SmartSplit — Team Expense Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #0f0f13; --bg2: #16161e; --bg3: #1e1e2a; --card: #1a1a24;
@@ -13,76 +13,98 @@
             --radius: 14px; --radius-sm: 8px;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow: hidden; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
         
-        /* Login Overlay */
-        #login-screen {
+        /* Auth Overlays */
+        .auth-overlay {
             position: fixed; inset: 0; background: var(--bg); z-index: 10000;
             display: flex; align-items: center; justify-content: center;
         }
-        .login-box {
+        .auth-box {
             background: var(--bg2); padding: 40px; border-radius: var(--radius);
-            border: 1px solid var(--border); text-align: center; width: 320px;
+            border: 1px solid var(--border); text-align: center; width: 340px;
         }
 
-        /* Rest of Styles */
-        .app { display: none; height: 100vh; } /* Hidden until login */
+        /* App Layout */
+        .app { display: none; height: 100vh; }
         .sidebar { width: 260px; background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
-        .main { flex: 1; overflow-y: auto; background: var(--bg); }
-        .logo { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; color: var(--text); }
+        .main { flex: 1; overflow-y: auto; background: var(--bg); padding: 30px; }
+        
+        /* UI Elements */
+        .logo { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; color: var(--text); margin-bottom: 20px; }
         .logo span { color: var(--accent2); }
-        .form-input { width: 100%; padding: 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); color: #fff; margin-bottom: 15px; outline: none; }
-        .btn { padding: 10px 20px; border-radius: var(--radius-sm); border: none; cursor: pointer; font-weight: 600; transition: 0.2s; }
-        .btn-primary { background: var(--accent); color: white; width: 100%; }
-        .nav-item { padding: 12px 20px; cursor: pointer; color: var(--muted); }
-        .nav-item.active { background: rgba(124,106,245,0.1); color: var(--accent2); }
-        .group-item { padding: 10px 15px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
-        .group-item.active { background: var(--bg3); }
-        .content { padding: 30px; }
-        .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
+        .form-input { width: 100%; padding: 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); color: #fff; margin-bottom: 12px; outline: none; transition: 0.2s; }
+        .form-input:focus { border-color: var(--accent); }
+        .btn { padding: 12px; border-radius: var(--radius-sm); border: none; cursor: pointer; font-weight: 600; width: 100%; margin-top: 10px; transition: 0.2s; }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+        .btn-primary:hover { opacity: 0.9; }
+        
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-top: 20px; }
         .expense-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<div id="login-screen">
-    <div class="login-box">
-        <div class="logo" style="margin-bottom: 30px;">Smart<span>Split</span></div>
-        <p style="font-size: 13px; color: var(--muted); margin-bottom: 10px;">Enter 4-Digit Group Code</p>
-        <input type="password" id="auth-code" class="form-input" maxlength="4" style="text-align:center; font-size: 24px; letter-spacing: 8px;" placeholder="****">
-        <button id="login-btn" class="btn btn-primary">Unlock Dashboard</button>
-        <p id="login-err" style="color: var(--red); font-size: 12px; margin-top: 15px; display: none;">Access Denied</p>
+<div id="start-screen" class="auth-overlay">
+    <div class="auth-box">
+        <div class="logo">Smart<span>Split</span></div>
+        <p style="color: var(--muted); margin-bottom: 20px; font-size: 14px;">Welcome back. How would you like to proceed?</p>
+        <button class="btn btn-primary" onclick="showScreen('login-screen')">Login with Code</button>
+        <button class="btn btn-ghost" onclick="showScreen('register-screen')">Create New Group</button>
     </div>
 </div>
 
-<div class="app" id="main-app" style="display: flex;">
+<div id="login-screen" class="auth-overlay hidden">
+    <div class="auth-box">
+        <div class="logo">Smart<span>Split</span></div>
+        <p style="font-size: 13px; color: var(--muted); margin-bottom: 10px;">Enter 4-Digit Access Code</p>
+        <input type="password" id="login-code" class="form-input" maxlength="4" style="text-align:center; font-size: 24px; letter-spacing: 8px;">
+        <button id="login-btn" class="btn btn-primary">Unlock</button>
+        <button class="btn btn-ghost" onclick="showScreen('start-screen')">Back</button>
+    </div>
+</div>
+
+<div id="register-screen" class="auth-overlay hidden">
+    <div class="auth-box">
+        <h3>Pick Your Code</h3>
+        <p style="font-size: 12px; color: var(--muted); margin: 15px 0;">Choose a 4-digit code for your new team.</p>
+        <input type="password" id="reg-code" class="form-input" maxlength="4" style="text-align:center; font-size: 24px; letter-spacing: 8px;">
+        <button id="reg-proceed-btn" class="btn btn-primary">Continue</button>
+        <button class="btn btn-ghost" onclick="showScreen('start-screen')">Cancel</button>
+    </div>
+</div>
+
+<div id="setup-screen" class="auth-overlay hidden">
+    <div class="auth-box" style="width: 380px;">
+        <h3>Finalize Setup</h3>
+        <p style="font-size: 12px; color: var(--muted); margin: 10px 0 20px;">Tell us about your group.</p>
+        <input type="text" id="setup-group-name" class="form-input" placeholder="Group Name (e.g. Goa Trip 2026)">
+        <input type="text" id="setup-user-name" class="form-input" placeholder="Your Name">
+        <button id="setup-finish-btn" class="btn btn-primary">Create & Launch</button>
+    </div>
+</div>
+
+<div id="main-app" class="app">
     <aside class="sidebar">
         <div style="padding: 24px 20px;"><div class="logo">Smart<span>Split</span></div></div>
-        <div class="nav-item active">Dashboard</div>
-        <div style="padding: 15px 20px; font-size: 11px; color: var(--muted); text-transform: uppercase;">Your Groups</div>
-        <div id="sidebar-groups"></div>
+        <div style="padding: 10px 20px; color: var(--accent2); font-weight: bold; background: rgba(124,106,245,0.1);">Dashboard</div>
+        <div style="padding: 20px 20px 10px; font-size: 11px; color: var(--muted); text-transform: uppercase;">My Groups</div>
+        <div id="sidebar-groups" style="padding: 0 10px;"></div>
     </aside>
 
     <main class="main">
-        <div class="content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-                <h1 id="view-title" style="font-family: 'Syne';">Overview</h1>
-                <button class="btn btn-primary" style="width: auto;" onclick="alert('Add Functionality here')">+ Add Expense</button>
-            </div>
-
-            <div id="expense-container">
-                <div class="card">
-                    <h3 style="font-family: 'Syne'; margin-bottom: 15px;">Recent Expenses</h3>
-                    <div id="expense-list"></div>
-                </div>
-            </div>
+        <h1 id="group-title" style="font-family: 'Syne';">My Expenses</h1>
+        <div id="expense-container" class="card">
+            <div id="expense-list"></div>
         </div>
     </main>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getDatabase, ref, get, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    import { getDatabase, ref, get, set, push, query, orderByChild, equalTo, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCqb7gAbpa3UabPU3g_YhNITuPWtWPY4KU",
@@ -97,76 +119,110 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    let state = { groups: {}, expenses: [], currentUserRole: 'user' };
+    let state = { groups: {}, expenses: [], activeCode: "" };
+
+    // --- NAVIGATION LOGIC ---
+    window.showScreen = function(screenId) {
+        document.querySelectorAll('.auth-overlay').forEach(s => s.classList.add('hidden'));
+        document.getElementById(screenId).classList.remove('hidden');
+    }
 
     // --- LOGIN LOGIC ---
     document.getElementById('login-btn').addEventListener('click', async () => {
-        const code = document.getElementById('auth-code').value;
-        const err = document.getElementById('login-err');
+        const code = document.getElementById('login-code').value;
+        await attemptLoad(code);
+    });
+
+    // --- REGISTRATION LOGIC ---
+    let pendingCode = "";
+    document.getElementById('reg-proceed-btn').addEventListener('click', async () => {
+        const code = document.getElementById('reg-code').value;
+        if(code.length !== 4) return alert("Code must be 4 digits");
+
+        const q = query(ref(db, 'smartsplit/groups'), orderByChild('loginCode'), equalTo(code));
+        const snap = await get(q);
         
-        if (code === "8888") {
-            // ADMIN PATH: Logic to fetch everything (requires rules for query.equalTo === '8888')
-            await loadData(code, true);
+        if(snap.exists()) {
+            alert("This code is already taken. Try another.");
         } else {
-            // USER PATH: Fetch only their group
-            await loadData(code, false);
+            pendingCode = code;
+            showScreen('setup-screen');
         }
     });
 
-    async function loadData(code, isAdmin) {
-        const groupsRef = ref(db, 'smartsplit/groups');
-        // This query is REQUIRED by your security rules
-        const groupQuery = isAdmin ? query(groupsRef) : query(groupsRef, orderByChild('loginCode'), equalTo(code));
+    document.getElementById('setup-finish-btn').addEventListener('click', async () => {
+        const gName = document.getElementById('setup-group-name').value;
+        const uName = document.getElementById('setup-user-name').value;
+        if(!gName || !uName) return alert("Fill all fields");
+
+        const newGroupRef = push(ref(db, 'smartsplit/groups'));
+        const groupId = newGroupRef.key;
+
+        const updates = {};
+        updates[`smartsplit/groups/${groupId}`] = {
+            name: gName,
+            loginCode: pendingCode,
+            currency: "₹",
+            id: Date.now()
+        };
+        updates[`smartsplit/members/${push(ref(db, 'smartsplit/members')).key}`] = {
+            name: uName,
+            groupId: groupId,
+            role: "Owner"
+        };
 
         try {
-            const snapshot = await get(groupQuery);
-            if (snapshot.exists()) {
-                state.groups = snapshot.val();
+            await update(ref(db), updates);
+            alert("Group Created!");
+            await attemptLoad(pendingCode);
+        } catch (e) {
+            console.error(e);
+            alert("Error: Check Firebase Rules/Indexing");
+        }
+    });
+
+    // --- CORE DATA LOADING ---
+    async function attemptLoad(code) {
+        const q = query(ref(db, 'smartsplit/groups'), orderByChild('loginCode'), equalTo(code));
+        try {
+            const snap = await get(q);
+            if(snap.exists()) {
+                state.groups = snap.val();
+                const gid = Object.keys(state.groups)[0];
                 
-                // Fetch expenses for the first group found
-                const firstGroupId = Object.keys(state.groups)[0];
-                await loadExpenses(firstGroupId, code);
+                // Load Expenses for this group
+                const eq = query(ref(db, 'smartsplit/expenses'), orderByChild('groupId'), equalTo(gid));
+                const eSnap = await get(eq);
+                state.expenses = eSnap.exists() ? Object.values(eSnap.val()) : [];
                 
-                document.getElementById('login-screen').style.display = 'none';
+                // Switch to UI
+                document.querySelectorAll('.auth-overlay').forEach(s => s.classList.add('hidden'));
                 document.getElementById('main-app').style.display = 'flex';
-                renderUI();
+                renderApp(gid);
             } else {
-                throw new Error("No access");
+                alert("Invalid Code");
             }
         } catch (e) {
-            document.getElementById('login-err').style.display = 'block';
             console.error(e);
+            alert("Permission Denied: Ensure 'loginCode' index is set in Rules.");
         }
     }
 
-    async function loadExpenses(groupId, code) {
-        const expRef = ref(db, 'smartsplit/expenses');
-        // Again, query for specific group as per rules
-        const expQuery = query(expRef, orderByChild('groupId'), equalTo(groupId));
+    function renderApp(activeGid) {
+        const g = state.groups[activeGid];
+        document.getElementById('group-title').innerText = g.name;
         
-        // Note: In rules, reading expenses also checks the loginCode of the parent group
-        const snapshot = await get(expQuery);
-        state.expenses = snapshot.exists() ? Object.values(snapshot.val()) : [];
-    }
+        const side = document.getElementById('sidebar-groups');
+        side.innerHTML = `<div style="padding:10px; background:var(--bg3); border-radius:8px;">${g.name}</div>`;
 
-    // --- RENDER LOGIC ---
-    function renderUI() {
-        const groupList = document.getElementById('sidebar-groups');
-        groupList.innerHTML = Object.values(state.groups).map(g => `
-            <div class="group-item">
-                <div style="width:10px; height:10px; border-radius:50%; background:var(--accent);"></div>
-                ${g.name}
-            </div>
-        `).join('');
-
-        const expList = document.getElementById('expense-list');
-        if (state.expenses.length === 0) {
-            expList.innerHTML = "<p style='color:var(--muted)'>No expenses found for this group.</p>";
+        const list = document.getElementById('expense-list');
+        if(state.expenses.length === 0) {
+            list.innerHTML = `<p style="color:var(--muted); text-align:center; padding:20px;">No expenses yet.</p>`;
         } else {
-            expList.innerHTML = state.expenses.map(e => `
+            list.innerHTML = state.expenses.map(e => `
                 <div class="expense-item">
                     <span>${e.name}</span>
-                    <span style="font-weight:bold; color:var(--accent2)">₹${e.amount}</span>
+                    <span style="color:var(--accent2); font-weight:bold;">₹${e.amount}</span>
                 </div>
             `).join('');
         }
