@@ -656,9 +656,28 @@
 
 <div class="toast" id="toast"></div>
 
-<script>
-// ===== DATA =====
-let state = JSON.parse(localStorage.getItem('smartsplit') || 'null') || {
+<!-- Firebase SDKs -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCqb7gAbpa3UabPU3g_YhNITuPWtWPY4KU",
+  authDomain: "ak-events-2016.firebaseapp.com",
+  databaseURL: "https://ak-events-2016-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "ak-events-2016",
+  storageBucket: "ak-events-2016.firebasestorage.app",
+  messagingSenderId: "78066764444",
+  appId: "1:78066764444:web:d5ff1b1ea4c2a19932fb59",
+  measurementId: "G-41CKRPWBDW"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const DB_PATH = 'smartsplit';
+
+// Default seed data
+const DEFAULT_STATE = {
   groups: [
     { id: 1, name: 'Goa Trip', desc: 'Beach vacation', currency: '₹', color: 0 },
     { id: 2, name: 'Flat Expenses', desc: 'Monthly shared bills', currency: '₹', color: 1 },
@@ -687,9 +706,91 @@ let state = JSON.parse(localStorage.getItem('smartsplit') || 'null') || {
   nextId: 10
 };
 
-function save() {
-  localStorage.setItem('smartsplit', JSON.stringify(state));
+// ===== FIREBASE STORAGE =====
+window._db = db;
+window._ref = ref;
+window._set = set;
+
+window.save = function() {
+  set(ref(db, DB_PATH), JSON.parse(JSON.stringify(state)))
+    .catch(err => { console.error('Firebase save error:', err); showToast('Save failed: ' + err.message, 'error'); });
+};
+
+// Show loading indicator
+document.body.insertAdjacentHTML('beforeend',
+  `<div id="fb-loading" style="position:fixed;inset:0;background:rgba(15,15,19,0.92);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
+    <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#a594ff">Smart<span style="color:#f0f0f5">Split</span></div>
+    <div style="display:flex;gap:8px">
+      <div class="dot" style="width:8px;height:8px;border-radius:50%;background:#7c6af5;animation:pulse 1s infinite 0s"></div>
+      <div class="dot" style="width:8px;height:8px;border-radius:50%;background:#7c6af5;animation:pulse 1s infinite 0.2s"></div>
+      <div class="dot" style="width:8px;height:8px;border-radius:50%;background:#7c6af5;animation:pulse 1s infinite 0.4s"></div>
+    </div>
+    <div style="font-size:13px;color:#888899">Connecting to Firebase…</div>
+    <style>@keyframes pulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1)}}</style>
+  </div>`
+);
+
+// Load from Firebase, seed if empty, then boot
+get(ref(db, DB_PATH)).then(snapshot => {
+  let data = snapshot.val();
+  if (!data) {
+    // First time — seed with defaults
+    data = DEFAULT_STATE;
+    set(ref(db, DB_PATH), data);
+  }
+  window.state = data;
+  // Ensure arrays (Firebase strips empty arrays)
+  ['groups','members','expenses','dailySpends'].forEach(k => {
+    if (!Array.isArray(state[k])) state[k] = Object.values(state[k] || {});
+    // Ensure nested arrays in expenses
+    if (k === 'expenses') state[k].forEach(e => {
+      if (!Array.isArray(e.splitWith)) e.splitWith = Object.values(e.splitWith || {});
+    });
+  });
+  if (!state.budgets) state.budgets = { daily: 500, monthly: 15000 };
+  if (!state.nextId) state.nextId = 10;
+
+  document.getElementById('fb-loading').remove();
+  initApp();
+
+  // Live sync — re-render when another device saves
+  onValue(ref(db, DB_PATH), snap => {
+    const fresh = snap.val();
+    if (!fresh) return;
+    ['groups','members','expenses','dailySpends'].forEach(k => {
+      if (!Array.isArray(fresh[k])) fresh[k] = Object.values(fresh[k] || {});
+      if (k === 'expenses') fresh[k].forEach(e => {
+        if (!Array.isArray(e.splitWith)) e.splitWith = Object.values(e.splitWith || {});
+      });
+    });
+    const prevActive = state.activeGroup;
+    Object.assign(state, fresh);
+    state.activeGroup = prevActive;
+    renderAll();
+  });
+
+}).catch(err => {
+  document.getElementById('fb-loading').innerHTML =
+    `<div style="color:#f46f6f;font-family:'Syne',sans-serif;text-align:center;padding:20px">
+      <div style="font-size:18px;font-weight:700;margin-bottom:8px">Firebase connection failed</div>
+      <div style="font-size:13px;color:#888899">${err.message}</div>
+      <div style="font-size:12px;color:#888899;margin-top:8px">Check your database rules and config</div>
+    </div>`;
+});
+</script>
+
+<script>
+// ===== DATA (populated by Firebase module above) =====
+let state = window.state || {};
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.className = 'toast', 2500);
 }
+
+// save() is defined in the module above and attached to window
 
 // ===== UTILS =====
 const catIcons = { Food:'🍔', Travel:'✈️', Shopping:'🛍️', Entertainment:'🎬', Utilities:'💡', Other:'📦' };
@@ -699,12 +800,7 @@ const avatarColors = ['#7c6af5','#3ecf8e','#5b9cf6','#f5a623','#f46f6f','#e879f9
 function fmt(n) { return '₹' + Math.round(n).toLocaleString('en-IN'); }
 function getInitials(name) { return name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
 
-function toast(msg, type='success') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = `toast ${type} show`;
-  setTimeout(() => t.className = 'toast', 2500);
-}
+function toast(msg, type='success') { showToast(msg, type); }
 
 function openModal(id) {
   populateModal(id);
@@ -1387,7 +1483,11 @@ function renderAllSettlements() {
 }
 
 // ===== INIT =====
-renderAll();
+function initApp() {
+  state = window.state;
+  renderAll();
+}
+// initApp() is called by the Firebase module once data is loaded
 </script>
 </body>
 </html>
