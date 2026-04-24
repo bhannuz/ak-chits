@@ -3,89 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartSplit — Team Manager</title>
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+    <title>SmartSplit Pro — Travel Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #0f0f13; --bg2: #16161e; --bg3: #1e1e2a; --card: #1a1a24;
-            --border: rgba(255,255,255,0.08); --text: #f0f0f5; --muted: #888899;
-            --accent: #7c6af5; --accent2: #a594ff; --radius: 14px; --radius-sm: 8px;
+            --bg: #0b0b0f; --bg2: #12121a; --bg3: #1c1c27; --card: #161620;
+            --border: rgba(255,255,255,0.06); --text: #f0f0f5; --muted: #888899;
+            --accent: #7c6af5; --accent2: #a594ff; --green: #3ecf8e; --red: #f46f6f;
+            --radius: 16px; --radius-sm: 10px;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
         
-        .auth-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 10000; display: flex; align-items: center; justify-content: center; }
-        .auth-box { background: var(--bg2); padding: 40px; border-radius: var(--radius); border: 1px solid var(--border); text-align: center; width: 340px; }
+        /* Auth Screens */
+        .auth-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .auth-box { background: var(--bg2); padding: 40px; border-radius: var(--radius); border: 1px solid var(--border); text-align: center; width: 100%; max-width: 360px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
         
-        .app { display: none; height: 100vh; }
-        .sidebar { width: 260px; background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
-        .main { flex: 1; overflow-y: auto; padding: 30px; }
+        /* Layout */
+        .app { display: none; height: 100vh; flex-direction: column; }
+        .navbar { height: 70px; background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 30px; position: sticky; top: 0; z-index: 100; }
+        .main { flex: 1; overflow-y: auto; padding: 30px; max-width: 1200px; margin: 0 auto; width: 100%; }
         
-        .logo { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; color: var(--text); margin-bottom: 20px; }
+        /* Components */
+        .logo { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; letter-spacing: -1px; }
         .logo span { color: var(--accent2); }
-        .form-input { width: 100%; padding: 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); color: #fff; margin-bottom: 12px; outline: none; text-align: center; }
-        .btn { padding: 12px; border-radius: var(--radius-sm); border: none; cursor: pointer; font-weight: 600; width: 100%; margin-top: 10px; }
-        .btn-primary { background: var(--accent); color: white; }
+        .form-input { width: 100%; padding: 14px; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); color: #fff; margin-bottom: 12px; outline: none; font-size: 15px; }
+        .btn { padding: 12px 24px; border-radius: var(--radius-sm); border: none; cursor: pointer; font-weight: 700; transition: 0.3s; font-family: 'Syne'; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-primary { background: var(--accent); color: white; box-shadow: 0 4px 15px rgba(124,106,245,0.3); }
         .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
-        .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+        .btn:hover { transform: translateY(-2px); opacity: 0.9; }
+
+        /* Dashboard Grid */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-top: 24px; }
+        .stat-card { background: var(--card); padding: 24px; border-radius: var(--radius); border: 1px solid var(--border); }
+        .stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+        .stat-val { font-family: 'Syne'; font-size: 32px; margin-top: 8px; }
+
+        .card { background: var(--card); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
+        .card-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .card-body { padding: 20px; }
+
+        .expense-item { display: flex; align-items: center; gap: 15px; padding: 15px 0; border-bottom: 1px solid var(--border); }
+        .expense-item:last-child { border-bottom: none; }
+        .cat-icon { width: 45px; height: 45px; border-radius: 12px; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        
         .hidden { display: none !important; }
+        
+        /* Modal */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 20000; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(5px); }
+        .modal.active { display: flex; }
     </style>
 </head>
 <body>
 
 <div id="start-screen" class="auth-overlay">
     <div class="auth-box">
-        <div class="logo">Smart<span>Split</span></div>
-        <button class="btn btn-primary" onclick="showScreen('login-screen')">Login with Code</button>
-        <button class="btn btn-ghost" onclick="showScreen('reg-screen')">Create New Group</button>
+        <div class="logo" style="margin-bottom:30px">Smart<span>Split</span></div>
+        <button class="btn btn-primary" style="width:100%" onclick="showScreen('login-screen')">Login with Code</button>
+        <button class="btn btn-ghost" style="width:100%; margin-top:12px" onclick="showScreen('reg-screen')">New Trip</button>
     </div>
 </div>
 
 <div id="login-screen" class="auth-overlay hidden">
     <div class="auth-box">
-        <h3>Login</h3>
-        <p style="color:var(--muted); font-size:12px; margin: 10px 0;">Enter your 4-digit code</p>
-        <input type="password" id="l-code" class="form-input" maxlength="4" style="letter-spacing:8px; font-size:20px;">
-        <button class="btn btn-primary" id="do-login">Unlock</button>
-        <button class="btn btn-ghost" onclick="showScreen('start-screen')">Back</button>
+        <h3>Welcome Back</h3>
+        <p style="color:var(--muted); font-size:13px; margin: 12px 0 20px;">Enter your 4-digit trip code</p>
+        <input type="password" id="l-code" class="form-input" maxlength="4" style="letter-spacing:10px; font-size:24px; text-align:center;">
+        <button class="btn btn-primary" style="width:100%" id="do-login">Unlock Trip</button>
+        <button class="btn btn-ghost" style="width:100%; margin-top:12px" onclick="showScreen('start-screen')">Cancel</button>
     </div>
 </div>
 
 <div id="reg-screen" class="auth-overlay hidden">
     <div class="auth-box">
-        <h3>New Code</h3>
-        <p style="color:var(--muted); font-size:12px; margin: 10px 0;">Pick a 4-digit code for your group</p>
-        <input type="password" id="r-code" class="form-input" maxlength="4" style="letter-spacing:8px; font-size:20px;">
-        <button class="btn btn-primary" id="reg-next">Continue</button>
-        <button class="btn btn-ghost" onclick="showScreen('start-screen')">Back</button>
+        <h3>Create Trip Code</h3>
+        <p style="color:var(--muted); font-size:12px; margin: 12px 0 20px;">Set a 4-digit code to share with friends.</p>
+        <input type="password" id="r-code" class="form-input" maxlength="4" style="letter-spacing:10px; font-size:24px; text-align:center;">
+        <button class="btn btn-primary" style="width:100%" id="reg-next">Continue</button>
+        <button class="btn btn-ghost" style="width:100%; margin-top:12px" onclick="showScreen('start-screen')">Back</button>
     </div>
 </div>
 
 <div id="setup-screen" class="auth-overlay hidden">
     <div class="auth-box">
-        <h3>Finalize Setup</h3>
-        <input type="text" id="s-group" class="form-input" placeholder="Group Name" style="text-align:left">
-        <input type="text" id="s-user" class="form-input" placeholder="Your Name" style="text-align:left">
-        <button class="btn btn-primary" id="finish-setup">Create & Launch</button>
+        <h3>Trip Details</h3>
+        <input type="text" id="s-group" class="form-input" placeholder="Trip Name (e.g. Goa 2026)">
+        <input type="text" id="s-user" class="form-input" placeholder="Your Name">
+        <button class="btn btn-primary" style="width:100%" id="finish-setup">Launch Trip</button>
     </div>
 </div>
 
 <div id="main-app" class="app">
-    <aside class="sidebar">
-        <div style="padding: 24px 20px;"><div class="logo">Smart<span>Split</span></div></div>
-        <div id="sidebar-groups" style="padding: 10px 20px;"></div>
-    </aside>
+    <nav class="navbar">
+        <div class="logo">Smart<span>Split</span></div>
+        <div style="display:flex; gap:12px;">
+            <button class="btn btn-ghost" style="padding: 8px 16px; font-size:13px;" onclick="openModal('member-modal')">👥 Members</button>
+            <button class="btn btn-primary" style="padding: 8px 16px; font-size:13px;" onclick="openModal('expense-modal')">＋ Add Spend</button>
+        </div>
+    </nav>
+
     <main class="main">
-        <h1 id="active-title" style="font-family: 'Syne';">Dashboard</h1>
-        <div class="card" style="margin-top:20px">
-            <div id="exp-list">Select a group to see expenses</div>
+        <div style="margin-bottom: 30px;">
+            <h1 id="active-title" style="font-family: 'Syne'; font-size: 36px; letter-spacing: -1px;">Trip Dashboard</h1>
+            <p id="group-code-display" style="color:var(--accent2); font-weight:700; font-size:14px; margin-top:5px;">CODE: XXXX</p>
+        </div>
+
+        <div class="grid">
+            <div class="stat-card" style="background: linear-gradient(135deg, #7c6af5 0%, #a594ff 100%); color:white;">
+                <div class="stat-label" style="color: rgba(255,255,255,0.8)">Total Trip Spend</div>
+                <div class="stat-val" id="stat-total">₹0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Per Person</div>
+                <div class="stat-val" style="color:var(--green)" id="stat-per-person">₹0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Budget Progress</div>
+                <div class="stat-val" id="stat-budget">0%</div>
+            </div>
+        </div>
+
+        <div class="grid" style="grid-template-columns: 2fr 1fr;">
+            <div class="card">
+                <div class="card-header"><h3>Recent Activity</h3></div>
+                <div class="card-body" id="exp-list"></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3>By Category</h3></div>
+                <div class="card-body" id="cat-list"></div>
+            </div>
         </div>
     </main>
 </div>
 
+<div class="modal" id="expense-modal">
+    <div class="auth-box" style="text-align:left; max-width:400px;">
+        <h3 style="margin-bottom:20px;">Add New Spend</h3>
+        <label style="font-size:12px; color:var(--muted);">Description</label>
+        <input type="text" id="exp-name" class="form-input" placeholder="e.g. Dinner at Beach">
+        <label style="font-size:12px; color:var(--muted);">Amount (₹)</label>
+        <input type="number" id="exp-amt" class="form-input" placeholder="0.00">
+        <label style="font-size:12px; color:var(--muted);">Category</label>
+        <select id="exp-cat" class="form-input">
+            <option>🍔 Food</option>
+            <option>✈️ Transport</option>
+            <option>🏨 Stay</option>
+            <option>🎭 Fun</option>
+            <option>📦 Other</option>
+        </select>
+        <div style="display:flex; gap:10px; margin-top:10px;">
+            <button class="btn btn-primary" style="flex:1" id="save-expense">Save</button>
+            <button class="btn btn-ghost" onclick="closeModal('expense-modal')">Close</button>
+        </div>
+    </div>
+</div>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getDatabase, ref, get, set, push, query, orderByChild, equalTo, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    import { getDatabase, ref, get, push, query, orderByChild, equalTo, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCqb7gAbpa3UabPU3g_YhNITuPWtWPY4KU",
@@ -100,73 +175,124 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    let currentCode = "";
+    let state = { groups: {}, expenses: [], currentCode: "", activeGid: "" };
 
     window.showScreen = (id) => {
         document.querySelectorAll('.auth-overlay').forEach(s => s.classList.add('hidden'));
         document.getElementById(id).classList.remove('hidden');
     };
 
-    // LOGIN
+    window.openModal = (id) => document.getElementById(id).classList.add('active');
+    window.closeModal = (id) => document.getElementById(id).classList.remove('active');
+
+    // --- AUTH ACTIONS ---
     document.getElementById('do-login').onclick = () => attemptLoad(document.getElementById('l-code').value);
 
-    // REGISTER STEP 1
     document.getElementById('reg-next').onclick = async () => {
         const code = document.getElementById('r-code').value;
-        if(code.length !== 4) return alert("Enter 4 digits");
-        
-        // Check if code exists
+        if(code.length !== 4) return alert("Code must be 4 digits");
         const q = query(ref(db, 'smartsplit/groups'), orderByChild('loginCode'), equalTo(code));
         const snap = await get(q);
-        if(snap.exists()) return alert("Code taken. Try another.");
-        
-        currentCode = code;
+        if(snap.exists()) return alert("Code already in use!");
+        state.currentCode = code;
         showScreen('setup-screen');
     };
 
-    // FINAL SETUP
     document.getElementById('finish-setup').onclick = async () => {
-        const gName = document.getElementById('s-group').value;
-        const uName = document.getElementById('s-user').value;
-        if(!gName || !uName) return alert("Fill all fields");
+        const gn = document.getElementById('s-group').value;
+        const un = document.getElementById('s-user').value;
+        if(!gn || !un) return alert("Fill all fields");
 
         const gRef = push(ref(db, 'smartsplit/groups'));
-        const gId = gRef.key;
-
+        const gid = gRef.key;
         const updates = {};
-        updates[`smartsplit/groups/${gId}`] = { name: gName, loginCode: currentCode, id: Date.now() };
-        updates[`smartsplit/members/${push(ref(db, 'smartsplit/members')).key}`] = { name: uName, groupId: gId, role: 'Owner' };
+        updates[`smartsplit/groups/${gid}`] = { name: gn, loginCode: state.currentCode, budget: 50000 };
+        updates[`smartsplit/members/${push(ref(db, 'smartsplit/members')).key}`] = { name: un, groupId: gid, role: 'Admin' };
 
-        try {
-            await update(ref(db), updates);
-            alert("Group Created!");
-            attemptLoad(currentCode);
-        } catch (e) {
-            console.error(e);
-            alert("Rule Error: Check console and click the Indexing link if visible.");
-        }
+        await update(ref(db), updates);
+        attemptLoad(state.currentCode);
     };
 
+    // --- DATA ACTIONS ---
     async function attemptLoad(code) {
         const q = query(ref(db, 'smartsplit/groups'), orderByChild('loginCode'), equalTo(code));
         try {
             const snap = await get(q);
             if(snap.exists()) {
-                const groups = snap.val();
-                const gId = Object.keys(groups)[0];
+                state.currentCode = code;
+                state.groups = snap.val();
+                state.activeGid = Object.keys(state.groups)[0];
+                
+                await loadExpenses();
                 
                 document.querySelectorAll('.auth-overlay').forEach(s => s.classList.add('hidden'));
                 document.getElementById('main-app').style.display = 'flex';
-                
-                document.getElementById('active-title').innerText = groups[gId].name;
-                document.getElementById('sidebar-groups').innerHTML = `<div style="background:var(--bg3); padding:10px; border-radius:5px;">${groups[gId].name}</div>`;
-            } else {
-                alert("Invalid Code");
-            }
-        } catch (e) {
-            console.error(e);
-            alert("Access Denied: Please check your Database Rules.");
-        }
+                renderUI();
+            } else { alert("Invalid Code"); }
+        } catch (e) { alert("Permission Denied: Please check Firebase Indexing"); }
+    }
+
+    async function loadExpenses() {
+        const eq = query(ref(db, 'smartsplit/expenses'), orderByChild('groupId'), equalTo(state.activeGid));
+        const snap = await get(eq);
+        state.expenses = snap.exists() ? Object.values(snap.val()) : [];
+    }
+
+    document.getElementById('save-expense').onclick = async () => {
+        const name = document.getElementById('exp-name').value;
+        const amt = parseFloat(document.getElementById('exp-amt').value);
+        const cat = document.getElementById('exp-cat').value;
+        if(!name || !amt) return alert("Enter details");
+
+        const newExpRef = push(ref(db, 'smartsplit/expenses'));
+        await set(newExpRef, {
+            name, amount: amt, category: cat, 
+            groupId: state.activeGid, date: new Date().toLocaleDateString()
+        });
+
+        closeModal('expense-modal');
+        await loadExpenses();
+        renderUI();
+    };
+
+    function renderUI() {
+        const g = state.groups[state.activeGid];
+        document.getElementById('active-title').innerText = g.name;
+        document.getElementById('group-code-display').innerText = `TEAM CODE: ${g.loginCode}`;
+
+        const total = state.expenses.reduce((s, e) => s + e.amount, 0);
+        document.getElementById('stat-total').innerText = `₹${total.toLocaleString()}`;
+        document.getElementById('stat-per-person').innerText = `₹${Math.round(total/2).toLocaleString()}`;
+        
+        const budgetPct = Math.min(100, Math.round((total / g.budget) * 100));
+        document.getElementById('stat-budget').innerText = `${budgetPct}%`;
+
+        // Expenses List
+        const list = document.getElementById('exp-list');
+        list.innerHTML = state.expenses.reverse().map(e => `
+            <div class="expense-item">
+                <div class="cat-icon">${e.category.split(' ')[0]}</div>
+                <div style="flex:1">
+                    <div style="font-weight:700;">${e.name}</div>
+                    <div style="font-size:12px; color:var(--muted);">${e.category.split(' ')[1]} • ${e.date}</div>
+                </div>
+                <div style="font-family:'Syne'; font-weight:800; color:var(--accent2);">₹${e.amount}</div>
+            </div>
+        `).join('');
+
+        // Category Breakdown
+        const cats = {};
+        state.expenses.forEach(e => cats[e.category] = (cats[e.category] || 0) + e.amount);
+        document.getElementById('cat-list').innerHTML = Object.entries(cats).map(([c, v]) => `
+            <div style="margin-bottom:15px;">
+                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;">
+                    <span>${c}</span><span>₹${v}</span>
+                </div>
+                <div style="height:6px; background:var(--bg3); border-radius:3px;">
+                    <div style="width:${Math.min(100, (v/total)*100)}%; height:100%; background:var(--accent); border-radius:3px;"></div>
+                </div>
+            </div>
+        `).join('');
     }
 </script>
 </body>
