@@ -15,40 +15,38 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
 
-        /* Navigation */
+        /* Auth Overlays */
+        .auth-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .auth-box { background: var(--bg2); padding: 45px; border-radius: var(--radius); border: 1px solid var(--border); text-align: center; width: 100%; max-width: 380px; box-shadow: 0 30px 60px rgba(0,0,0,0.6); }
+        .hidden { display: none !important; }
+
+        /* Layout */
         .navbar { height: 75px; background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 40px; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
         .logo { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; letter-spacing: -1px; }
         .logo span { color: var(--accent2); }
-
-        /* Layout */
         .main { padding: 40px; max-width: 1300px; margin: 0 auto; width: 100%; }
         .grid-main { display: grid; grid-template-columns: 1fr 360px; gap: 30px; margin-top: 30px; }
         @media (max-width: 1000px) { .grid-main { grid-template-columns: 1fr; } }
 
-        /* Stat Cards */
+        /* Stats */
         .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
-        .stat-card { background: var(--card); padding: 30px; border-radius: var(--radius); border: 1px solid var(--border); transition: transform 0.3s; }
-        .stat-card:hover { transform: translateY(-5px); border-color: var(--accent); }
+        .stat-card { background: var(--card); padding: 30px; border-radius: var(--radius); border: 1px solid var(--border); position: relative; overflow: hidden; }
+        .stat-card::before { content:''; position:absolute; left:0; top:0; height:100%; width:4px; background: var(--accent); }
         .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 800; }
         .stat-val { font-family: 'Syne'; font-size: 36px; margin-top: 12px; font-weight: 800; }
 
-        /* Expenses */
-        .card { background: var(--card); border-radius: var(--radius); border: 1px solid var(--border); padding: 28px; height: 100%; }
+        /* Expense Items */
+        .card { background: var(--card); border-radius: var(--radius); border: 1px solid var(--border); padding: 28px; }
         .expense-item { display: flex; align-items: center; gap: 20px; padding: 20px 0; border-bottom: 1px solid var(--border); }
         .cat-icon { width: 52px; height: 52px; border-radius: 16px; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 24px; }
         
-        /* Auth & Modals */
-        .auth-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .auth-box { background: var(--bg2); padding: 45px; border-radius: var(--radius); border: 1px solid var(--border); text-align: center; width: 100%; max-width: 380px; box-shadow: 0 30px 60px rgba(0,0,0,0.6); }
         .btn { padding: 14px 28px; border-radius: var(--radius-sm); border: none; cursor: pointer; font-weight: 700; font-family: 'Syne'; transition: 0.3s; display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
         .btn-primary { background: var(--accent); color: white; box-shadow: 0 6px 20px rgba(124,106,245,0.4); }
         .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
         .form-input { width: 100%; padding: 15px; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); color: #fff; margin-bottom: 15px; outline: none; font-size: 16px; }
-        .hidden { display: none !important; }
 
-        /* Progress Bars */
-        .progress-track { height: 6px; background: var(--bg3); border-radius: 10px; margin-top: 8px; overflow: hidden; }
-        .progress-fill { height: 100%; background: var(--accent); border-radius: 10px; transition: width 0.6s ease; }
+        .progress-track { height: 6px; background: var(--bg3); border-radius: 10px; margin-top: 15px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--accent); transition: width 0.8s ease; }
     </style>
 </head>
 <body>
@@ -56,14 +54,14 @@
 <div id="start-screen" class="auth-overlay">
     <div class="auth-box">
         <div class="logo" style="font-size:36px; margin-bottom:40px;">Smart<span>Split</span></div>
-        <button class="btn btn-primary" style="width:100%" onclick="showScreen('login-screen')">Join with Trip Code</button>
-        <button class="btn btn-ghost" style="width:100%; margin-top:15px" onclick="showScreen('reg-screen')">Start New Trip</button>
+        <button class="btn btn-primary" style="width:100%" onclick="showScreen('login-screen')">Join Trip Code</button>
+        <button class="btn btn-ghost" style="width:100%; margin-top:15px" onclick="showScreen('reg-screen')">New Trip</button>
     </div>
 </div>
 
 <div id="login-screen" class="auth-overlay hidden">
     <div class="auth-box">
-        <h3>Trip Access</h3>
+        <h3>Enter Trip Code</h3>
         <input type="password" id="l-code" class="form-input" maxlength="4" placeholder="••••" style="letter-spacing:15px; font-size:30px; text-align:center; margin-top:25px;">
         <button class="btn btn-primary" style="width:100%" id="do-login">Unlock Dashboard</button>
         <button class="btn btn-ghost" style="width:100%; margin-top:15px" onclick="showScreen('start-screen')">Back</button>
@@ -72,46 +70,46 @@
 
 <div id="reg-screen" class="auth-overlay hidden">
     <div class="auth-box">
-        <h3>Set Trip Code</h3>
+        <h3>Set 4-Digit Code</h3>
         <input type="password" id="r-code" class="form-input" maxlength="4" style="letter-spacing:15px; font-size:30px; text-align:center; margin-top:25px;">
-        <button class="btn btn-primary" style="width:100%" id="reg-next">Next: Setup Trip</button>
+        <button class="btn btn-primary" style="width:100%" id="reg-next">Next</button>
         <button class="btn btn-ghost" style="width:100%; margin-top:15px" onclick="showScreen('start-screen')">Back</button>
     </div>
 </div>
 
 <div id="setup-screen" class="auth-overlay hidden">
     <div class="auth-box">
-        <h3>Destination Details</h3>
-        <input type="text" id="s-group" class="form-input" placeholder="e.g. Switzerland 2026">
-        <input type="number" id="s-budget" class="form-input" placeholder="Total Budget (₹)">
-        <button class="btn btn-primary" style="width:100%" id="finish-setup">Launch Trip</button>
+        <h3>Trip Details</h3>
+        <input type="text" id="s-group" class="form-input" placeholder="Trip Destination">
+        <input type="number" id="s-budget" class="form-input" placeholder="Budget (₹)">
+        <button class="btn btn-primary" style="width:100%" id="finish-setup">Launch</button>
     </div>
 </div>
 
 <div id="main-app" style="display:none; flex-direction:column;">
     <nav class="navbar">
         <div class="logo">Smart<span>Split</span></div>
-        <button class="btn btn-primary" style="padding: 10px 20px; font-size: 14px;" onclick="document.getElementById('exp-modal').style.display='flex'">＋ Add Expense</button>
+        <button class="btn btn-primary" style="padding: 10px 20px;" onclick="document.getElementById('exp-modal').style.display='flex'">＋ Add Expense</button>
     </nav>
     <main class="main">
         <div style="margin-bottom: 40px;">
-            <h1 id="active-title" style="font-family: 'Syne'; font-size: 42px; letter-spacing: -2px;">Trip Dashboard</h1>
-            <p id="group-code-display" style="color:var(--accent2); font-weight:700; letter-spacing:1px; margin-top:10px;"></p>
+            <h1 id="active-title" style="font-family: 'Syne'; font-size: 42px; letter-spacing: -2px;">Dashboard</h1>
+            <p id="group-code-display" style="color:var(--accent2); font-weight:700; margin-top:10px;"></p>
         </div>
 
         <div class="stats-row">
             <div class="stat-card">
-                <div class="stat-label">Total Spend</div>
+                <div class="stat-label">Total Spent</div>
                 <div class="stat-val" id="stat-total" style="color:var(--accent2);">₹0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Daily Average</div>
-                <div class="stat-val" id="stat-avg" style="color:var(--green);">₹0</div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Budget Remaining</div>
                 <div class="stat-val" id="stat-budget">₹0</div>
                 <div class="progress-track"><div id="budget-bar" class="progress-fill" style="width:100%"></div></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Avg / Activity</div>
+                <div class="stat-val" id="stat-avg" style="color:var(--green);">₹0</div>
             </div>
         </div>
 
@@ -120,11 +118,9 @@
                 <h3 style="font-family: 'Syne'; margin-bottom: 25px;">Recent Activities</h3>
                 <div id="exp-list"></div>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 24px;">
-                <div class="card">
-                    <h3 style="font-family: 'Syne'; margin-bottom: 20px;">By Category</h3>
-                    <div id="cat-breakdown"></div>
-                </div>
+            <div class="card">
+                <h3 style="font-family: 'Syne'; margin-bottom: 20px;">Category Split</h3>
+                <div id="cat-breakdown"></div>
             </div>
         </div>
     </main>
@@ -133,11 +129,8 @@
 <div id="exp-modal" class="auth-overlay hidden" style="background:rgba(0,0,0,0.9); backdrop-filter:blur(10px);">
     <div class="auth-box" style="max-width:440px; text-align:left;">
         <h3 style="font-family:'Syne'; margin-bottom:25px;">New Expense</h3>
-        <label class="stat-label">Description</label>
-        <input type="text" id="n-name" class="form-input" placeholder="Lunch at Zurich Central">
-        <label class="stat-label">Amount (₹)</label>
-        <input type="number" id="n-amt" class="form-input" placeholder="0.00">
-        <label class="stat-label">Category</label>
+        <input type="text" id="n-name" class="form-input" placeholder="What did you pay for?">
+        <input type="number" id="n-amt" class="form-input" placeholder="Amount (₹)">
         <select id="n-cat" class="form-input">
             <option value="🍔 Food">🍔 Food & Drinks</option>
             <option value="✈️ Transport">✈️ Transport</option>
@@ -146,7 +139,7 @@
             <option value="🛍️ Shopping">🛍️ Shopping</option>
         </select>
         <div style="display:flex; gap:15px; margin-top:15px;">
-            <button class="btn btn-primary" style="flex:1" id="save-exp">Save Expense</button>
+            <button class="btn btn-primary" style="flex:1" id="save-exp">Save</button>
             <button class="btn btn-ghost" onclick="document.getElementById('exp-modal').style.display='none'">Cancel</button>
         </div>
     </div>
@@ -178,20 +171,16 @@
         document.getElementById(id).classList.remove('hidden');
     };
 
-    // AUTH ACTIONS
+    // AUTH
     document.getElementById('do-login').onclick = () => attemptLoad(document.getElementById('l-code').value);
-
     document.getElementById('reg-next').onclick = () => {
-        const c = document.getElementById('r-code').value;
-        if(c.length !== 4) return alert("Select 4 digits");
-        tempCode = c;
-        showScreen('setup-screen');
+        tempCode = document.getElementById('r-code').value;
+        if(tempCode.length === 4) showScreen('setup-screen');
     };
 
     document.getElementById('finish-setup').onclick = async () => {
         const name = document.getElementById('s-group').value;
         const b = parseFloat(document.getElementById('s-budget').value) || 0;
-        if(!name) return alert("Name required");
         const gRef = push(ref(db, 'smartsplit/groups'));
         activeGid = gRef.key;
         await set(gRef, { name, loginCode: tempCode, budget: b });
@@ -213,17 +202,19 @@
         } else alert("Invalid Code");
     }
 
+    // DATA
     async function loadData() {
-        const q = query(ref(db, 'smartsplit/expenses'), orderByChild('groupId'), equalTo(activeGid));
-        const snap = await get(q);
-        renderUI(snap.exists() ? Object.values(snap.val()) : []);
+        try {
+            const q = query(ref(db, 'smartsplit/expenses'), orderByChild('groupId'), equalTo(activeGid));
+            const snap = await get(q);
+            renderUI(snap.exists() ? Object.values(snap.val()) : []);
+        } catch(e) { console.error(e); }
     }
 
     document.getElementById('save-exp').onclick = async () => {
         const name = document.getElementById('n-name').value;
         const amt = parseFloat(document.getElementById('n-amt').value);
         const cat = document.getElementById('n-cat').value;
-        if(!name || !amt) return;
         await set(push(ref(db, 'smartsplit/expenses')), { name, amount: amt, category: cat, groupId: activeGid, date: new Date().toLocaleDateString() });
         document.getElementById('exp-modal').style.display = 'none';
         loadData();
@@ -235,9 +226,9 @@
         document.getElementById('stat-avg').innerText = "₹" + (exps.length ? Math.round(total/exps.length).toLocaleString() : 0);
         
         if(budget) {
-            const rem = budget - total;
-            document.getElementById('stat-budget').innerText = "₹" + Math.max(0, rem).toLocaleString();
-            document.getElementById('budget-bar').style.width = Math.max(0, (rem/budget)*100) + "%";
+            const rem = Math.max(0, budget - total);
+            document.getElementById('stat-budget').innerText = "₹" + rem.toLocaleString();
+            document.getElementById('budget-bar').style.width = (rem/budget)*100 + "%";
         }
 
         document.getElementById('exp-list').innerHTML = exps.reverse().map(e => `
@@ -255,7 +246,7 @@
         exps.forEach(e => cats[e.category] = (cats[e.category] || 0) + e.amount);
         document.getElementById('cat-breakdown').innerHTML = Object.entries(cats).map(([c, v]) => `
             <div style="margin-bottom:20px">
-                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:8px">
+                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px">
                     <span>${c}</span><span style="font-weight:700">₹${v}</span>
                 </div>
                 <div class="progress-track"><div style="width:${(v/total)*100}%; height:100%; background:var(--accent); border-radius:10px"></div></div>
