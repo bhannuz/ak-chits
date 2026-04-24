@@ -244,14 +244,16 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 <div id="s-join" class="screen hidden">
   <div class="auth-box">
     <div class="auth-title">Enter Trip PIN</div>
-    <div class="auth-sub">4-digit code shared by your trip organiser</div>
-    <div class="pin-dots">
-      <div class="pin-dot" id="jd0"></div><div class="pin-dot" id="jd1"></div>
-      <div class="pin-dot" id="jd2"></div><div class="pin-dot" id="jd3"></div>
-    </div>
-    <div class="numpad" id="join-pad"></div>
+    <div class="auth-sub">Type your 4-digit trip code and press Unlock</div>
+    <input class="fi" id="j-pin" type="text" maxlength="4" placeholder="e.g. 8888"
+      style="font-size:36px;letter-spacing:12px;text-align:center;padding:20px;margin-bottom:6px;font-family:'Syne',sans-serif;font-weight:800;color:var(--accent2)"
+      oninput="this.value=this.value.replace(/\D/g,'').slice(0,4)"
+      onkeydown="if(event.key==='Enter') joinTrip()">
     <div class="pin-err" id="join-err"></div>
-    <button class="btn btn-ghost btn-full" onclick="goScreen('s-start')" style="margin-top:16px">← Back</button>
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn btn-ghost" onclick="goScreen('s-start')">← Back</button>
+      <button class="btn btn-primary" onclick="joinTrip()">Unlock →</button>
+    </div>
   </div>
 </div>
 
@@ -459,9 +461,17 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 <div class="toast" id="toast"></div>
 
 <!-- ══════════════════ FIREBASE + LOGIC ══════════════════ -->
+<!-- ══════════════════ FIREBASE + LOGIC ══════════════════ -->
+<!-- FIREBASE RULES REQUIRED in your console:
+  {
+    "rules": {
+      "smartsplit_trips": { ".read": true, ".write": true }
+    }
+  }
+-->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, get, set, push, remove, onValue, query, orderByChild, equalTo }
+import { getDatabase, ref, get, set, push, remove, onValue }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const FB = {
@@ -476,416 +486,497 @@ const FB = {
 
 const app = initializeApp(FB);
 const db  = getDatabase(app);
+const DB  = 'smartsplit_trips'; // top-level node — grant .read/.write in Firebase Rules
 
 // ── State ──
-let trip   = null;  // { id, name, pin, budget }
-let members    = [];  // [{ id, name, role }]
-let expenses   = [];  // [{ id, name, amount, cat, date, paidById, splitIds:[] }]
-let settlements = []; // [{ id, fromId, toId, amount, date, done }]
+let trip        = null;
+let members     = [];
+let expenses    = [];
+let settlements = [];
+let activeListeners = [];
 
-// ── helpers ──
+// ── Helpers ──
 window.goScreen = id => {
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
+  // Auto-focus PIN input and clear it when showing join screen
+  if (id === 's-join') {
+    const inp = document.getElementById('j-pin');
+    if (inp) { inp.value = ''; setTimeout(() => inp.focus(), 100); }
+    document.getElementById('join-err').textContent = '';
+  }
 };
 window.closeModal = id => document.getElementById(id).classList.add('hidden');
 window.openModal  = id => document.getElementById(id).classList.remove('hidden');
 
 function toast(msg, type='ok') {
   const t = document.getElementById('toast');
-  t.textContent = msg; t.className = `toast ${type} show`;
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
   setTimeout(() => t.className = 'toast', 2800);
 }
 
-// ── NUMPAD BUILDER ──
-function buildPad(padId, dotsPrefix, errId, onComplete) {
-  let buf = '';
-  const pad = document.getElementById(padId);
-  function updateDots() {
-    for(let i=0;i<4;i++){
-      const d=document.getElementById(dotsPrefix+i);
-      if(!d) return;
-      d.classList.toggle('on', i<buf.length);
-      d.classList.remove('err');
-    }
-  }
-  function press(v) {
-    if(buf.length>=4) return;
-    buf+=v; updateDots();
-    if(buf.length===4) setTimeout(()=>onComplete(buf, ()=>{ buf=''; updateDots(); }), 180);
-  }
-  function del() { buf=buf.slice(0,-1); updateDots(); document.getElementById(errId).textContent=''; }
+// (numpad removed — using simple text input)
 
-  const nums=['1','2','3','4','5','6','7','8','9'];
-  pad.innerHTML = nums.map(n=>`<div class="nk" data-v="${n}">${n}</div>`).join('')
-    + `<div class="nk del" id="${padId}-del">⌫</div>`
-    + `<div class="nk zero" data-v="0">0</div>`;
-  pad.querySelectorAll('[data-v]').forEach(el=>el.onclick=()=>press(el.dataset.v));
-  document.getElementById(`${padId}-del`).onclick = del;
-}
-
-// ── FIREBASE READY ──
-document.getElementById('fb-loader').innerHTML += ''; // already shown
+// ── INIT — hide loader, show start ──
 setTimeout(() => {
   document.getElementById('fb-loader').classList.add('hidden');
   goScreen('s-start');
+}, 600);
 
-  // Build join numpad
-  buildPad('join-pad','jd','join-err', async (pin, reset) => {
-    try {
-      const snap = await get(query(ref(db,'ss/trips'), orderByChild('pin'), equalTo(pin)));
-      if (!snap.exists()) {
-        document.getElementById('join-err').textContent='Wrong PIN — try again';
-        for(let i=0;i<4;i++) {
-          const d=document.getElementById('jd'+i);
-          d.classList.add('err'); d.classList.remove('on');
-        }
-        setTimeout(reset, 600);
-        return;
+// ── JOIN TRIP (simple input, no numpad) ──
+window.joinTrip = async () => {
+  const pin   = document.getElementById('j-pin').value.trim();
+  const errEl = document.getElementById('join-err');
+  errEl.textContent = '';
+  if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+    return errEl.textContent = 'Enter a valid 4-digit PIN';
+  }
+  errEl.textContent = '⏳ Looking up trip…';
+  try {
+    // Search new path first
+    let foundId = null, foundData = null;
+    const snap1 = await get(ref(db, DB));
+    if (snap1.exists()) {
+      for (const [id, t] of Object.entries(snap1.val())) {
+        if (String(t.pin) === pin) { foundId = id; foundData = t; break; }
       }
-      const data = snap.val();
-      const id   = Object.keys(data)[0];
-      await bootTrip(id, data[id]);
-    } catch(e) { document.getElementById('join-err').textContent='Error: '+e.message; reset(); }
-  });
-}, 800);
+    }
+    // Fallback: also check old path (smartsplit/groups) for legacy trips like 8888
+    if (!foundId) {
+      const snap2 = await get(ref(db, 'smartsplit/groups'));
+      if (snap2.exists()) {
+        for (const [id, t] of Object.entries(snap2.val())) {
+          if (String(t.loginCode) === pin || String(t.pin) === pin) {
+            // Migrate to new path
+            const tRef = push(ref(db, DB));
+            const migrated = { name: t.name || 'Trip', pin: pin, budget: t.budget || 0 };
+            await set(tRef, migrated);
+            foundId = tRef.key; foundData = migrated;
+            break;
+          }
+        }
+      }
+    }
+    if (!foundId) {
+      errEl.textContent = 'Wrong PIN — no trip found';
+      document.getElementById('j-pin').style.borderColor = 'var(--red)';
+      setTimeout(() => { document.getElementById('j-pin').style.borderColor = ''; }, 1500);
+      return;
+    }
+    await bootTrip(foundId, foundData);
+  } catch(e) {
+    errEl.textContent = 'Error: ' + e.message;
+    console.error(e);
+  }
+};
 
 // ── CREATE TRIP ──
 window.createTrip = async () => {
   const name   = document.getElementById('n-name').value.trim();
-  const budget = parseFloat(document.getElementById('n-budget').value)||0;
+  const budget = parseFloat(document.getElementById('n-budget').value) || 0;
   const pin    = document.getElementById('n-pin').value.trim();
-  const err    = document.getElementById('new-err');
-  if(!name)          return err.textContent='Enter a trip name';
-  if(pin.length!==4||!/^\d{4}$/.test(pin)) return err.textContent='PIN must be exactly 4 digits';
-  // Check unique
-  const snap = await get(query(ref(db,'ss/trips'), orderByChild('pin'), equalTo(pin)));
-  if(snap.exists()) return err.textContent='PIN already taken — choose another';
-  const tRef = push(ref(db,'ss/trips'));
-  await set(tRef, { name, pin, budget });
-  await bootTrip(tRef.key, { name, pin, budget });
+  const errEl  = document.getElementById('new-err');
+  errEl.textContent = '';
+
+  if (!name)                             return errEl.textContent = 'Enter a trip name';
+  if (pin.length !== 4 || !/^\d{4}$/.test(pin)) return errEl.textContent = 'PIN must be exactly 4 digits';
+
+  try {
+    // Scan for duplicate PIN
+    const snap = await get(ref(db, DB));
+    if (snap.exists()) {
+      for (const t of Object.values(snap.val())) {
+        if (t.pin === pin) return errEl.textContent = 'PIN already taken — choose another';
+      }
+    }
+    const tRef = push(ref(db, DB));
+    await set(tRef, { name, pin, budget });
+    await bootTrip(tRef.key, { name, pin, budget });
+  } catch(e) {
+    errEl.textContent = 'Error: ' + e.message;
+    console.error(e);
+  }
 };
 
-// ── BOOT TRIP ──
+// ── BOOT TRIP (attach listeners) ──
 async function bootTrip(id, data) {
   trip = { id, ...data };
-  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
-  document.getElementById('main-app').classList.remove('hidden');
-  document.getElementById('main-app').style.display='flex';
+
+  // Remove any previous listeners
+  activeListeners.forEach(u => u());
+  activeListeners = [];
+
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  const appEl = document.getElementById('main-app');
+  appEl.classList.remove('hidden');
+  appEl.style.display = 'flex';
   document.getElementById('badge-name').textContent = trip.name;
   document.getElementById('badge-code').textContent = trip.pin;
 
-  // Live listeners
-  onValue(ref(db,`ss/trips/${id}/members`), snap => {
-    members = snap.val() ? Object.entries(snap.val()).map(([k,v])=>({id:k,...v})) : [];
+  // Live Firebase listeners
+  activeListeners.push(onValue(ref(db, `${DB}/${id}/members`), snap => {
+    members = snap.val()
+      ? Object.entries(snap.val()).map(([k, v]) => ({ id: k, ...v }))
+      : [];
     renderAll();
-  });
-  onValue(ref(db,`ss/trips/${id}/expenses`), snap => {
-    expenses = snap.val() ? Object.entries(snap.val()).map(([k,v])=>({
-      id:k,...v,
-      splitIds: Array.isArray(v.splitIds)?v.splitIds:(v.splitIds?Object.values(v.splitIds):[])
-    })) : [];
+  }));
+
+  activeListeners.push(onValue(ref(db, `${DB}/${id}/expenses`), snap => {
+    expenses = snap.val()
+      ? Object.entries(snap.val()).map(([k, v]) => ({
+          id: k, ...v,
+          splitIds: Array.isArray(v.splitIds) ? v.splitIds
+                  : (v.splitIds ? Object.values(v.splitIds) : [])
+        }))
+      : [];
     renderAll();
-  });
-  onValue(ref(db,`ss/trips/${id}/settlements`), snap => {
-    settlements = snap.val() ? Object.entries(snap.val()).map(([k,v])=>({id:k,...v})) : [];
+  }));
+
+  activeListeners.push(onValue(ref(db, `${DB}/${id}/settlements`), snap => {
+    settlements = snap.val()
+      ? Object.entries(snap.val()).map(([k, v]) => ({ id: k, ...v }))
+      : [];
     renderAll();
-  });
+  }));
 }
 
+// ── LOGOUT ──
 window.doLogout = () => {
-  trip=null; members=[]; expenses=[]; settlements=[];
+  activeListeners.forEach(u => u());
+  activeListeners = [];
+  trip = null; members = []; expenses = []; settlements = [];
   document.getElementById('main-app').classList.add('hidden');
-  document.getElementById('main-app').style.display='none';
+  document.getElementById('main-app').style.display = 'none';
   goScreen('s-start');
 };
 
 // ── ADD EXPENSE ──
 window.openAddExp = () => {
-  if(!trip) return;
-  document.getElementById('e-name').value='';
-  document.getElementById('e-amt').value='';
-  document.getElementById('e-date').value=new Date().toISOString().split('T')[0];
-  document.getElementById('e-err').textContent='';
-  // Payer
-  const payer=document.getElementById('e-payer');
-  payer.innerHTML=members.length
-    ? members.map(m=>`<option value="${m.id}">${m.name}</option>`).join('')
+  if (!trip) return;
+  document.getElementById('e-name').value = '';
+  document.getElementById('e-amt').value = '';
+  document.getElementById('e-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('e-err').textContent = '';
+
+  const payer = document.getElementById('e-payer');
+  payer.innerHTML = members.length
+    ? members.map(m => `<option value="${m.id}">${m.name}</option>`).join('')
     : '<option value="">— Add members first —</option>';
-  // Split chips
-  const sc=document.getElementById('e-split');
-  sc.innerHTML=members.map(m=>`<div class="mem-chip on" data-id="${m.id}" onclick="this.classList.toggle('on')">${m.name}</div>`).join('')
-    || '<p style="font-size:12px;color:var(--muted)">No members added yet</p>';
+
+  const sc = document.getElementById('e-split');
+  sc.innerHTML = members.map(m =>
+    `<div class="mem-chip on" data-id="${m.id}" onclick="this.classList.toggle('on')">${m.name}</div>`
+  ).join('') || '<p style="font-size:12px;color:var(--muted)">No members yet</p>';
+
   openModal('m-exp');
 };
 
 window.saveExpense = async () => {
-  const name = document.getElementById('e-name').value.trim();
-  const amt  = parseFloat(document.getElementById('e-amt').value);
-  const err  = document.getElementById('e-err');
-  if(!name||!amt) return err.textContent='Name and amount are required';
-  if(!members.length) return err.textContent='Add at least one member first';
+  const name   = document.getElementById('e-name').value.trim();
+  const amt    = parseFloat(document.getElementById('e-amt').value);
+  const errEl  = document.getElementById('e-err');
+  errEl.textContent = '';
+
+  if (!name || !amt)     return errEl.textContent = 'Name and amount are required';
+  if (!members.length)   return errEl.textContent = 'Add at least one member first';
+
   const paidById = document.getElementById('e-payer').value;
-  const splitIds = [...document.querySelectorAll('#e-split .mem-chip.on')].map(c=>c.dataset.id);
-  if(!splitIds.length) return err.textContent='Select at least one member to split with';
-  await push(ref(db,`ss/trips/${trip.id}/expenses`),{
-    name, amount:amt, cat:document.getElementById('e-cat').value,
-    date:document.getElementById('e-date').value, paidById, splitIds
-  });
-  closeModal('m-exp');
-  toast(`₹${amt.toLocaleString()} added ✓`);
+  if (!paidById)         return errEl.textContent = 'Select who paid';
+
+  const splitIds = [...document.querySelectorAll('#e-split .mem-chip.on')].map(c => c.dataset.id);
+  if (!splitIds.length)  return errEl.textContent = 'Select at least one person to split with';
+
+  try {
+    await push(ref(db, `${DB}/${trip.id}/expenses`), {
+      name, amount: amt,
+      cat:  document.getElementById('e-cat').value,
+      date: document.getElementById('e-date').value,
+      paidById, splitIds
+    });
+    closeModal('m-exp');
+    toast(`₹${amt.toLocaleString('en-IN')} added ✓`);
+  } catch(e) { errEl.textContent = 'Save failed: ' + e.message; }
 };
 
 window.deleteExpense = async id => {
-  await remove(ref(db,`ss/trips/${trip.id}/expenses/${id}`));
-  toast('Expense removed','info');
+  await remove(ref(db, `${DB}/${trip.id}/expenses/${id}`));
+  toast('Expense removed', 'info');
 };
 
 // ── ADD MEMBER ──
 window.openAddMember = () => {
-  document.getElementById('mm-name').value='';
-  document.getElementById('mm-err').textContent='';
+  document.getElementById('mm-name').value = '';
+  document.getElementById('mm-err').textContent = '';
   openModal('m-mem');
 };
 
 window.saveMember = async () => {
-  const name=document.getElementById('mm-name').value.trim();
-  if(!name) return document.getElementById('mm-err').textContent='Enter a name';
-  await push(ref(db,`ss/trips/${trip.id}/members`),{ name, role:document.getElementById('mm-role').value||'' });
-  closeModal('m-mem');
-  toast(`${name} added ✓`);
+  const name  = document.getElementById('mm-name').value.trim();
+  const errEl = document.getElementById('mm-err');
+  if (!name) return errEl.textContent = 'Enter a name';
+  try {
+    await push(ref(db, `${DB}/${trip.id}/members`), {
+      name, role: document.getElementById('mm-role').value || ''
+    });
+    closeModal('m-mem');
+    toast(`${name} added ✓`);
+  } catch(e) { errEl.textContent = 'Error: ' + e.message; }
 };
 
 window.deleteMember = async id => {
-  await remove(ref(db,`ss/trips/${trip.id}/members/${id}`));
-  toast('Member removed','info');
+  await remove(ref(db, `${DB}/${trip.id}/members/${id}`));
+  toast('Member removed', 'info');
 };
 
 // ── SETTLE UP ──
-window.markSettled = async (fromId,toId,amount) => {
-  await push(ref(db,`ss/trips/${trip.id}/settlements`),{
+window.markSettled = async (fromId, toId, amount) => {
+  await push(ref(db, `${DB}/${trip.id}/settlements`), {
     fromId, toId, amount,
-    date:new Date().toISOString().split('T')[0], done:true
+    date: new Date().toISOString().split('T')[0]
   });
   toast('Settlement recorded ✓');
 };
 
 // ── BALANCE ENGINE ──
 function calcBalances() {
-  const bal={};
-  members.forEach(m=>bal[m.id]=0);
-  expenses.forEach(exp=>{
-    const n=exp.splitIds.length||1;
-    const share=exp.amount/n;
-    bal[exp.paidById]=(bal[exp.paidById]||0)+exp.amount;
-    exp.splitIds.forEach(id=>{ bal[id]=(bal[id]||0)-share; });
+  const bal = {};
+  members.forEach(m => bal[m.id] = 0);
+  expenses.forEach(exp => {
+    const n = exp.splitIds.length || 1;
+    const share = exp.amount / n;
+    bal[exp.paidById] = (bal[exp.paidById] || 0) + exp.amount;
+    exp.splitIds.forEach(id => { bal[id] = (bal[id] || 0) - share; });
   });
-  // subtract completed settlements
-  settlements.forEach(s=>{
-    bal[s.fromId]=(bal[s.fromId]||0)-s.amount;
-    bal[s.toId]=(bal[s.toId]||0)+s.amount;
+  // Subtract completed settlements
+  settlements.forEach(s => {
+    bal[s.fromId] = (bal[s.fromId] || 0) - s.amount;
+    bal[s.toId]   = (bal[s.toId]   || 0) + s.amount;
   });
   return bal;
 }
 
-function calcPendingSettlements() {
-  const bal=calcBalances();
-  const cred=[],debt=[];
-  Object.entries(bal).forEach(([id,b])=>{
-    if(b>0.5) cred.push({id,amt:b});
-    else if(b<-0.5) debt.push({id,amt:-b});
+function calcPending() {
+  const bal = calcBalances();
+  const cred = [], debt = [];
+  Object.entries(bal).forEach(([id, b]) => {
+    if (b > 0.5)  cred.push({ id, amt: b  });
+    else if (b < -0.5) debt.push({ id, amt: -b });
   });
-  cred.sort((a,b)=>b.amt-a.amt); debt.sort((a,b)=>b.amt-a.amt);
-  const result=[];
-  let ci=0,di=0;
-  while(ci<cred.length&&di<debt.length){
-    const c=cred[ci],d=debt[di],a=Math.min(c.amt,d.amt);
-    result.push({fromId:d.id,toId:c.id,amount:a});
-    c.amt-=a; d.amt-=a;
-    if(c.amt<0.5)ci++; if(d.amt<0.5)di++;
+  cred.sort((a, b) => b.amt - a.amt);
+  debt.sort((a, b) => b.amt - a.amt);
+  const result = [];
+  let ci = 0, di = 0;
+  while (ci < cred.length && di < debt.length) {
+    const c = cred[ci], d = debt[di], a = Math.min(c.amt, d.amt);
+    result.push({ fromId: d.id, toId: c.id, amount: a });
+    c.amt -= a; d.amt -= a;
+    if (c.amt < 0.5) ci++;
+    if (d.amt < 0.5) di++;
   }
   return result;
 }
 
-// ── RENDER ──
-function renderAll() { renderStats(); renderExpenses(); renderMembers(); renderSettlements(); renderAnalytics(); }
+// ── RENDER ALL ──
+function renderAll() {
+  renderStats();
+  renderExpenses();
+  renderMembers();
+  renderSettlements();
+  renderAnalytics();
+}
+
+function fmt(n) { return '₹' + Math.round(n).toLocaleString('en-IN'); }
 
 function renderStats() {
-  const total=expenses.reduce((s,e)=>s+e.amount,0);
-  document.getElementById('s-total').textContent='₹'+total.toLocaleString('en-IN');
-  document.getElementById('s-total-sub').textContent=`${expenses.length} transaction${expenses.length!==1?'s':''}`;
-  document.getElementById('s-avg').textContent='₹'+(expenses.length?Math.round(total/expenses.length).toLocaleString('en-IN'):0);
-  document.getElementById('s-avg-sub').textContent=expenses.length+' transactions';
-  if(trip?.budget){
-    const rem=Math.max(0,trip.budget-total);
-    const pct=Math.min(100,rem/trip.budget*100);
-    document.getElementById('s-budget').textContent='₹'+rem.toLocaleString('en-IN');
-    const bar=document.getElementById('s-bprog');
-    bar.style.width=pct+'%';
-    bar.style.background=pct<20?'var(--red)':pct<50?'var(--amber)':'var(--green)';
-  } else { document.getElementById('s-budget').textContent='—'; }
-  const pend=calcPendingSettlements().length;
-  document.getElementById('s-pend').textContent=pend;
-  document.getElementById('settle-cnt').textContent=pend;
+  const total = expenses.reduce((s, e) => s + e.amount, 0);
+  document.getElementById('s-total').textContent = fmt(total);
+  document.getElementById('s-total-sub').textContent = `${expenses.length} transaction${expenses.length !== 1 ? 's' : ''}`;
+  document.getElementById('s-avg').textContent = fmt(expenses.length ? total / expenses.length : 0);
+  document.getElementById('s-avg-sub').textContent = expenses.length + ' transactions';
+
+  if (trip?.budget) {
+    const rem = Math.max(0, trip.budget - total);
+    const pct = Math.min(100, rem / trip.budget * 100);
+    document.getElementById('s-budget').textContent = fmt(rem);
+    const bar = document.getElementById('s-bprog');
+    bar.style.width = pct + '%';
+    bar.style.background = pct < 20 ? 'var(--red)' : pct < 50 ? 'var(--amber)' : 'var(--green)';
+  } else {
+    document.getElementById('s-budget').textContent = '—';
+  }
+
+  const pend = calcPending().length;
+  document.getElementById('s-pend').textContent = pend;
+  document.getElementById('settle-cnt').textContent = pend;
 }
 
 function renderExpenses() {
-  const filter=document.getElementById('cat-filter')?.value;
-  let list=expenses.slice().sort((a,b)=>b.date?.localeCompare(a.date));
-  if(filter) list=list.filter(e=>e.cat===filter);
-  const el=document.getElementById('exp-list');
-  el.innerHTML=list.length?list.map((e,i)=>{
-    const payer=members.find(m=>m.id===e.paidById);
-    const per=e.splitIds.length?e.amount/e.splitIds.length:e.amount;
-    const icon=e.cat?.split(' ')[0]||'💸';
+  const filter = document.getElementById('cat-filter')?.value;
+  let list = expenses.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  if (filter) list = list.filter(e => e.cat === filter);
+
+  const el = document.getElementById('exp-list');
+  el.innerHTML = list.length ? list.map(e => {
+    const payer = members.find(m => m.id === e.paidById);
+    const per   = e.splitIds.length ? e.amount / e.splitIds.length : e.amount;
+    const icon  = (e.cat || '').split(' ')[0] || '💸';
     return `<div class="exp-item">
       <div class="exp-icon">${icon}</div>
       <div style="flex:1;min-width:0">
         <div class="exp-name">${e.name}</div>
-        <div class="exp-meta">${e.cat||'Other'} · ${e.date||''} · by <b>${payer?.name||'?'}</b> · ₹${Math.round(per)}/person</div>
+        <div class="exp-meta">${e.cat || 'Other'} · ${e.date || ''} · paid by <b>${payer?.name || '?'}</b> · ${fmt(per)}/person</div>
       </div>
-      <div class="exp-amt">₹${e.amount.toLocaleString('en-IN')}</div>
+      <div class="exp-amt">${fmt(e.amount)}</div>
       <button class="exp-del" onclick="deleteExpense('${e.id}')" title="Delete">🗑</button>
     </div>`;
-  }).join(''):'<div class="empty"><div class="eico">💸</div><p>No expenses yet. Add one!</p></div>';
+  }).join('') : '<div class="empty"><div class="eico">💸</div><p>No expenses yet. Add one!</p></div>';
 
-  // Category chart
-  const cats={};
-  expenses.forEach(e=>{cats[e.cat||'Other']=(cats[e.cat||'Other']||0)+e.amount;});
-  const tot=expenses.reduce((s,e)=>s+e.amount,0)||1;
-  document.getElementById('cat-chart').innerHTML=Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`
-    <div class="cat-row">
-      <div class="cat-top"><span>${c}</span><span>₹${v.toLocaleString('en-IN')} <span style="color:var(--muted);font-size:11px">${Math.round(v/tot*100)}%</span></span></div>
-      <div class="prog-track"><div style="width:${v/tot*100}%;height:100%;background:var(--accent);border-radius:3px"></div></div>
-    </div>`).join('')||'<div class="empty" style="padding:16px"><p>No data</p></div>';
+  // Category bar chart
+  const cats = {};
+  expenses.forEach(e => { cats[e.cat || 'Other'] = (cats[e.cat || 'Other'] || 0) + e.amount; });
+  const tot = expenses.reduce((s, e) => s + e.amount, 0) || 1;
+  document.getElementById('cat-chart').innerHTML = Object.entries(cats)
+    .sort((a, b) => b[1] - a[1])
+    .map(([c, v]) => `
+      <div class="cat-row">
+        <div class="cat-top"><span>${c}</span><span>${fmt(v)} <span style="color:var(--muted);font-size:11px">${Math.round(v/tot*100)}%</span></span></div>
+        <div class="prog-track"><div style="width:${v/tot*100}%;height:100%;background:var(--accent);border-radius:3px"></div></div>
+      </div>`).join('') || '<div class="empty" style="padding:16px"><p>No data</p></div>';
 
-  // Members mini
-  document.getElementById('mem-cnt').textContent=members.length+' people';
-  const bal=calcBalances();
-  document.getElementById('mem-mini').innerHTML=members.map((m,i)=>{
-    const b=bal[m.id]||0;
+  // Mini member list in sidebar
+  document.getElementById('mem-cnt').textContent = members.length + ' people';
+  const bal = calcBalances();
+  document.getElementById('mem-mini').innerHTML = members.map((m, i) => {
+    const b = bal[m.id] || 0;
     return `<div class="mem-row">
-      <div class="mem-av av${i%6}">${m.name.slice(0,2).toUpperCase()}</div>
-      <div><div class="mem-name">${m.name}</div><div class="mem-sub">${m.role||'Member'}</div></div>
-      <div class="mem-bal"><div class="amt ${b>=0?'pos':'neg'}">${b>=0?'+':''}₹${Math.abs(Math.round(b)).toLocaleString('en-IN')}</div></div>
+      <div class="mem-av av${i % 6}">${m.name.slice(0,2).toUpperCase()}</div>
+      <div><div class="mem-name">${m.name}</div><div class="mem-sub">${m.role || 'Member'}</div></div>
+      <div class="mem-bal"><div class="amt ${b >= 0 ? 'pos' : 'neg'}">${b >= 0 ? '+' : ''}${fmt(Math.abs(b))}</div></div>
     </div>`;
-  }).join('')||'<div class="empty" style="padding:10px"><p>No members</p></div>';
+  }).join('') || '<div class="empty" style="padding:10px"><p>No members</p></div>';
 }
 
 function renderMembers() {
-  const bal=calcBalances();
-  document.getElementById('mem-list').innerHTML=members.length?members.map((m,i)=>{
-    const b=bal[m.id]||0;
-    const paid=expenses.filter(e=>e.paidById===m.id).reduce((s,e)=>s+e.amount,0);
+  const bal = calcBalances();
+  document.getElementById('mem-list').innerHTML = members.length ? members.map((m, i) => {
+    const b    = bal[m.id] || 0;
+    const paid = expenses.filter(e => e.paidById === m.id).reduce((s, e) => s + e.amount, 0);
     return `<div class="mem-row">
-      <div class="mem-av av${i%6}">${m.name.slice(0,2).toUpperCase()}</div>
+      <div class="mem-av av${i % 6}">${m.name.slice(0,2).toUpperCase()}</div>
       <div style="flex:1">
-        <div class="mem-name">${m.name} ${m.role==='You'?'<span style="font-size:10px;background:rgba(124,106,245,.2);color:var(--accent2);padding:2px 8px;border-radius:4px;margin-left:4px">you</span>':''}</div>
-        <div class="mem-sub">Paid total: ₹${paid.toLocaleString('en-IN')}</div>
+        <div class="mem-name">${m.name}${m.role === 'You' ? ' <span style="font-size:10px;background:rgba(124,106,245,.2);color:var(--accent2);padding:2px 8px;border-radius:4px">you</span>' : ''}</div>
+        <div class="mem-sub">Total paid: ${fmt(paid)}</div>
       </div>
       <div class="mem-bal">
-        <div class="amt ${b>=0?'pos':'neg'}">${b>=0?'gets back ':'owes '}₹${Math.abs(Math.round(b)).toLocaleString('en-IN')}</div>
+        <div class="amt ${b >= 0 ? 'pos' : 'neg'}">${b >= 0 ? 'gets back ' : 'owes '}${fmt(Math.abs(b))}</div>
       </div>
       <button class="exp-del" onclick="deleteMember('${m.id}')" style="margin-left:8px">🗑</button>
     </div>`;
-  }).join(''):'<div class="empty"><div class="eico">👥</div><p>No members. Add some!</p></div>';
+  }).join('') : '<div class="empty"><div class="eico">👥</div><p>No members yet. Add some!</p></div>';
 
-  const sp={};
-  expenses.forEach(e=>{sp[e.paidById]=(sp[e.paidById]||0)+e.amount;});
-  const sorted=Object.entries(sp).sort((a,b)=>b[1]-a[1]);
-  const maxS=sorted[0]?.[1]||1;
-  document.getElementById('top-payers').innerHTML=sorted.length?sorted.map(([id,amt],i)=>{
-    const m=members.find(x=>x.id===id);
+  // Top payers chart
+  const sp = {};
+  expenses.forEach(e => { sp[e.paidById] = (sp[e.paidById] || 0) + e.amount; });
+  const sorted = Object.entries(sp).sort((a, b) => b[1] - a[1]);
+  const maxS = sorted[0]?.[1] || 1;
+  const colors = ['var(--accent)','var(--green)','var(--amber)','var(--red)','#5b9cf6','#e879f9'];
+  document.getElementById('top-payers').innerHTML = sorted.length ? sorted.map(([id, amt], i) => {
+    const m = members.find(x => x.id === id);
     return `<div style="margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px">
-        <span>${m?.name||'?'}</span><span style="font-family:'Syne';font-weight:800">₹${amt.toLocaleString('en-IN')}</span>
+        <span>${m?.name || '?'}</span>
+        <span style="font-family:'Syne';font-weight:800">${fmt(amt)}</span>
       </div>
-      <div class="prog-track"><div style="width:${amt/maxS*100}%;height:100%;background:var(--av${i%6})||var(--accent);border-radius:3px"></div></div>
+      <div class="prog-track"><div style="width:${amt/maxS*100}%;height:100%;background:${colors[i%6]};border-radius:3px"></div></div>
     </div>`;
-  }).join(''):'<div class="empty"><p>No data</p></div>';
+  }).join('') : '<div class="empty"><p>No data yet</p></div>';
 }
 
 function renderSettlements() {
-  const pending=calcPendingSettlements();
-  const sl=document.getElementById('settle-list');
-  sl.innerHTML=pending.length?pending.map(s=>{
-    const from=members.find(m=>m.id===s.fromId);
-    const to=members.find(m=>m.id===s.toId);
+  const pending = calcPending();
+  document.getElementById('settle-list').innerHTML = pending.length ? pending.map(s => {
+    const from = members.find(m => m.id === s.fromId);
+    const to   = members.find(m => m.id === s.toId);
     return `<div class="settle-item">
       <div>
-        <div class="settle-from">${from?.name||'?'}</div>
+        <div class="settle-from">${from?.name || '?'}</div>
         <div style="font-size:11px;color:var(--muted)">owes</div>
       </div>
       <div class="settle-arr">→</div>
       <div>
-        <div class="settle-to">${to?.name||'?'}</div>
+        <div class="settle-to">${to?.name || '?'}</div>
         <div style="font-size:11px;color:var(--muted)">receives</div>
       </div>
-      <div class="settle-amt">₹${Math.round(s.amount).toLocaleString('en-IN')}</div>
+      <div class="settle-amt">${fmt(s.amount)}</div>
       <button class="btn btn-green btn-sm" onclick="markSettled('${s.fromId}','${s.toId}',${s.amount})">Mark Paid ✓</button>
     </div>`;
-  }).join(''):'<div class="empty"><div class="eico">🎉</div><p>Everyone is settled up!</p></div>';
+  }).join('') : '<div class="empty"><div class="eico">🎉</div><p>Everyone is settled up!</p></div>';
 
-  const sh=document.getElementById('settle-hist');
-  sh.innerHTML=settlements.length?settlements.slice().reverse().map(s=>{
-    const from=members.find(m=>m.id===s.fromId);
-    const to=members.find(m=>m.id===s.toId);
-    return `<div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(62,207,142,.06);border-radius:8px;margin-bottom:8px;border:1px solid rgba(62,207,142,.15)">
-      <span style="font-size:16px">✅</span>
-      <div style="flex:1;font-size:13px">${from?.name||'?'} → ${to?.name||'?'}</div>
-      <div style="font-family:'Syne';font-weight:800;color:var(--green)">₹${Math.round(s.amount).toLocaleString('en-IN')}</div>
-      <div style="font-size:11px;color:var(--muted)">${s.date||''}</div>
-    </div>`;
-  }).join(''):'<div class="empty"><p>No history yet</p></div>';
+  document.getElementById('settle-hist').innerHTML = settlements.length
+    ? settlements.slice().reverse().map(s => {
+        const from = members.find(m => m.id === s.fromId);
+        const to   = members.find(m => m.id === s.toId);
+        return `<div style="display:flex;align-items:center;gap:10px;padding:12px;background:rgba(62,207,142,.06);border-radius:8px;margin-bottom:8px;border:1px solid rgba(62,207,142,.15)">
+          <span style="font-size:16px">✅</span>
+          <div style="flex:1;font-size:13px">${from?.name || '?'} → ${to?.name || '?'}</div>
+          <div style="font-family:'Syne';font-weight:800;color:var(--green)">${fmt(s.amount)}</div>
+          <div style="font-size:11px;color:var(--muted)">${s.date || ''}</div>
+        </div>`;
+      }).join('')
+    : '<div class="empty"><p>No history yet</p></div>';
 }
 
 function renderAnalytics() {
-  const total=expenses.reduce((s,e)=>s+e.amount,0)||1;
-  const cats={};
-  expenses.forEach(e=>{cats[e.cat||'Other']=(cats[e.cat||'Other']||0)+e.amount;});
+  const total  = expenses.reduce((s, e) => s + e.amount, 0) || 1;
+  const cats   = {};
+  expenses.forEach(e => { cats[e.cat || 'Other'] = (cats[e.cat || 'Other'] || 0) + e.amount; });
 
-  document.getElementById('an-summary').innerHTML=`
+  document.getElementById('an-summary').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
       ${[
-        ['Total Spent','₹'+expenses.reduce((s,e)=>s+e.amount,0).toLocaleString('en-IN'),'var(--accent2)'],
-        ['# Expenses',expenses.length,'var(--text)'],
-        ['# Members',members.length,'var(--green)'],
-        ['Settlements Done',settlements.length,'var(--amber)'],
-      ].map(([l,v,c])=>`
+        ['Total Spent',       fmt(expenses.reduce((s,e)=>s+e.amount,0)), 'var(--accent2)'],
+        ['Expenses',          expenses.length,   'var(--text)'  ],
+        ['Members',           members.length,    'var(--green)' ],
+        ['Settled',           settlements.length,'var(--amber)' ],
+      ].map(([l, v, c]) => `
         <div style="background:var(--bg3);border-radius:10px;padding:14px">
           <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">${l}</div>
           <div style="font-family:'Syne';font-size:22px;font-weight:800;color:${c};margin-top:6px">${v}</div>
         </div>`).join('')}
     </div>
-    ${trip?.budget?`<div style="background:var(--bg3);border-radius:10px;padding:16px">
+    ${trip?.budget ? `<div style="background:var(--bg3);border-radius:10px;padding:16px">
       <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px">
         <span>Budget Used</span>
-        <span style="font-family:'Syne';font-weight:800">${Math.round(expenses.reduce((s,e)=>s+e.amount,0)/trip.budget*100)}%</span>
+        <span style="font-family:'Syne';font-weight:800">${Math.min(100,Math.round(expenses.reduce((s,e)=>s+e.amount,0)/trip.budget*100))}%</span>
       </div>
       <div class="prog-track"><div style="width:${Math.min(100,expenses.reduce((s,e)=>s+e.amount,0)/trip.budget*100)}%;height:100%;background:var(--accent);border-radius:3px"></div></div>
       <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:6px">
-        <span>₹${expenses.reduce((s,e)=>s+e.amount,0).toLocaleString('en-IN')} spent</span>
-        <span>₹${trip.budget.toLocaleString('en-IN')} budget</span>
-      </div></div>`:''}`;
+        <span>${fmt(expenses.reduce((s,e)=>s+e.amount,0))} spent</span>
+        <span>${fmt(trip.budget)} budget</span>
+      </div>
+    </div>` : ''}`;
 
-  document.getElementById('an-cats').innerHTML=Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`
-    <div class="cat-row">
-      <div class="cat-top"><span>${c}</span><span>₹${v.toLocaleString('en-IN')} (${Math.round(v/total*100)}%)</span></div>
-      <div class="prog-track"><div style="width:${v/total*100}%;height:100%;background:var(--accent);border-radius:3px"></div></div>
-    </div>`).join('')||'<div class="empty"><p>No data</p></div>';
+  document.getElementById('an-cats').innerHTML = Object.entries(cats)
+    .sort((a, b) => b[1] - a[1])
+    .map(([c, v]) => `
+      <div class="cat-row">
+        <div class="cat-top"><span>${c}</span><span>${fmt(v)} (${Math.round(v/total*100)}%)</span></div>
+        <div class="prog-track"><div style="width:${v/total*100}%;height:100%;background:var(--accent);border-radius:3px"></div></div>
+      </div>`).join('') || '<div class="empty"><p>No data yet</p></div>';
 }
 
 // ── TABS ──
 window.switchView = (name, el) => {
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('show'));
-  document.getElementById('v-'+name).classList.add('show');
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('show'));
+  document.getElementById('v-' + name).classList.add('show');
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
 };
 
-// close modal on backdrop click
-document.querySelectorAll('.modal-back').forEach(mb=>{
-  mb.addEventListener('click',e=>{ if(e.target===mb) mb.classList.add('hidden'); });
+// Close modal on backdrop click
+document.querySelectorAll('.modal-back').forEach(mb => {
+  mb.addEventListener('click', e => { if (e.target === mb) mb.classList.add('hidden'); });
 });
 </script>
 </body>
