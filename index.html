@@ -6,315 +6,76 @@
     <title>SmartSplit Pro — Travel Manager</title>
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+        /* Keeping your existing styles for consistency */
         :root {
             --bg: #0b0b0f; --bg2: #12121a; --bg3: #1c1c27; --card: #161620;
             --border: rgba(255,255,255,0.07); --text: #f0f0f5; --muted: #888899;
             --accent: #7c6af5; --accent2: #a594ff; --green: #3ecf8e; --red: #f46f6f;
-            --yellow: #f5c842;
             --radius: 16px; --radius-sm: 10px;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
-
-        /* ─── AUTH SCREENS ─── */
+        body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
         .auth-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .auth-box { background: var(--bg2); padding: 36px; border-radius: var(--radius); border: 1px solid var(--border); text-align: center; width: 100%; max-width: 360px; box-shadow: 0 24px 48px rgba(0,0,0,0.5); }
+        .auth-box { background: var(--bg2); padding: 36px; border-radius: var(--radius); border: 1px solid var(--border); text-align: center; width: 100%; max-width: 360px; }
         .hidden { display: none !important; }
-
-        /* ─── LAYOUT ─── */
         .app { display: none; height: 100vh; flex-direction: column; }
-        .navbar { height: 68px; background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 28px; position: sticky; top: 0; z-index: 100; flex-shrink: 0; }
+        .navbar { height: 68px; background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 28px; }
         .main { flex: 1; overflow-y: auto; padding: 28px; max-width: 1200px; margin: 0 auto; width: 100%; }
-
-        /* ─── COMPONENTS ─── */
         .logo { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; letter-spacing: -1px; }
         .logo span { color: var(--accent2); }
-        .form-input { width: 100%; padding: 13px 14px; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); margin-bottom: 12px; outline: none; font-size: 15px; font-family: 'DM Sans', sans-serif; transition: border-color 0.2s; }
-        .form-input:focus { border-color: var(--accent); }
-        .form-input option { background: var(--bg3); }
-        .form-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin-bottom: 5px; display: block; }
-        .btn { padding: 12px 22px; border-radius: var(--radius-sm); border: none; cursor: pointer; font-weight: 700; transition: all 0.2s; font-family: 'Syne', sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; }
-        .btn-primary { background: var(--accent); color: white; box-shadow: 0 4px 15px rgba(124,106,245,0.3); }
-        .btn-green { background: var(--green); color: #0b1a12; }
-        .btn-red { background: var(--red); color: white; }
+        .form-input { width: 100%; padding: 13px; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); margin-bottom: 12px; outline: none; }
+        .btn { padding: 12px 22px; border-radius: var(--radius-sm); border: none; cursor: pointer; font-weight: 700; font-family: 'Syne'; transition: 0.2s; }
+        .btn-primary { background: var(--accent); color: white; }
         .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
-        .btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
-        .btn:active { transform: translateY(0); }
-        .btn-sm { padding: 7px 14px; font-size: 12px; }
-
-        /* ─── STATS ─── */
-        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 24px; }
-        .grid-2 { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-        @media(max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } .grid-3 { grid-template-columns: repeat(2,1fr); } }
-        @media(max-width: 580px) { .grid-3 { grid-template-columns: 1fr; } }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 24px; }
         .stat-card { background: var(--card); padding: 22px; border-radius: var(--radius); border: 1px solid var(--border); }
-        .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+        .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: 700; }
         .stat-val { font-family: 'Syne'; font-size: 28px; margin-top: 8px; font-weight: 800; }
-
-        .card { background: var(--card); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; margin-bottom: 24px; }
-        .card-header { padding: 18px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        .card-header h3 { font-family: 'Syne'; font-size: 16px; }
-        .card-body { padding: 20px; }
-
-        /* ─── EXPENSE LIST ─── */
         .expense-item { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); }
-        .expense-item:last-child { border-bottom: none; }
-        .cat-icon { width: 44px; height: 44px; border-radius: 12px; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
-        .exp-actions { display: flex; gap: 6px; flex-shrink: 0; }
-        .tag { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; background: var(--bg3); color: var(--muted); }
-
-        /* ─── MEMBERS ─── */
-        .member-item { display: flex; align-items: center; gap: 14px; padding: 13px 0; border-bottom: 1px solid var(--border); }
-        .member-item:last-child { border-bottom: none; }
-        .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-family: 'Syne'; font-size: 16px; font-weight: 800; flex-shrink: 0; }
-
-        /* ─── SETTLEMENTS ─── */
-        .settle-item { display: flex; align-items: center; justify-content: space-between; padding: 14px; border-radius: var(--radius-sm); background: var(--bg3); margin-bottom: 10px; border: 1px solid var(--border); }
-        .settle-item.done { opacity: 0.45; }
-
-        /* ─── MODAL ─── */
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 20000; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
-        .modal.active { display: flex; }
-        .modal-box { background: var(--bg2); padding: 30px; border-radius: var(--radius); border: 1px solid var(--border); text-align: left; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; }
-        .modal-box h3 { font-family: 'Syne'; font-size: 20px; margin-bottom: 20px; }
-
-        /* ─── TABS ─── */
-        .tabs { display: flex; gap: 4px; background: var(--bg3); padding: 4px; border-radius: var(--radius-sm); margin-bottom: 24px; }
-        .tab { flex: 1; padding: 9px; border-radius: 7px; border: none; background: transparent; color: var(--muted); font-family: 'DM Sans'; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.2s; }
-        .tab.active { background: var(--card); color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
-
-        /* ─── BUDGET BAR ─── */
-        .progress-bar { height: 8px; background: var(--bg3); border-radius: 4px; overflow: hidden; margin-top: 10px; }
-        .progress-fill { height: 100%; border-radius: 4px; transition: width 0.4s; background: var(--accent); }
-
-        /* ─── EMPTY STATE ─── */
-        .empty { text-align: center; padding: 40px; color: var(--muted); }
-        .empty .icon { font-size: 40px; margin-bottom: 12px; }
-
-        /* ─── TOAST ─── */
-        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 24px; font-weight: 700; font-size: 14px; z-index: 99999; transition: transform 0.3s; pointer-events: none; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
-        .toast.show { transform: translateX(-50%) translateY(0); }
-
-        /* ─── SPLIT TYPE TOGGLE ─── */
-        .split-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
-        .split-btn { flex: 1; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg3); color: var(--muted); font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.2s; font-family: 'DM Sans'; }
-        .split-btn.active { border-color: var(--accent); background: rgba(124,106,245,0.15); color: var(--accent2); }
-
-        .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-        .badge-green { background: rgba(62,207,142,0.15); color: var(--green); }
-        .badge-red { background: rgba(244,111,111,0.15); color: var(--red); }
-        .badge-accent { background: rgba(124,106,245,0.15); color: var(--accent2); }
-
-        select.form-input { appearance: none; -webkit-appearance: none; cursor: pointer; }
-
-        .divider { height: 1px; background: var(--border); margin: 16px 0; }
-
-        #members-checkboxes { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-        .member-check { display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--bg3); border-radius: 20px; cursor: pointer; border: 1px solid var(--border); transition: all 0.2s; user-select: none; font-size: 14px; }
-        .member-check.selected { border-color: var(--accent); background: rgba(124,106,245,0.12); color: var(--accent2); }
     </style>
 </head>
 <body>
 
-<!-- ═══════════════ START SCREEN ═══════════════ -->
-<div id="start-screen" class="auth-overlay">
+<div id="login-screen" class="auth-overlay">
     <div class="auth-box">
-        <div class="logo" style="font-size:28px; margin-bottom:8px">Smart<span>Split</span></div>
-        <p style="color:var(--muted); font-size:13px; margin-bottom:30px;">Group travel expense tracker</p>
-        <button class="btn btn-primary" style="width:100%" onclick="showScreen('login-screen')">🔑 Join with Trip Code</button>
-        <button class="btn btn-ghost" style="width:100%; margin-top:12px" onclick="showScreen('reg-screen')">✈️ Start New Trip</button>
-    </div>
-</div>
-
-<!-- ═══════════════ LOGIN SCREEN ═══════════════ -->
-<div id="login-screen" class="auth-overlay hidden">
-    <div class="auth-box">
-        <h3 style="margin-bottom:8px">Welcome Back</h3>
+        <div class="logo" style="margin-bottom:20px">Smart<span>Split</span></div>
+        <h3 style="margin-bottom:8px">Trip Access</h3>
         <p style="color:var(--muted); font-size:13px; margin-bottom:24px">Enter your 4-digit trip code</p>
         <input type="password" id="l-code" class="form-input" maxlength="4" placeholder="••••" style="letter-spacing:12px; font-size:26px; text-align:center;">
-        <input type="text" id="l-name" class="form-input" placeholder="Your Name (to track expenses)">
         <button class="btn btn-primary" style="width:100%" id="do-login">Unlock Trip →</button>
-        <button class="btn btn-ghost" style="width:100%; margin-top:10px" onclick="showScreen('start-screen')">← Back</button>
-        <p id="login-err" style="color:var(--red); font-size:13px; margin-top:12px; display:none;"></p>
+        <div id="login-err" style="color:var(--red); font-size:13px; margin-top:12px; display:none;"></div>
     </div>
 </div>
 
-<!-- ═══════════════ REGISTER SCREEN ═══════════════ -->
-<div id="reg-screen" class="auth-overlay hidden">
-    <div class="auth-box">
-        <h3 style="margin-bottom:8px">Create Trip Code</h3>
-        <p style="color:var(--muted); font-size:12px; margin-bottom:24px">Set a 4-digit code to share with friends</p>
-        <input type="password" id="r-code" class="form-input" maxlength="4" placeholder="••••" style="letter-spacing:12px; font-size:26px; text-align:center;">
-        <button class="btn btn-primary" style="width:100%" id="reg-next">Continue →</button>
-        <button class="btn btn-ghost" style="width:100%; margin-top:10px" onclick="showScreen('start-screen')">← Back</button>
-    </div>
-</div>
-
-<!-- ═══════════════ SETUP SCREEN ═══════════════ -->
-<div id="setup-screen" class="auth-overlay hidden">
-    <div class="auth-box">
-        <h3 style="margin-bottom:20px">Trip Details</h3>
-        <input type="text" id="s-group" class="form-input" placeholder="Trip Name (e.g. Goa 2026)">
-        <input type="text" id="s-user" class="form-input" placeholder="Your Name">
-        <input type="number" id="s-budget" class="form-input" placeholder="Budget (₹) — optional">
-        <button class="btn btn-primary" style="width:100%" id="finish-setup">🚀 Launch Trip</button>
-    </div>
-</div>
-
-<!-- ═══════════════ MAIN APP ═══════════════ -->
 <div id="main-app" class="app">
     <nav class="navbar">
         <div class="logo">Smart<span>Split</span></div>
-        <div style="display:flex; gap:10px; align-items:center;">
-            <span id="nav-user" style="font-size:13px; color:var(--muted); font-weight:700;"></span>
-            <button class="btn btn-ghost btn-sm" onclick="openModal('member-modal')">👥 Members</button>
-            <button class="btn btn-primary btn-sm" onclick="openModal('expense-modal')">＋ Add Spend</button>
-        </div>
+        <button class="btn btn-primary" onclick="alert('Add Function Coming Soon')">＋ Add Spend</button>
     </nav>
-
     <main class="main">
         <div style="margin-bottom: 24px;">
-            <h1 id="active-title" style="font-family: 'Syne'; font-size: 32px; letter-spacing: -1px; line-height:1.1;">Trip Dashboard</h1>
-            <p id="group-code-display" style="color:var(--accent2); font-weight:700; font-size:13px; margin-top:6px; letter-spacing:1px;"></p>
+            <h1 id="active-title" style="font-family: 'Syne'; font-size: 32px;">Trip Dashboard</h1>
+            <p id="group-code-display" style="color:var(--accent2); font-weight:700; font-size:13px; margin-top:6px;"></p>
         </div>
-
         <div class="grid-3">
-            <div class="stat-card" style="background: linear-gradient(135deg, #7c6af5 0%, #a594ff 100%);">
-                <div class="stat-label" style="color:rgba(255,255,255,0.75)">Total Spend</div>
-                <div class="stat-val" id="stat-total">₹0</div>
+            <div class="stat-card" style="background: var(--accent);">
+                <div class="stat-label" style="color:white">Total Spend</div>
+                <div class="stat-val" id="stat-total" style="color:white">₹0</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Per Person (equal split)</div>
-                <div class="stat-val" style="color:var(--green)" id="stat-per-person">₹0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Budget</div>
-                <div class="stat-val" id="stat-budget">—</div>
-                <div class="progress-bar"><div class="progress-fill" id="budget-fill" style="width:0%"></div></div>
+                <div class="stat-label">Budget Remaining</div>
+                <div class="stat-val" style="color:var(--green)" id="stat-budget">₹0</div>
             </div>
         </div>
-
-        <!-- TABS -->
-        <div class="tabs">
-            <button class="tab active" onclick="switchTab('expenses-tab', this)">💸 Expenses</button>
-            <button class="tab" onclick="switchTab('breakdown-tab', this)">📊 Breakdown</button>
-            <button class="tab" onclick="switchTab('settle-tab', this)">✅ Settle Up</button>
-        </div>
-
-        <!-- EXPENSES TAB -->
-        <div id="expenses-tab">
-            <div class="grid-2">
-                <div class="card">
-                    <div class="card-header">
-                        <h3>All Expenses</h3>
-                        <div style="display:flex; gap:8px; align-items:center;">
-                            <select id="filter-cat" class="form-input" style="margin:0; padding:7px 10px; font-size:12px; width:auto;" onchange="renderUI()">
-                                <option value="">All Categories</option>
-                                <option>🍔 Food</option><option>✈️ Transport</option>
-                                <option>🏨 Stay</option><option>🎭 Fun</option>
-                                <option>🛍️ Shopping</option><option>💊 Medical</option><option>📦 Other</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="card-body" id="exp-list"><div class="empty"><div class="icon">💸</div><p>No expenses yet. Add your first one!</p></div></div>
-                </div>
-                <div>
-                    <div class="card" style="margin-bottom:0">
-                        <div class="card-header"><h3>By Category</h3></div>
-                        <div class="card-body" id="cat-list"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- BREAKDOWN TAB -->
-        <div id="breakdown-tab" class="hidden">
-            <div class="grid-2">
-                <div class="card" style="margin-bottom:0">
-                    <div class="card-header"><h3>Who Paid What</h3></div>
-                    <div class="card-body" id="paid-list"></div>
-                </div>
-                <div class="card" style="margin-bottom:0">
-                    <div class="card-header"><h3>Who Owes What</h3></div>
-                    <div class="card-body" id="owes-list"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- SETTLE UP TAB -->
-        <div id="settle-tab" class="hidden">
-            <div class="card">
-                <div class="card-header">
-                    <h3>Settlement Plan</h3>
-                    <button class="btn btn-ghost btn-sm" onclick="renderUI()">🔄 Recalculate</button>
-                </div>
-                <div class="card-body" id="settle-list"></div>
-            </div>
+        <div id="exp-list" class="stat-card">
+            <p style="color:var(--muted)">Loading expenses...</p>
         </div>
     </main>
 </div>
 
-<!-- ═══════════════ ADD EXPENSE MODAL ═══════════════ -->
-<div class="modal" id="expense-modal">
-    <div class="modal-box">
-        <h3>💸 Add New Expense</h3>
-        <input type="hidden" id="edit-exp-id">
-        <label class="form-label">Description</label>
-        <input type="text" id="exp-name" class="form-input" placeholder="e.g. Dinner at Beach Shack">
-        <label class="form-label">Amount (₹)</label>
-        <input type="number" id="exp-amt" class="form-input" placeholder="0" min="0">
-        <label class="form-label">Category</label>
-        <select id="exp-cat" class="form-input">
-            <option>🍔 Food</option><option>✈️ Transport</option>
-            <option>🏨 Stay</option><option>🎭 Fun</option>
-            <option>🛍️ Shopping</option><option>💊 Medical</option><option>📦 Other</option>
-        </select>
-        <label class="form-label">Paid By</label>
-        <select id="exp-paidby" class="form-input"></select>
-        <label class="form-label">Date</label>
-        <input type="date" id="exp-date" class="form-input">
-        <label class="form-label">Notes (optional)</label>
-        <input type="text" id="exp-notes" class="form-input" placeholder="Optional notes">
-        <label class="form-label">Split Between</label>
-        <div id="members-checkboxes"></div>
-        <div id="split-type-area">
-            <label class="form-label">Split Type</label>
-            <div class="split-toggle">
-                <button class="split-btn active" id="split-equal" onclick="setSplitType('equal')">⚖️ Equal</button>
-                <button class="split-btn" id="split-custom" onclick="setSplitType('custom')">✏️ Custom</button>
-            </div>
-            <div id="custom-split-area" class="hidden"></div>
-        </div>
-        <div class="divider"></div>
-        <div style="display:flex; gap:10px;">
-            <button class="btn btn-primary" style="flex:1" id="save-expense">Save Expense</button>
-            <button class="btn btn-ghost" onclick="closeModal('expense-modal')">Cancel</button>
-        </div>
-    </div>
-</div>
-
-<!-- ═══════════════ MEMBER MODAL ═══════════════ -->
-<div class="modal" id="member-modal">
-    <div class="modal-box">
-        <h3>👥 Trip Members</h3>
-        <div id="member-list" style="margin-bottom:20px;"></div>
-        <div class="divider"></div>
-        <label class="form-label">Add Member</label>
-        <div style="display:flex; gap:10px;">
-            <input type="text" id="new-member-name" class="form-input" placeholder="Name" style="margin:0; flex:1;">
-            <button class="btn btn-green" onclick="addMember()">Add</button>
-        </div>
-        <div class="divider"></div>
-        <button class="btn btn-ghost" style="width:100%" onclick="closeModal('member-modal')">Close</button>
-    </div>
-</div>
-
-<!-- ═══════════════ TOAST ═══════════════ -->
-<div class="toast" id="toast"></div>
-
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, get, push, query, orderByChild, equalTo, update, remove, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, get, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyCqb7gAbpa3UabPU3g_YhNITuPWtWPY4KU",
@@ -329,522 +90,71 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-let state = {
-    groups: {}, expenses: {}, members: {},
-    currentCode: "", activeGid: "", currentUser: "",
-    splitType: 'equal', selectedMembers: [], settlements: {}
-};
-
-// ─── UTILS ───────────────────────────────────────────────
-function toast(msg, dur = 2500) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), dur);
-}
-function fmt(n) { return '₹' + Math.round(n).toLocaleString('en-IN'); }
-function today() { return new Date().toISOString().split('T')[0]; }
-function colorFor(name) {
-    const cols = ['#7c6af5','#3ecf8e','#f46f6f','#f5c842','#a594ff','#4ecdc4','#f97316','#8b5cf6'];
-    let h = 0; for (const c of (name||'?')) h += c.charCodeAt(0);
-    return cols[h % cols.length];
-}
-
-// ─── SCREEN NAVIGATION ───────────────────────────────────
-window.showScreen = id => {
-    document.querySelectorAll('.auth-overlay').forEach(s => s.classList.add('hidden'));
-    document.getElementById(id).classList.remove('hidden');
-};
-window.openModal = id => {
-    if (id === 'expense-modal') resetExpenseForm();
-    if (id === 'member-modal') renderMemberModal();
-    document.getElementById(id).classList.add('active');
-};
-window.closeModal = id => document.getElementById(id).classList.remove('active');
-
-window.switchTab = (tabId, btn) => {
-    ['expenses-tab','breakdown-tab','settle-tab'].forEach(t => document.getElementById(t).classList.add('hidden'));
-    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
-    document.getElementById(tabId).classList.remove('hidden');
-    btn.classList.add('active');
-};
-
-// ─── AUTH ─────────────────────────────────────────────────
+// LOGIN LOGIC
 document.getElementById('do-login').onclick = async () => {
     const code = document.getElementById('l-code').value.trim();
-    const name = document.getElementById('l-name').value.trim();
     const errEl = document.getElementById('login-err');
     errEl.style.display = 'none';
-    if (code.length !== 4) { errEl.textContent = 'Enter a 4-digit code'; errEl.style.display='block'; return; }
-    if (!name) { errEl.textContent = 'Enter your name'; errEl.style.display='block'; return; }
-    await attemptLoad(code, name);
-};
 
-document.getElementById('reg-next').onclick = async () => {
-    const code = document.getElementById('r-code').value.trim();
-    if (code.length !== 4 || isNaN(code)) return toast('Code must be 4 digits');
-    const q = query(ref(db, 'smartsplit/groups'), orderByChild('loginCode'), equalTo(code));
-    const snap = await get(q);
-    if (snap.exists()) return toast('Code already in use! Try another.');
-    state.currentCode = code;
-    showScreen('setup-screen');
-};
+    if (code.length !== 4) {
+        errEl.innerText = "Enter 4 digits";
+        errEl.style.display = "block";
+        return;
+    }
 
-document.getElementById('finish-setup').onclick = async () => {
-    const gn = document.getElementById('s-group').value.trim();
-    const un = document.getElementById('s-user').value.trim();
-    const budget = parseFloat(document.getElementById('s-budget').value) || 0;
-    if (!gn || !un) return toast('Please fill all fields');
-
-    const gRef = push(ref(db, 'smartsplit/groups'));
-    const gid = gRef.key;
-    const mRef = push(ref(db, 'smartsplit/members'));
-    const updates = {};
-    updates[`smartsplit/groups/${gid}`] = { name: gn, loginCode: state.currentCode, budget };
-    updates[`smartsplit/members/${mRef.key}`] = { name: un, groupId: gid };
-    await update(ref(db), updates);
-    toast('Trip created! 🎉');
-    await attemptLoad(state.currentCode, un);
-};
-
-// ─── LOAD DATA ────────────────────────────────────────────
-async function attemptLoad(code, userName) {
-    const errEl = document.getElementById('login-err');
     try {
-        const q = query(ref(db, 'smartsplit/groups'), orderByChild('loginCode'), equalTo(code));
+        const groupsRef = ref(db, 'smartsplit/groups');
+        // SECURE QUERY: Must match your Firebase Rules
+        const q = query(groupsRef, orderByChild('loginCode'), equalTo(code));
         const snap = await get(q);
-        if (!snap.exists()) {
-            if (errEl) { errEl.textContent = 'Invalid code. Try again.'; errEl.style.display='block'; }
-            return;
-        }
-        state.currentCode = code;
-        state.groups = snap.val();
-        state.activeGid = Object.keys(state.groups)[0];
-        state.currentUser = userName;
 
-        // Auto-add member if new name
-        if (userName) {
-            const mq = query(ref(db, 'smartsplit/members'), orderByChild('groupId'), equalTo(state.activeGid));
-            const ms = await get(mq);
-            const exists = ms.exists() && Object.values(ms.val()).some(m => m.name.toLowerCase() === userName.toLowerCase());
-            if (!exists) {
-                await set(push(ref(db, 'smartsplit/members')), { name: userName, groupId: state.activeGid });
-            }
-        }
+        if (snap.exists()) {
+            const groupsData = snap.val();
+            const gId = Object.keys(groupsData)[0];
+            const group = groupsData[gId];
 
-        await loadAll();
-        document.querySelectorAll('.auth-overlay').forEach(s => s.classList.add('hidden'));
-        document.getElementById('main-app').style.display = 'flex';
-        document.getElementById('nav-user').textContent = userName ? `👤 ${userName}` : '';
-        renderUI();
-    } catch(e) {
+            // Setup Dashboard
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('main-app').style.display = 'flex';
+            document.getElementById('active-title').innerText = group.name;
+            document.getElementById('group-code-display').innerText = "TRIP CODE: " + group.loginCode;
+
+            // Load Expenses for this group
+            loadExpenses(gId);
+        } else {
+            errEl.innerText = "Invalid Trip Code";
+            errEl.style.display = "block";
+        }
+    } catch (e) {
         console.error(e);
-        toast('Error: ' + e.message);
+        errEl.innerText = "Permission Denied. Click 'Inspect' -> 'Console' for the Index Link.";
+        errEl.style.display = "block";
     }
-}
-
-async function loadAll() {
-    const [expSnap, memSnap, setSnap] = await Promise.all([
-        get(query(ref(db, 'smartsplit/expenses'), orderByChild('groupId'), equalTo(state.activeGid))),
-        get(query(ref(db, 'smartsplit/members'), orderByChild('groupId'), equalTo(state.activeGid))),
-        get(ref(db, `smartsplit/settlements/${state.activeGid}`))
-    ]);
-    state.expenses = expSnap.exists() ? expSnap.val() : {};
-    state.members = memSnap.exists() ? memSnap.val() : {};
-    state.settlements = setSnap.exists() ? setSnap.val() : {};
-}
-
-// ─── MEMBERS ─────────────────────────────────────────────
-window.addMember = async () => {
-    const name = document.getElementById('new-member-name').value.trim();
-    if (!name) return toast('Enter a name');
-    const exists = Object.values(state.members).some(m => m.name.toLowerCase() === name.toLowerCase());
-    if (exists) return toast('Member already exists');
-    await set(push(ref(db, 'smartsplit/members')), { name, groupId: state.activeGid });
-    await loadAll();
-    renderMemberModal();
-    renderUI();
-    document.getElementById('new-member-name').value = '';
-    toast(`${name} added! 👋`);
 };
 
-window.removeMember = async (id) => {
-    if (!confirm('Remove this member?')) return;
-    await remove(ref(db, `smartsplit/members/${id}`));
-    await loadAll();
-    renderMemberModal();
-    renderUI();
-    toast('Member removed');
-};
-
-function renderMemberModal() {
-    const members = Object.entries(state.members);
-    document.getElementById('member-list').innerHTML = members.length ? members.map(([id, m]) => `
-        <div class="member-item">
-            <div class="avatar" style="background:${colorFor(m.name)}">${m.name[0].toUpperCase()}</div>
-            <div style="flex:1">
-                <div style="font-weight:700">${m.name}</div>
-                <div style="font-size:12px; color:var(--muted)">${memberExpenseCount(id)} expenses</div>
-            </div>
-            <button class="btn btn-ghost btn-sm" onclick="removeMember('${id}')" style="color:var(--red)">✕</button>
-        </div>
-    `).join('') : '<div class="empty" style="padding:20px"><p>No members yet</p></div>';
-}
-
-function memberExpenseCount(memberId) {
-    const mName = state.members[memberId]?.name;
-    return Object.values(state.expenses).filter(e => e.paidBy === mName).length;
-}
-
-// ─── EXPENSE FORM ─────────────────────────────────────────
-function resetExpenseForm() {
-    document.getElementById('edit-exp-id').value = '';
-    document.getElementById('exp-name').value = '';
-    document.getElementById('exp-amt').value = '';
-    document.getElementById('exp-cat').value = '🍔 Food';
-    document.getElementById('exp-date').value = today();
-    document.getElementById('exp-notes').value = '';
-    document.getElementById('expense-modal').querySelector('h3').textContent = '💸 Add New Expense';
-    document.getElementById('save-expense').textContent = 'Save Expense';
-    updatePaidByDropdown();
-    state.splitType = 'equal';
-    state.selectedMembers = Object.values(state.members).map(m => m.name);
-    renderMemberCheckboxes();
-    setSplitType('equal');
-}
-
-function updatePaidByDropdown() {
-    const sel = document.getElementById('exp-paidby');
-    sel.innerHTML = Object.values(state.members).map(m => `<option>${m.name}</option>`).join('');
-    if (state.currentUser) sel.value = state.currentUser;
-}
-
-function renderMemberCheckboxes() {
-    const members = Object.values(state.members);
-    state.selectedMembers = state.selectedMembers.length ? state.selectedMembers : members.map(m => m.name);
-    document.getElementById('members-checkboxes').innerHTML = members.map(m => `
-        <div class="member-check ${state.selectedMembers.includes(m.name) ? 'selected' : ''}"
-             onclick="toggleMember('${m.name}', this)">
-            <div style="width:24px;height:24px;border-radius:50%;background:${colorFor(m.name)};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800">${m.name[0].toUpperCase()}</div>
-            ${m.name}
-        </div>
-    `).join('');
-}
-
-window.toggleMember = (name, el) => {
-    if (state.selectedMembers.includes(name)) {
-        if (state.selectedMembers.length <= 1) return toast("At least 1 member required");
-        state.selectedMembers = state.selectedMembers.filter(n => n !== name);
-        el.classList.remove('selected');
-    } else {
-        state.selectedMembers.push(name);
-        el.classList.add('selected');
-    }
-    if (state.splitType === 'custom') renderCustomSplitInputs();
-};
-
-window.setSplitType = (type) => {
-    state.splitType = type;
-    document.getElementById('split-equal').classList.toggle('active', type === 'equal');
-    document.getElementById('split-custom').classList.toggle('active', type === 'custom');
-    const ca = document.getElementById('custom-split-area');
-    if (type === 'custom') { ca.classList.remove('hidden'); renderCustomSplitInputs(); }
-    else ca.classList.add('hidden');
-};
-
-function renderCustomSplitInputs() {
-    const amt = parseFloat(document.getElementById('exp-amt').value) || 0;
-    const perPerson = state.selectedMembers.length ? Math.round(amt / state.selectedMembers.length) : 0;
-    document.getElementById('custom-split-area').innerHTML = state.selectedMembers.map(name => `
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-            <div style="flex:1;font-size:14px;font-weight:700">${name}</div>
-            <input type="number" id="cs-${name.replace(/\s/g,'_')}" class="form-input" value="${perPerson}" style="margin:0;width:120px;padding:8px 12px;font-size:14px">
-        </div>
-    `).join('') + `<div style="font-size:12px;color:var(--muted);margin-top:5px">Values must add up to total amount</div>`;
-}
-
-document.getElementById('exp-amt').addEventListener('input', () => {
-    if (state.splitType === 'custom') renderCustomSplitInputs();
-});
-
-// ─── SAVE EXPENSE ─────────────────────────────────────────
-document.getElementById('save-expense').onclick = async () => {
-    const editId = document.getElementById('edit-exp-id').value;
-    const name = document.getElementById('exp-name').value.trim();
-    const amt = parseFloat(document.getElementById('exp-amt').value);
-    const cat = document.getElementById('exp-cat').value;
-    const paidBy = document.getElementById('exp-paidby').value;
-    const dateVal = document.getElementById('exp-date').value || today();
-    const notes = document.getElementById('exp-notes').value.trim();
-
-    if (!name) return toast('Add a description');
-    if (!amt || amt <= 0) return toast('Enter a valid amount');
-    if (!paidBy) return toast('Select who paid');
-    if (!state.selectedMembers.length) return toast('Select members to split between');
-
-    // Build split data
-    let splits = {};
-    if (state.splitType === 'equal') {
-        const share = amt / state.selectedMembers.length;
-        state.selectedMembers.forEach(m => splits[m.replace(/\s/g,'_')] = { name: m, share: Math.round(share * 100) / 100 });
-    } else {
-        let total = 0;
-        state.selectedMembers.forEach(m => {
-            const v = parseFloat(document.getElementById(`cs-${m.replace(/\s/g,'_')}`)?.value) || 0;
-            splits[m.replace(/\s/g,'_')] = { name: m, share: v };
-            total += v;
-        });
-        if (Math.abs(total - amt) > 1) return toast(`Custom split total ₹${Math.round(total)} ≠ ₹${amt}`);
-    }
-
-    const data = { name, amount: amt, category: cat, paidBy, date: dateVal, notes, splits, groupId: state.activeGid, splitType: state.splitType, splitBetween: state.selectedMembers };
-
-    if (editId) {
-        await update(ref(db, `smartsplit/expenses/${editId}`), data);
-        toast('Expense updated ✓');
-    } else {
-        await set(push(ref(db, 'smartsplit/expenses')), data);
-        toast('Expense added ✓');
-    }
-
-    closeModal('expense-modal');
-    await loadAll();
-    renderUI();
-};
-
-// ─── EDIT / DELETE ────────────────────────────────────────
-window.editExpense = async (id) => {
-    const e = state.expenses[id];
-    if (!e) return;
-    resetExpenseForm();
-    document.getElementById('edit-exp-id').value = id;
-    document.getElementById('exp-name').value = e.name;
-    document.getElementById('exp-amt').value = e.amount;
-    document.getElementById('exp-cat').value = e.category;
-    document.getElementById('exp-date').value = e.date || today();
-    document.getElementById('exp-notes').value = e.notes || '';
-    updatePaidByDropdown();
-    document.getElementById('exp-paidby').value = e.paidBy;
-    state.selectedMembers = e.splitBetween || Object.values(state.members).map(m => m.name);
-    renderMemberCheckboxes();
-    setSplitType(e.splitType || 'equal');
-    document.getElementById('expense-modal').querySelector('h3').textContent = '✏️ Edit Expense';
-    document.getElementById('save-expense').textContent = 'Update Expense';
-    openModal('expense-modal');
-    document.getElementById('expense-modal').classList.add('active');
-};
-
-window.deleteExpense = async (id) => {
-    if (!confirm('Delete this expense?')) return;
-    await remove(ref(db, `smartsplit/expenses/${id}`));
-    await loadAll();
-    renderUI();
-    toast('Expense deleted');
-};
-
-// ─── SETTLEMENTS ─────────────────────────────────────────
-window.markSettled = async (key) => {
-    const path = `smartsplit/settlements/${state.activeGid}/${key}`;
-    const current = state.settlements[key];
-    await set(ref(db, path), { settled: !current?.settled });
-    await loadAll();
-    renderSettleTab();
-};
-
-// ─── RENDER UI ────────────────────────────────────────────
-window.renderUI = () => {
-    const g = state.groups[state.activeGid];
-    document.getElementById('active-title').textContent = g.name;
-    document.getElementById('group-code-display').textContent = `TRIP CODE: ${g.loginCode}  •  Share this with your travel crew`;
-
-    const expenses = Object.values(state.expenses);
-    const total = expenses.reduce((s, e) => s + (e.amount || 0), 0);
-    const memberCount = Object.values(state.members).length || 1;
-
-    document.getElementById('stat-total').textContent = fmt(total);
-    document.getElementById('stat-per-person').textContent = fmt(total / memberCount);
-
-    const budget = g.budget || 0;
-    if (budget > 0) {
-        const pct = Math.min(100, Math.round((total / budget) * 100));
-        document.getElementById('stat-budget').textContent = `${pct}% of ${fmt(budget)}`;
-        const fill = document.getElementById('budget-fill');
-        fill.style.width = pct + '%';
-        fill.style.background = pct > 85 ? 'var(--red)' : pct > 60 ? 'var(--yellow)' : 'var(--accent)';
-    } else {
-        document.getElementById('stat-budget').textContent = 'No budget set';
-    }
-
-    renderExpenseList(expenses, total);
-    renderCategoryBreakdown(expenses, total);
-    renderBreakdownTab(expenses);
-    renderSettleTab();
-};
-
-function renderExpenseList(expenses, total) {
-    const filter = document.getElementById('filter-cat').value;
-    const filtered = filter ? expenses.filter(e => e.category === filter) : expenses;
-    const sorted = [...filtered].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-
+async function loadExpenses(gId) {
+    const expRef = ref(db, 'smartsplit/expenses');
+    const q = query(expRef, orderByChild('groupId'), equalTo(gId));
+    const snap = await get(q);
+    
     const list = document.getElementById('exp-list');
-    if (!sorted.length) {
-        list.innerHTML = '<div class="empty"><div class="icon">💸</div><p>No expenses yet</p></div>';
-        return;
-    }
-
-    // Find IDs for edit/delete
-    const expById = state.expenses;
-    list.innerHTML = sorted.map(e => {
-        const id = Object.keys(expById).find(k => expById[k] === e) || '';
-        const splitInfo = e.splitBetween ? `Split: ${e.splitBetween.join(', ')}` : '';
-        return `
-        <div class="expense-item">
-            <div class="cat-icon">${e.category?.split(' ')[0] || '📦'}</div>
-            <div style="flex:1; min-width:0;">
-                <div style="font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${e.name}</div>
-                <div style="font-size:11px; color:var(--muted); margin-top:2px;">
-                    ${e.category?.split(' ')[1] || 'Other'} • ${e.date || ''} • Paid by <strong>${e.paidBy || '?'}</strong>
+    if (snap.exists()) {
+        const expenses = Object.values(snap.val());
+        const total = expenses.reduce((s, e) => s + e.amount, 0);
+        document.getElementById('stat-total').innerText = "₹" + total.toLocaleString();
+        
+        list.innerHTML = expenses.map(e => `
+            <div class="expense-item">
+                <div style="flex:1">
+                    <div style="font-weight:700">${e.name}</div>
+                    <div style="font-size:11px; color:var(--muted)">${e.category}</div>
                 </div>
-                ${e.notes ? `<div style="font-size:11px; color:var(--muted); font-style:italic">${e.notes}</div>` : ''}
-                ${splitInfo ? `<div style="font-size:11px; color:var(--muted)">${splitInfo}</div>` : ''}
+                <div style="font-weight:800; color:var(--accent2)">₹${e.amount}</div>
             </div>
-            <div style="text-align:right; flex-shrink:0;">
-                <div style="font-family:'Syne'; font-weight:800; color:var(--accent2);">${fmt(e.amount)}</div>
-                <div class="exp-actions" style="margin-top:6px;">
-                    <button class="btn btn-ghost btn-sm" onclick="editExpense('${id}')">✏️</button>
-                    <button class="btn btn-ghost btn-sm" onclick="deleteExpense('${id}')" style="color:var(--red)">🗑️</button>
-                </div>
-            </div>
-        </div>`;
-    }).join('');
-}
-
-function renderCategoryBreakdown(expenses, total) {
-    const cats = {};
-    expenses.forEach(e => cats[e.category] = (cats[e.category] || 0) + (e.amount || 0));
-    const sorted = Object.entries(cats).sort((a, b) => b[1] - a[1]);
-    document.getElementById('cat-list').innerHTML = sorted.length ? sorted.map(([c, v]) => `
-        <div style="margin-bottom:14px;">
-            <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;">
-                <span>${c}</span><span style="font-weight:700">${fmt(v)}</span>
-            </div>
-            <div class="progress-bar">
-                <div style="width:${total ? Math.min(100,(v/total)*100) : 0}%; height:100%; background:var(--accent); border-radius:4px;"></div>
-            </div>
-        </div>
-    `).join('') : '<div class="empty"><p>No data yet</p></div>';
-}
-
-function renderBreakdownTab(expenses) {
-    const members = Object.values(state.members);
-    // How much each person paid
-    const paid = {};
-    members.forEach(m => paid[m.name] = 0);
-    expenses.forEach(e => { if (e.paidBy) paid[e.paidBy] = (paid[e.paidBy] || 0) + (e.amount || 0); });
-
-    // How much each person owes (based on splits)
-    const owes = {};
-    members.forEach(m => owes[m.name] = 0);
-    expenses.forEach(e => {
-        if (e.splits) {
-            Object.values(e.splits).forEach(s => {
-                owes[s.name] = (owes[s.name] || 0) + (s.share || 0);
-            });
-        } else if (e.splitBetween?.length) {
-            const share = (e.amount || 0) / e.splitBetween.length;
-            e.splitBetween.forEach(n => owes[n] = (owes[n] || 0) + share);
-        }
-    });
-
-    document.getElementById('paid-list').innerHTML = Object.entries(paid).map(([name, amt]) => `
-        <div class="member-item">
-            <div class="avatar" style="background:${colorFor(name)}">${name[0].toUpperCase()}</div>
-            <div style="flex:1"><div style="font-weight:700">${name}</div></div>
-            <div style="font-family:'Syne'; font-weight:800; color:var(--green)">${fmt(amt)}</div>
-        </div>
-    `).join('') || '<div class="empty"><p>No data</p></div>';
-
-    document.getElementById('owes-list').innerHTML = Object.entries(owes).map(([name, amt]) => {
-        const net = (paid[name] || 0) - amt;
-        return `
-        <div class="member-item">
-            <div class="avatar" style="background:${colorFor(name)}">${name[0].toUpperCase()}</div>
-            <div style="flex:1">
-                <div style="font-weight:700">${name}</div>
-                <div style="font-size:12px; color:var(--muted)">share: ${fmt(amt)}</div>
-            </div>
-            <div>
-                <span class="badge ${net >= 0 ? 'badge-green' : 'badge-red'}">${net >= 0 ? `gets back ${fmt(net)}` : `owes ${fmt(-net)}`}</span>
-            </div>
-        </div>`;
-    }).join('') || '<div class="empty"><p>No data</p></div>';
-}
-
-function renderSettleTab() {
-    const members = Object.values(state.members);
-    const expenses = Object.values(state.expenses);
-
-    // Net balance per person
-    const balance = {};
-    members.forEach(m => balance[m.name] = 0);
-
-    expenses.forEach(e => {
-        if (!e.paidBy) return;
-        balance[e.paidBy] = (balance[e.paidBy] || 0) + (e.amount || 0);
-        if (e.splits) {
-            Object.values(e.splits).forEach(s => balance[s.name] = (balance[s.name] || 0) - (s.share || 0));
-        } else if (e.splitBetween?.length) {
-            const share = (e.amount || 0) / e.splitBetween.length;
-            e.splitBetween.forEach(n => balance[n] = (balance[n] || 0) - share);
-        }
-    });
-
-    // Greedy settle algorithm
-    const creditors = [], debtors = [];
-    Object.entries(balance).forEach(([name, net]) => {
-        if (net > 0.5) creditors.push({ name, amt: net });
-        else if (net < -0.5) debtors.push({ name, amt: -net });
-    });
-    creditors.sort((a, b) => b.amt - a.amt);
-    debtors.sort((a, b) => b.amt - a.amt);
-
-    const transactions = [];
-    let ci = 0, di = 0;
-    while (ci < creditors.length && di < debtors.length) {
-        const c = creditors[ci], d = debtors[di];
-        const pay = Math.min(c.amt, d.amt);
-        transactions.push({ from: d.name, to: c.name, amount: pay });
-        c.amt -= pay; d.amt -= pay;
-        if (c.amt < 0.5) ci++;
-        if (d.amt < 0.5) di++;
+        `).join('');
+    } else {
+        list.innerHTML = "<p style='color:var(--muted)'>No expenses yet.</p>";
     }
-
-    const container = document.getElementById('settle-list');
-    if (!transactions.length) {
-        container.innerHTML = '<div class="empty"><div class="icon">🎉</div><p>All settled up! No payments needed.</p></div>';
-        return;
-    }
-
-    container.innerHTML = transactions.map((t, i) => {
-        const key = `${t.from}_${t.to}`.replace(/\s/g,'_');
-        const done = state.settlements[key]?.settled;
-        return `
-        <div class="settle-item ${done ? 'done' : ''}">
-            <div style="display:flex; align-items:center; gap:12px;">
-                <div class="avatar" style="background:${colorFor(t.from)}; width:36px;height:36px;font-size:14px">${t.from[0].toUpperCase()}</div>
-                <div>
-                    <div style="font-weight:700; font-size:14px">${t.from} → ${t.to}</div>
-                    <div style="font-size:12px; color:var(--muted)">${t.from} pays ${t.to}</div>
-                </div>
-            </div>
-            <div style="display:flex; align-items:center; gap:12px;">
-                <div style="font-family:'Syne'; font-weight:800; color:var(--accent2)">${fmt(t.amount)}</div>
-                <button class="btn btn-sm ${done ? 'btn-ghost' : 'btn-green'}" onclick="markSettled('${key}')">
-                    ${done ? '↩ Undo' : '✓ Done'}
-                </button>
-            </div>
-        </div>`;
-    }).join('');
 }
 </script>
 </body>
