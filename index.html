@@ -4,566 +4,572 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SmartSplit — Travel Expense Tracker</title>
-<link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=Cabinet+Grotesk:wght@400;500;700;800&family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root {
-  --ink:#0d0d12; --ink2:#16161f; --ink3:#1e1e2a; --ink4:#27273a;
-  --glass:rgba(255,255,255,0.04); --rim:rgba(255,255,255,0.08); --rim2:rgba(255,255,255,0.04);
-  --text:#eeeef5; --sub:#8888aa;
-  --lime:#c8f135; --violet:#8b74ff; --rose:#ff6b8a; --sky:#5eead4; --amber:#fbbf24;
-  --r:18px; --r-sm:11px;
+:root{
+  --ink:#0a0a10;--ink2:#111118;--ink3:#18181f;--ink4:#21212c;--ink5:#2a2a38;
+  --rim:rgba(255,255,255,.07);--rim2:rgba(255,255,255,.04);--rim3:rgba(255,255,255,.02);
+  --txt:#eeeef8;--sub:#6b6b90;--sub2:#9090b8;
+  --lime:#b8f724;--violet:#7c5fff;--rose:#ff5273;--sky:#2dd4d4;--amber:#f7a825;--blue:#4d9fff;--green:#22d07a;
+  --r:14px;--rsm:9px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;overflow:hidden;}
-body{
-  font-family:'Cabinet Grotesk',sans-serif;
-  background:var(--ink); color:var(--text);
-  background-image:linear-gradient(rgba(139,116,255,.05) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(139,116,255,.05) 1px,transparent 1px);
-  background-size:44px 44px;
-}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--ink);color:var(--txt);}
 .hidden{display:none!important;}
-body::before{
-  content:'';position:fixed;inset:0;
-  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-  pointer-events:none;z-index:0;opacity:.4;
-}
-.blob{position:fixed;width:700px;height:700px;border-radius:50%;
-  background:radial-gradient(circle,rgba(139,116,255,.1) 0%,transparent 70%);
-  pointer-events:none;top:-250px;right:-150px;z-index:0;
-  animation:drift 14s ease-in-out infinite alternate;}
-@keyframes drift{to{transform:translate(-80px,100px) scale(1.15);}}
 
-/* ─── AUTH ─── */
-.auth-wrap{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--ink);}
-.auth-card{
-  position:relative;width:100%;max-width:380px;
-  background:var(--ink2);border:1px solid var(--rim);border-radius:24px;padding:40px 36px;
-  box-shadow:0 32px 64px rgba(0,0,0,.6),0 0 0 1px var(--rim2);overflow:hidden;
-}
-.auth-card::before{content:'';position:absolute;inset:-1px;border-radius:25px;
-  background:linear-gradient(135deg,rgba(139,116,255,.18),transparent 50%);pointer-events:none;}
-.brand{font-family:'Bricolage Grotesque',sans-serif;font-size:32px;font-weight:800;letter-spacing:-1.5px;
-  background:linear-gradient(135deg,#fff 40%,var(--violet));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px;display:inline-block;}
-.brand em{font-style:normal;color:var(--lime);-webkit-text-fill-color:var(--lime);}
-.tag{font-size:13px;color:var(--sub);margin-bottom:28px;font-weight:500;}
-.field-label{font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;display:block;}
-.field{
-  width:100%;padding:13px 15px;background:var(--ink3);border:1px solid var(--rim);
-  border-radius:var(--r-sm);color:var(--text);font-size:14px;font-family:'Cabinet Grotesk',sans-serif;
-  outline:none;transition:border-color .2s,box-shadow .2s;margin-bottom:14px;
-}
-.field:focus{border-color:var(--violet);box-shadow:0 0 0 3px rgba(139,116,255,.15);}
-.field option{background:var(--ink3);}
-.code-field{letter-spacing:16px;font-size:28px;text-align:center;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;padding:16px;}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  padding:13px 22px;border-radius:var(--r-sm);border:none;cursor:pointer;
-  font-weight:700;font-family:'Cabinet Grotesk',sans-serif;font-size:14px;transition:all .2s;position:relative;overflow:hidden;}
-.btn::after{content:'';position:absolute;inset:0;background:rgba(255,255,255,0);transition:background .2s;}
-.btn:hover::after{background:rgba(255,255,255,.06);}
+/* AMBIENT GLOW */
+.glow-bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.glow-bg::before{content:'';position:absolute;width:700px;height:700px;border-radius:50%;
+  background:radial-gradient(circle,rgba(124,95,255,.07) 0%,transparent 70%);top:-200px;right:-150px;}
+.glow-bg::after{content:'';position:absolute;width:500px;height:500px;border-radius:50%;
+  background:radial-gradient(circle,rgba(43,212,212,.05) 0%,transparent 70%);bottom:-100px;left:-100px;}
+
+/* NOISE */
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.025'/%3E%3C/svg%3E");}
+
+/* ── AUTH SCREENS ── */
+.scr{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--ink);}
+.abox{position:relative;width:100%;max-width:380px;background:var(--ink2);border:1px solid var(--rim);border-radius:22px;padding:36px 32px;box-shadow:0 40px 80px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.06);overflow:hidden;}
+.abox::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(124,95,255,.6),transparent);}
+.logo{font-family:'Bricolage Grotesque',sans-serif;font-size:28px;font-weight:800;letter-spacing:-1.5px;display:inline-flex;align-items:center;gap:2px;}
+.logo-s{background:linear-gradient(120deg,#fff 30%,#a98fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.logo-dot{color:var(--lime);-webkit-text-fill-color:var(--lime);}
+.stag{font-size:13px;color:var(--sub2);margin-top:4px;margin-bottom:26px;font-weight:500;}
+
+/* FORM ELEMENTS */
+.fl{margin-bottom:12px;}
+.fl label{font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:1.4px;margin-bottom:5px;display:block;}
+.fi{width:100%;padding:12px 14px;background:var(--ink3);border:1px solid var(--rim);border-radius:var(--rsm);color:var(--txt);font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;outline:none;transition:border-color .18s,box-shadow .18s;}
+.fi:focus{border-color:rgba(124,95,255,.6);box-shadow:0 0 0 3px rgba(124,95,255,.12);}
+.fi option{background:var(--ink3);}
+.fi-code{letter-spacing:18px;font-size:28px;text-align:center;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;}
+select.fi{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6b90' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:12px 20px;border-radius:var(--rsm);border:none;cursor:pointer;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;transition:all .15s;white-space:nowrap;}
 .btn:active{transform:scale(.97);}
-.btn-lime{background:var(--lime);color:#0d0d12;box-shadow:0 4px 20px rgba(200,241,53,.25);}
-.btn-lime:hover{box-shadow:0 6px 30px rgba(200,241,53,.4);}
-.btn-ghost{background:var(--glass);border:1px solid var(--rim);color:var(--text);}
-.btn-violet{background:var(--violet);color:#fff;box-shadow:0 4px 20px rgba(139,116,255,.3);}
-.btn-rose{background:rgba(255,107,138,.15);color:var(--rose);border:1px solid rgba(255,107,138,.3);}
-.btn-rose:hover{background:rgba(255,107,138,.25);}
-.btn-sm{padding:7px 14px;font-size:12px;border-radius:9px;}
-.btn-xs{padding:5px 10px;font-size:11px;border-radius:7px;}
-.btn-icon{padding:8px;border-radius:9px;font-size:15px;}
+.bl{background:var(--lime);color:#0a0a10;box-shadow:0 4px 20px rgba(184,247,36,.2);}
+.bl:hover{box-shadow:0 6px 28px rgba(184,247,36,.38);filter:brightness(1.06);}
+.bg{background:rgba(255,255,255,.05);border:1px solid var(--rim);color:var(--txt);}
+.bg:hover{background:rgba(255,255,255,.09);}
+.bv{background:rgba(124,95,255,.15);border:1px solid rgba(124,95,255,.3);color:#b8a8ff;}
+.bv:hover{background:rgba(124,95,255,.22);}
+.bsm{padding:6px 12px;font-size:12px;border-radius:7px;}
+.bxs{padding:5px 9px;font-size:11px;border-radius:6px;}
 .w100{width:100%;}
-.mt10{margin-top:10px;}
-.err-text{color:var(--rose);font-size:13px;margin-top:8px;font-weight:600;}
+.err-msg{color:var(--rose);font-size:12px;margin-top:8px;font-weight:600;min-height:16px;}
 
-/* ─── LOADER ─── */
-.loader-wrap{position:fixed;inset:0;z-index:99999;background:rgba(13,13,18,.8);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;}
-.loader{width:34px;height:34px;border:3px solid var(--rim);border-top-color:var(--violet);border-radius:50%;animation:spin .6s linear infinite;}
+/* LOADER */
+.ldwrap{position:fixed;inset:0;z-index:99999;background:rgba(10,10,16,.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;}
+.ld{width:32px;height:32px;border:2.5px solid var(--rim);border-top-color:var(--violet);border-radius:50%;animation:spin .65s linear infinite;}
+.ld-txt{font-size:13px;color:var(--sub2);font-weight:600;}
 @keyframes spin{to{transform:rotate(360deg);}}
 
-/* ─── APP SHELL ─── */
+/* ── APP SHELL ── */
 .app{display:none;height:100vh;flex-direction:column;position:relative;z-index:1;}
 
-/* ─── TOPBAR ─── */
-.topbar{height:60px;flex-shrink:0;background:rgba(13,13,18,.92);backdrop-filter:blur(20px);
-  border-bottom:1px solid var(--rim);display:flex;align-items:center;justify-content:space-between;
-  padding:0 22px;position:sticky;top:0;z-index:100;}
-.topbar-brand{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:19px;letter-spacing:-.8px;
-  background:linear-gradient(135deg,#fff,var(--violet));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.topbar-right{display:flex;gap:8px;align-items:center;}
-.trip-chip{display:flex;align-items:center;gap:8px;background:var(--ink3);border:1px solid var(--rim);
-  border-radius:40px;padding:5px 14px 5px 8px;font-size:12px;font-weight:700;}
-.trip-dot{width:8px;height:8px;border-radius:50%;background:var(--lime);box-shadow:0 0 8px var(--lime);}
-.code-pill{background:rgba(139,116,255,.15);border:1px solid rgba(139,116,255,.3);border-radius:20px;
-  padding:2px 10px;font-size:11px;color:var(--violet);font-weight:700;letter-spacing:1px;cursor:pointer;
-  transition:all .2s;}
-.code-pill:hover{background:rgba(139,116,255,.25);}
+/* TOPBAR */
+.topbar{height:58px;flex-shrink:0;background:rgba(10,10,16,.94);backdrop-filter:blur(28px);border-bottom:1px solid var(--rim);display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:100;}
+.t-brand{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:18px;letter-spacing:-.8px;display:flex;align-items:center;gap:3px;}
+.t-bs{background:linear-gradient(120deg,#fff,#a98fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.t-bd{color:var(--lime);-webkit-text-fill-color:var(--lime);}
+.t-right{display:flex;gap:7px;align-items:center;}
+.trip-pill{display:flex;align-items:center;gap:7px;background:var(--ink3);border:1px solid var(--rim);border-radius:20px;padding:5px 12px 5px 8px;cursor:pointer;transition:all .2s;}
+.trip-pill:hover{border-color:rgba(124,95,255,.4);}
+.trip-dot{width:7px;height:7px;border-radius:50%;background:var(--lime);box-shadow:0 0 6px var(--lime);animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+.trip-pill-name{font-size:12px;font-weight:700;color:var(--txt);}
+.trip-pill-code{font-size:11px;color:var(--sub);margin-left:2px;}
 
-/* ─── MAIN ─── */
-.main{flex:1;overflow-y:auto;padding:22px;scrollbar-width:thin;scrollbar-color:var(--rim) transparent;}
-.main::-webkit-scrollbar{width:4px;}
-.main::-webkit-scrollbar-thumb{background:var(--rim);border-radius:2px;}
+/* MAIN */
+.main{flex:1;overflow-y:auto;padding:20px 22px;scrollbar-width:thin;scrollbar-color:var(--rim) transparent;}
+.page-head{margin-bottom:18px;}
+.pg-title{font-family:'Bricolage Grotesque',sans-serif;font-size:26px;font-weight:800;letter-spacing:-1.2px;line-height:1;}
+.pg-meta{font-size:12px;color:var(--sub2);font-weight:600;margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.codepill{background:rgba(124,95,255,.12);border:1px solid rgba(124,95,255,.25);border-radius:20px;padding:3px 10px;font-size:11px;color:#b8a8ff;font-weight:700;letter-spacing:.6px;cursor:pointer;transition:all .18s;}
+.codepill:hover{background:rgba(124,95,255,.22);}
+.codepill:active{transform:scale(.96);}
 
-/* ─── HERO ─── */
-.hero{margin-bottom:20px;}
-.trip-name{font-family:'Bricolage Grotesque',sans-serif;font-size:30px;font-weight:800;letter-spacing:-1.2px;margin-bottom:4px;}
-.trip-meta{font-size:12px;color:var(--sub);font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+/* STATS GRID */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+@media(max-width:860px){.stats{grid-template-columns:repeat(2,1fr);}}
+.sc{background:var(--ink2);border:1px solid var(--rim);border-radius:var(--r);padding:16px 18px;position:relative;overflow:hidden;transition:transform .18s,border-color .18s;}
+.sc:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.11);}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--sc-ac,var(--violet));}
+.sc-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--sub);margin-bottom:7px;display:flex;align-items:center;gap:6px;}
+.sc-lbl-ico{font-size:12px;opacity:.7;}
+.sc-val{font-family:'Bricolage Grotesque',sans-serif;font-size:24px;font-weight:800;letter-spacing:-.8px;line-height:1;}
+.sc-sub{font-size:11px;color:var(--sub2);margin-top:4px;font-weight:500;}
+.sc-bar{height:3px;background:var(--ink5);border-radius:2px;margin-top:10px;overflow:hidden;}
+.sc-fill{height:100%;border-radius:2px;transition:width .6s ease;}
 
-/* ─── STATS ─── */
-.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
-@media(max-width:900px){.stats-row{grid-template-columns:repeat(2,1fr);}}
-.stat{background:var(--ink2);border:1px solid var(--rim);border-radius:var(--r);padding:18px 20px;
-  position:relative;overflow:hidden;transition:transform .2s,border-color .2s;}
-.stat:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.12);}
-.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--stat-accent,var(--violet));}
-.stat-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--sub);margin-bottom:8px;}
-.stat-num{font-family:'Bricolage Grotesque',sans-serif;font-size:26px;font-weight:800;letter-spacing:-1px;color:var(--stat-color,var(--text));}
-.stat-sub{font-size:11px;color:var(--sub);margin-top:4px;font-weight:500;}
-.stat-prog{height:3px;background:var(--ink4);border-radius:2px;margin-top:10px;overflow:hidden;}
-.stat-prog-fill{height:100%;border-radius:2px;transition:width .6s;background:var(--stat-accent,var(--violet));}
+/* TABS */
+.tabrow{display:flex;gap:2px;background:var(--ink2);border:1px solid var(--rim);border-radius:11px;padding:3px;margin-bottom:16px;width:fit-content;overflow-x:auto;flex-wrap:nowrap;}
+.tb{padding:7px 16px;border-radius:8px;border:none;background:transparent;color:var(--sub);font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.tb.on{background:var(--ink3);color:var(--txt);box-shadow:0 2px 8px rgba(0,0,0,.4);}
 
-/* ─── TABS ─── */
-.tabs-row{display:flex;gap:2px;background:var(--ink2);border:1px solid var(--rim);border-radius:12px;padding:4px;margin-bottom:18px;width:fit-content;}
-.tab-btn{padding:8px 18px;border-radius:9px;border:none;background:transparent;color:var(--sub);
-  font-family:'Cabinet Grotesk',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap;}
-.tab-btn.on{background:var(--ink3);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.3);}
-.tab-badge{display:inline-flex;align-items:center;justify-content:center;
-  min-width:18px;height:18px;border-radius:9px;background:var(--violet);
-  color:#fff;font-size:10px;padding:0 5px;margin-left:5px;}
+/* PANELS */
+.two{display:grid;grid-template-columns:1fr 340px;gap:14px;}
+@media(max-width:960px){.two{grid-template-columns:1fr;}}
+.pnl{background:var(--ink2);border:1px solid var(--rim);border-radius:var(--r);overflow:hidden;margin-bottom:14px;}
+.ph{padding:13px 16px;border-bottom:1px solid var(--rim);display:flex;justify-content:space-between;align-items:center;}
+.pt{font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:700;letter-spacing:-.2px;}
+.pb{padding:14px 16px;}
 
-/* ─── LAYOUT ─── */
-.two-col{display:grid;grid-template-columns:1fr 360px;gap:16px;}
-@media(max-width:980px){.two-col{grid-template-columns:1fr;}}
+/* SEARCH / FILTER */
+.toolbar{display:flex;gap:8px;align-items:center;padding:10px 16px 0;}
+.si{flex:1;padding:8px 12px;background:var(--ink3);border:1px solid var(--rim);border-radius:var(--rsm);color:var(--txt);font-size:12px;font-family:'Plus Jakarta Sans',sans-serif;outline:none;transition:border-color .18s;}
+.si:focus{border-color:rgba(124,95,255,.5);}
+.si::placeholder{color:var(--sub);}
 
-/* ─── PANEL ─── */
-.panel{background:var(--ink2);border:1px solid var(--rim);border-radius:var(--r);overflow:hidden;margin-bottom:16px;}
-.panel-head{padding:14px 18px;border-bottom:1px solid var(--rim);display:flex;justify-content:space-between;align-items:center;}
-.panel-title{font-family:'Bricolage Grotesque',sans-serif;font-size:15px;font-weight:700;letter-spacing:-.3px;}
-.panel-body{padding:16px 18px;}
+/* EXPENSE ITEM */
+.ei{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--rim3);transition:all .12s;}
+.ei:last-child{border-bottom:none;}
+.eico{width:40px;height:40px;border-radius:11px;background:var(--ink3);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;border:1px solid var(--rim);}
+.en{font-weight:700;font-size:13px;line-height:1.3;}
+.em{font-size:11px;color:var(--sub2);margin-top:2px;font-weight:500;}
+.ea{font-family:'Bricolage Grotesque',sans-serif;font-size:15px;font-weight:800;color:var(--lime);}
+.eper{font-size:10px;color:var(--sub2);font-weight:600;}
+.ebtns{display:flex;gap:4px;margin-top:6px;}
+.enotes{font-size:10px;color:var(--sub);font-style:italic;margin-top:2px;}
 
-/* ─── EXPENSE ITEMS ─── */
-.exp-item{display:flex;align-items:flex-start;gap:12px;padding:13px 0;border-bottom:1px solid var(--rim2);transition:background .15s;}
-.exp-item:last-child{border-bottom:none;}
-.exp-icon{width:42px;height:42px;border-radius:12px;background:var(--ink3);display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;border:1px solid var(--rim);}
-.exp-name{font-weight:700;font-size:14px;line-height:1.2;}
-.exp-meta{font-size:11px;color:var(--sub);margin-top:3px;font-weight:500;line-height:1.6;}
-.exp-amount{font-family:'Bricolage Grotesque',sans-serif;font-size:16px;font-weight:800;color:var(--lime);white-space:nowrap;}
-.exp-per{font-size:11px;color:var(--sub);margin-top:2px;text-align:right;}
-.exp-actions{display:flex;gap:4px;margin-top:5px;justify-content:flex-end;}
-.exp-tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;
-  background:rgba(139,116,255,.12);color:var(--violet);margin-top:3px;letter-spacing:.3px;}
+/* CATEGORY BARS */
+.catrow{margin-bottom:10px;}
+.cattop{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;font-weight:600;}
+.catbar{height:4px;background:var(--ink5);border-radius:2px;overflow:hidden;}
+.catfill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--violet),var(--lime));}
 
-/* ─── RECEIPT STYLE SPLIT VIEW ─── */
-.split-breakdown{
-  background:var(--ink3);border:1px solid var(--rim);border-radius:10px;
-  padding:10px 12px;margin-top:8px;font-size:12px;
-}
-.split-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0;color:var(--sub);}
-.split-row strong{color:var(--text);font-weight:600;}
-.split-row span{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;color:var(--sky);}
+/* MEMBER ROW */
+.mr{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--rim3);}
+.mr:last-child{border-bottom:none;}
+.mav{display:flex;align-items:center;justify-content:center;border-radius:50%;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;flex-shrink:0;color:#000;}
+.mname{font-weight:700;font-size:13px;}
+.msub{font-size:11px;color:var(--sub2);}
+.pos{color:var(--green);font-family:'Bricolage Grotesque',sans-serif;font-weight:800;}
+.neg{color:var(--rose);font-family:'Bricolage Grotesque',sans-serif;font-weight:800;}
 
-/* ─── MEMBER ROWS ─── */
-.mem-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--rim2);}
-.mem-row:last-child{border-bottom:none;}
-.mem-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:800;flex-shrink:0;}
-.mem-name{font-weight:700;font-size:14px;}
-.mem-role{font-size:11px;color:var(--sub);}
-.pos{color:var(--lime);font-family:'Bricolage Grotesque',sans-serif;font-size:15px;font-weight:800;}
-.neg{color:var(--rose);font-family:'Bricolage Grotesque',sans-serif;font-size:15px;font-weight:800;}
-.zero{color:var(--sub);font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:700;}
+/* SETTLE CARDS */
+.stlc{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:11px;background:var(--ink3);border:1px solid var(--rim);margin-bottom:9px;transition:all .2s;}
+.stlc.done{opacity:.3;}
+.stlc:not(.done):hover{border-color:rgba(184,247,36,.2);}
+.stlarr{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.stlamt{font-family:'Bricolage Grotesque',sans-serif;font-size:17px;font-weight:800;color:var(--lime);}
+.aline{width:32px;height:2px;background:linear-gradient(90deg,var(--violet),var(--lime));border-radius:2px;position:relative;flex-shrink:0;}
+.aline::after{content:'▶';position:absolute;right:-7px;top:-7px;font-size:9px;color:var(--lime);}
 
-/* ─── CAT BARS ─── */
-.cat-row{margin-bottom:13px;}
-.cat-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;font-size:13px;}
-.cat-top span:last-child{font-weight:700;}
-.cat-bar{height:5px;background:var(--ink4);border-radius:3px;overflow:hidden;}
-.cat-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--violet),var(--lime));}
-
-/* ─── SETTLE CARDS ─── */
-.settle-card{display:flex;align-items:center;justify-content:space-between;
-  padding:15px 16px;border-radius:var(--r-sm);background:var(--ink3);border:1px solid var(--rim);margin-bottom:10px;}
-.settle-card.done{opacity:.35;}
-.settle-info{display:flex;align-items:center;gap:10px;}
-.settle-arrow-line{width:36px;height:2px;background:linear-gradient(90deg,var(--violet),var(--lime));border-radius:2px;position:relative;}
-.settle-arrow-line::after{content:'▶';position:absolute;right:-6px;top:-7px;font-size:9px;color:var(--lime);}
-.settle-amt{font-family:'Bricolage Grotesque',sans-serif;font-size:18px;font-weight:800;color:var(--lime);}
-
-/* ─── MODAL ─── */
-.modal{position:fixed;inset:0;z-index:20000;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);
-  display:none;align-items:center;justify-content:center;padding:16px;}
+/* MODAL */
+.modal{position:fixed;inset:0;z-index:20000;background:rgba(0,0,0,.8);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;padding:20px;}
 .modal.on{display:flex;}
-.modal-box{background:var(--ink2);border:1px solid var(--rim);border-radius:22px;
-  padding:26px;width:100%;max-width:460px;max-height:94vh;overflow-y:auto;
-  box-shadow:0 32px 64px rgba(0,0,0,.6);animation:slideUp .22s ease;}
-@keyframes slideUp{from{transform:translateY(16px);opacity:0;}to{transform:translateY(0);opacity:1;}}
-.modal-title{font-family:'Bricolage Grotesque',sans-serif;font-size:19px;font-weight:800;letter-spacing:-.4px;margin-bottom:18px;}
-.modal-box::-webkit-scrollbar{width:4px;}
-.modal-box::-webkit-scrollbar-thumb{background:var(--rim);border-radius:2px;}
+.mbox{background:var(--ink2);border:1px solid var(--rim);border-radius:20px;padding:26px;width:100%;max-width:440px;max-height:92vh;overflow-y:auto;box-shadow:0 40px 80px rgba(0,0,0,.7);animation:sUp .2s ease;position:relative;}
+.mbox::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;border-radius:20px 20px 0 0;background:linear-gradient(90deg,transparent,rgba(124,95,255,.5),transparent);}
+@keyframes sUp{from{transform:translateY(14px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.mtitle{font-family:'Bricolage Grotesque',sans-serif;font-size:18px;font-weight:800;letter-spacing:-.4px;margin-bottom:16px;}
+.dvd{height:1px;background:var(--rim);margin:13px 0;}
 
-/* ─── FORM ROWS ─── */
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.form-row{display:flex;gap:10px;align-items:flex-start;}
-.form-group{margin-bottom:0;}
-.divider{height:1px;background:var(--rim);margin:14px 0;}
+/* MEMBER CHECKLIST (no chips) */
+.mck-list{border:1px solid var(--rim);border-radius:var(--rsm);overflow:hidden;margin-bottom:10px;max-height:180px;overflow-y:auto;}
+.mck{display:flex;align-items:center;gap:10px;padding:9px 13px;cursor:pointer;transition:background .12s;border-bottom:1px solid var(--rim3);}
+.mck:last-child{border-bottom:none;}
+.mck:hover{background:var(--ink3);}
+.mck.on{background:rgba(124,95,255,.08);}
+.mck-cb{width:16px;height:16px;border-radius:4px;border:2px solid var(--rim);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .13s;}
+.mck.on .mck-cb{background:var(--violet);border-color:var(--violet);}
+.mck.on .mck-cb::after{content:'✓';font-size:9px;color:#fff;font-weight:900;}
+.mck-av{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#000;flex-shrink:0;}
 
-/* ─── SPLIT TYPE TOGGLE (text only, no chips) ─── */
-.split-toggle{display:flex;gap:6px;margin-bottom:12px;}
-.split-opt{flex:1;padding:9px;border-radius:9px;border:1px solid var(--rim);background:var(--ink3);
-  color:var(--sub);font-weight:700;font-size:12px;cursor:pointer;transition:all .2s;font-family:'Cabinet Grotesk',sans-serif;text-align:center;}
-.split-opt.on{border-color:var(--violet);background:rgba(139,116,255,.12);color:#c4b8ff;}
+/* SPLIT TYPE */
+.sptog{display:flex;gap:6px;margin-bottom:10px;}
+.spopt{flex:1;padding:8px;border-radius:8px;border:1px solid var(--rim);background:var(--ink3);color:var(--sub);font-weight:700;font-size:12px;cursor:pointer;transition:all .15s;font-family:'Plus Jakarta Sans',sans-serif;}
+.spopt.on{border-color:rgba(124,95,255,.5);background:rgba(124,95,255,.1);color:#c0b0ff;}
 
-/* ─── MEMBER SELECTOR (dropdown style, NO chips) ─── */
-.mem-select-list{background:var(--ink3);border:1px solid var(--rim);border-radius:10px;overflow:hidden;margin-bottom:12px;}
-.mem-select-row{display:flex;align-items:center;gap:10px;padding:10px 12px;
-  border-bottom:1px solid var(--rim2);cursor:pointer;transition:background .15s;}
-.mem-select-row:last-child{border-bottom:none;}
-.mem-select-row:hover{background:rgba(255,255,255,.04);}
-.mem-select-row input[type=checkbox]{
-  width:16px;height:16px;accent-color:var(--violet);cursor:pointer;flex-shrink:0;}
-.mem-select-name{font-size:13px;font-weight:600;flex:1;}
-.mem-select-share{font-family:'Bricolage Grotesque',sans-serif;font-size:13px;font-weight:700;color:var(--violet);}
+/* ANALYTICS */
+.chart-wrap{height:130px;display:flex;align-items:flex-end;gap:3px;padding:0 2px;}
+.bcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.bfill{width:100%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,var(--violet),rgba(124,95,255,.3));transition:height .5s ease;min-height:2px;position:relative;cursor:pointer;}
+.bfill:hover .btip{display:block;}
+.btip{display:none;position:absolute;top:-30px;left:50%;transform:translateX(-50%);background:var(--ink4);border:1px solid var(--rim);border-radius:6px;padding:3px 7px;font-size:10px;font-weight:700;white-space:nowrap;z-index:5;pointer-events:none;color:var(--txt);}
+.blbl{font-size:8px;color:var(--sub);font-weight:600;text-align:center;margin-top:2px;}
 
-/* ─── CUSTOM SPLIT ─── */
-.custom-split-list{background:var(--ink3);border:1px solid var(--rim);border-radius:10px;overflow:hidden;margin-bottom:8px;}
-.custom-split-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--rim2);}
-.custom-split-row:last-child{border-bottom:none;}
-.custom-split-name{font-size:13px;font-weight:600;flex:1;}
-.custom-split-input{width:90px;padding:6px 10px;background:var(--ink4);border:1px solid var(--rim);
-  border-radius:7px;color:var(--text);font-size:13px;font-family:'Cabinet Grotesk',sans-serif;outline:none;text-align:right;}
-.custom-split-input:focus{border-color:var(--violet);}
+/* BUDGET RING */
+.ring-wrap{display:flex;align-items:center;gap:18px;padding:8px 0;}
+.ring-pct{font-family:'Bricolage Grotesque',sans-serif;font-size:30px;font-weight:800;letter-spacing:-1px;}
+.ring-lbl{font-size:11px;color:var(--sub2);margin-top:2px;}
 
-/* ─── ANALYTICS ─── */
-.analytics-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
-@media(max-width:700px){.analytics-grid{grid-template-columns:1fr;}}
-.mini-stat{background:var(--ink3);border:1px solid var(--rim);border-radius:12px;padding:14px;}
-.mini-stat-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--sub);margin-bottom:6px;}
-.mini-stat-val{font-family:'Bricolage Grotesque',sans-serif;font-size:22px;font-weight:800;letter-spacing:-.5px;}
-.bar-chart{display:flex;align-items:flex-end;gap:8px;height:80px;margin-top:10px;}
-.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;}
-.bar-fill{width:100%;border-radius:4px 4px 0 0;background:linear-gradient(180deg,var(--violet),rgba(139,116,255,.4));min-height:4px;transition:height .5s;}
-.bar-lbl{font-size:9px;color:var(--sub);font-weight:700;text-align:center;}
+/* TIMELINE */
+.tl-item{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--rim3);}
+.tl-item:last-child{border-bottom:none;}
+.tl-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.tl-line{position:relative;}
 
-/* ─── HISTORY LOG ─── */
-.history-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--rim2);font-size:13px;}
-.history-item:last-child{border-bottom:none;}
-.history-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-
-/* ─── TOAST ─── */
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
-  background:var(--ink2);border:1px solid var(--rim);border-radius:40px;
-  padding:11px 22px;font-weight:700;font-size:13px;z-index:99999;
-  transition:transform .3s cubic-bezier(.34,1.56,.64,1);pointer-events:none;
-  box-shadow:0 8px 32px rgba(0,0,0,.5);white-space:nowrap;}
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink2);border:1px solid var(--rim);border-radius:40px;padding:10px 20px;font-weight:700;font-size:13px;z-index:99999;transition:transform .3s cubic-bezier(.34,1.56,.64,1);pointer-events:none;box-shadow:0 8px 32px rgba(0,0,0,.5);white-space:nowrap;}
 .toast.show{transform:translateX(-50%) translateY(0);}
-.empty{text-align:center;padding:36px 20px;color:var(--sub);}
-.empty-icon{font-size:36px;margin-bottom:10px;opacity:.5;}
-.empty p{font-size:13px;font-weight:600;}
-select.field{appearance:none;cursor:pointer;}
+
+/* BADGE */
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+.badge-g{background:rgba(34,208,122,.12);color:var(--green);}
+.badge-r{background:rgba(255,82,115,.12);color:var(--rose);}
+.badge-v{background:rgba(124,95,255,.12);color:#c0b0ff;}
+.badge-a{background:rgba(247,168,37,.12);color:var(--amber);}
+
+/* EMPTY */
+.empty{text-align:center;padding:32px;color:var(--sub2);}
+.empty-ico{font-size:34px;margin-bottom:10px;opacity:.4;}
+
+/* GRID HELPERS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.info-box{background:var(--ink3);border:1px solid var(--rim);border-radius:10px;padding:12px;text-align:center;}
+.info-box-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--sub);margin-bottom:4px;}
+.info-box-val{font-family:'Bricolage Grotesque',sans-serif;font-size:17px;font-weight:800;letter-spacing:-.5px;}
+.row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--rim3);font-size:12px;}
+.row:last-child{border-bottom:none;}
+.row-lbl{color:var(--sub2);font-weight:500;}
+.row-val{font-weight:700;}
 </style>
 </head>
 <body>
-<div class="blob"></div>
+<div class="glow-bg"></div>
 
-<!-- ════ START ════ -->
-<div id="scr-start" class="auth-wrap">
-  <div class="auth-card">
-    <div class="brand">Smart<em>Split</em></div>
-    <p class="tag">Split travel expenses — zero drama.</p>
-    <button class="btn btn-lime w100" onclick="go('scr-login')">🔑 Enter Trip Code</button>
-    <button class="btn btn-ghost w100 mt10" onclick="go('scr-reg')">✈️ Create New Trip</button>
+<!-- ══════ START ══════ -->
+<div id="s-start" class="scr">
+  <div class="abox">
+    <div class="logo"><span class="logo-s">Smart</span><span class="logo-dot">Split</span></div>
+    <p class="stag">Split travel expenses — zero drama.</p>
+    <button class="btn bl w100" onclick="go('s-login')">🔑 Enter Trip Code</button>
+    <button class="btn bg w100" style="margin-top:8px" onclick="go('s-reg')">✈️ Create New Trip</button>
   </div>
 </div>
 
-<!-- ════ LOGIN ════ -->
-<div id="scr-login" class="auth-wrap hidden">
-  <div class="auth-card">
-    <div class="brand" style="font-size:22px;margin-bottom:4px">Welcome Back</div>
-    <p class="tag">Enter your 4-digit trip code</p>
-    <input type="tel" id="l-code" class="field code-field" maxlength="4" placeholder="····" autocomplete="off"
-      onkeydown="if(event.key==='Enter')doLogin()">
-    <button class="btn btn-lime w100" onclick="doLogin()">Unlock Trip →</button>
-    <button class="btn btn-ghost w100 mt10" onclick="go('scr-start')">← Back</button>
-    <p id="login-err" class="err-text"></p>
+<!-- ══════ LOGIN ══════ -->
+<div id="s-login" class="scr hidden">
+  <div class="abox">
+    <div class="logo" style="font-size:22px;margin-bottom:4px"><span class="logo-s">Welcome</span> <span class="logo-s">Back</span></div>
+    <p class="stag">Enter your 4-digit trip code</p>
+    <div class="fl"><input type="tel" id="l-code" class="fi fi-code" maxlength="4" placeholder="····" autocomplete="off"></div>
+    <button class="btn bl w100" id="btn-login">Unlock Trip →</button>
+    <button class="btn bg w100" style="margin-top:8px" onclick="go('s-start')">← Back</button>
+    <p id="l-err" class="err-msg"></p>
   </div>
 </div>
 
-<!-- ════ REGISTER ════ -->
-<div id="scr-reg" class="auth-wrap hidden">
-  <div class="auth-card">
-    <div class="brand" style="font-size:22px;margin-bottom:4px">Create Trip</div>
-    <p class="tag">Choose a 4-digit code for your crew</p>
-    <input type="tel" id="r-code" class="field code-field" maxlength="4" placeholder="e.g. 1234" autocomplete="off">
-    <button class="btn btn-lime w100" onclick="doRegister()">Continue →</button>
-    <button class="btn btn-ghost w100 mt10" onclick="go('scr-start')">← Back</button>
-    <p id="reg-err" class="err-text"></p>
+<!-- ══════ REGISTER ══════ -->
+<div id="s-reg" class="scr hidden">
+  <div class="abox">
+    <div class="logo" style="font-size:22px;margin-bottom:4px"><span class="logo-s">New Trip</span></div>
+    <p class="stag">Pick a 4-digit code for your crew</p>
+    <div class="fl"><input type="tel" id="r-code" class="fi fi-code" maxlength="4" placeholder="1234" autocomplete="off"></div>
+    <button class="btn bl w100" id="btn-reg">Continue →</button>
+    <button class="btn bg w100" style="margin-top:8px" onclick="go('s-start')">← Back</button>
+    <p id="r-err" class="err-msg"></p>
   </div>
 </div>
 
-<!-- ════ SETUP ════ -->
-<div id="scr-setup" class="auth-wrap hidden">
-  <div class="auth-card">
-    <div class="brand" style="font-size:22px;margin-bottom:4px">Trip Details</div>
-    <p class="tag" style="margin-bottom:20px">Name your adventure</p>
-    <label class="field-label">Trip Name</label>
-    <input type="text" id="s-name" class="field" placeholder="e.g. Char Dham 2026">
-    <label class="field-label">Budget ₹ (optional)</label>
-    <input type="number" id="s-budget" class="field" placeholder="50000">
-    <button class="btn btn-lime w100" onclick="doSetup()">🚀 Launch Trip</button>
-    <p id="setup-err" class="err-text"></p>
+<!-- ══════ SETUP ══════ -->
+<div id="s-setup" class="scr hidden">
+  <div class="abox">
+    <div class="logo" style="font-size:22px;margin-bottom:4px"><span class="logo-s">Trip Details</span></div>
+    <p class="stag" style="margin-bottom:18px">Name your adventure</p>
+    <div class="fl"><label>Trip Name</label><input type="text" id="sn" class="fi" placeholder="e.g. Char Dham 2026"></div>
+    <div class="fl"><label>Budget ₹ (optional)</label><input type="number" id="sb" class="fi" placeholder="50000"></div>
+    <button class="btn bl w100" id="btn-setup">🚀 Launch Trip</button>
+    <p id="se-err" class="err-msg"></p>
   </div>
 </div>
 
-<!-- ════ MAIN APP ════ -->
-<div id="main-app" class="app">
+<!-- ══════ MAIN APP ══════ -->
+<div id="app" class="app">
   <nav class="topbar">
-    <div class="topbar-brand">SmartSplit</div>
-    <div class="topbar-right">
-      <div class="trip-chip">
+    <div class="t-brand"><span class="t-bs">Smart</span><span class="t-bd">Split</span></div>
+    <div class="t-right">
+      <div class="trip-pill" onclick="copyCode()" title="Click to copy code">
         <div class="trip-dot"></div>
-        <span id="chip-name" style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Trip</span>
+        <span class="trip-pill-name" id="tp-name">Trip</span>
+        <span class="trip-pill-code" id="tp-code"></span>
       </div>
-      <span class="code-pill" id="code-pill" onclick="copyCode()">CODE: ····</span>
-      <button class="btn btn-lime btn-sm" onclick="openAddModal()">＋ Add Spend</button>
+      <button class="btn bg bsm" onclick="openMem()">👥 Members</button>
+      <button class="btn bl bsm" onclick="openAdd()">＋ Add Spend</button>
     </div>
   </nav>
 
   <div class="main">
-    <!-- HERO -->
-    <div class="hero">
-      <h1 class="trip-name" id="trip-name-h">Trip</h1>
-      <div class="trip-meta">
-        <span id="trip-sub-txt"></span>
+    <!-- HEADER -->
+    <div class="page-head">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+        <div>
+          <h1 class="pg-title" id="pg-title">Trip</h1>
+          <div class="pg-meta">
+            <span id="pg-meta"></span>
+            <span class="codepill" id="codepill" onclick="copyCode()">CODE: ····</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn bg bsm" onclick="openBudgetEdit()">⚙️ Set Budget</button>
+          <button class="btn bv bsm" onclick="exportCSV()">⬇️ Export CSV</button>
+        </div>
       </div>
     </div>
 
-    <!-- STATS -->
-    <div class="stats-row">
-      <div class="stat" style="--stat-accent:var(--lime);--stat-color:var(--lime)">
-        <div class="stat-lbl">Total Spent</div>
-        <div class="stat-num" id="s-total">₹0</div>
-        <div class="stat-sub" id="s-txns">0 transactions</div>
+    <!-- STATS: 4 cards, no Budget Left chip issue -->
+    <div class="stats">
+      <div class="sc" style="--sc-ac:var(--lime)">
+        <div class="sc-lbl"><span class="sc-lbl-ico">💰</span>Total Spent</div>
+        <div class="sc-val" id="sv-total" style="color:var(--lime)">₹0</div>
+        <div class="sc-sub" id="sv-txns">0 transactions</div>
       </div>
-      <div class="stat" style="--stat-accent:var(--sky)">
-        <div class="stat-lbl">Budget Left</div>
-        <div class="stat-num" id="s-left" style="color:var(--sky)">—</div>
-        <div class="stat-prog"><div class="stat-prog-fill" id="s-prog" style="background:var(--sky);width:0%"></div></div>
+      <div class="sc" style="--sc-ac:var(--sky)">
+        <div class="sc-lbl"><span class="sc-lbl-ico">📊</span>Budget</div>
+        <div class="sc-val" id="sv-budget" style="color:var(--sky)">—</div>
+        <div class="sc-sub" id="sv-bleft">No budget set</div>
+        <div class="sc-bar"><div class="sc-fill" id="sv-bfill" style="width:0%;background:var(--sky)"></div></div>
       </div>
-      <div class="stat" style="--stat-accent:var(--violet)">
-        <div class="stat-lbl">Avg / Expense</div>
-        <div class="stat-num" id="s-avg" style="color:var(--violet)">₹0</div>
-        <div class="stat-sub" id="s-members-sub">0 members</div>
+      <div class="sc" style="--sc-ac:var(--violet)">
+        <div class="sc-lbl"><span class="sc-lbl-ico">👤</span>Per Person</div>
+        <div class="sc-val" id="sv-per" style="color:#c0b0ff">₹0</div>
+        <div class="sc-sub" id="sv-members">equal split</div>
       </div>
-      <div class="stat" style="--stat-accent:var(--amber)">
-        <div class="stat-lbl">Settlements Pending</div>
-        <div class="stat-num" id="s-pend" style="color:var(--amber)">0</div>
-        <div class="stat-sub" id="s-pend-sub">All clear!</div>
+      <div class="sc" style="--sc-ac:var(--amber)">
+        <div class="sc-lbl"><span class="sc-lbl-ico">⚡</span>Today's Spend</div>
+        <div class="sc-val" id="sv-today" style="color:var(--amber)">₹0</div>
+        <div class="sc-sub" id="sv-settle">0 pending</div>
       </div>
     </div>
 
     <!-- TABS -->
-    <div class="tabs-row">
-      <button class="tab-btn on" onclick="switchTab('t-expenses',this)">💸 Expenses</button>
-      <button class="tab-btn" onclick="switchTab('t-members',this)">👥 Members</button>
-      <button class="tab-btn" onclick="switchTab('t-settle',this)">✅ Settle Up</button>
-      <button class="tab-btn" onclick="switchTab('t-analytics',this)">📊 Analytics</button>
+    <div class="tabrow">
+      <button class="tb on" onclick="switchTab('tab-exp',this)">💸 Expenses</button>
+      <button class="tb" onclick="switchTab('tab-anal',this)">📈 Analytics</button>
+      <button class="tb" onclick="switchTab('tab-mem',this)">👥 Members</button>
+      <button class="tb" onclick="switchTab('tab-settle',this)">✅ Settle Up</button>
     </div>
 
-    <!-- TAB: EXPENSES -->
-    <div id="t-expenses">
-      <div class="two-col">
+    <!-- ── EXPENSES TAB ── -->
+    <div id="tab-exp">
+      <div class="two">
         <div>
-          <div class="panel">
-            <div class="panel-head">
-              <span class="panel-title">All Expenses</span>
-              <div style="display:flex;gap:8px;align-items:center">
-                <select id="filter-cat" class="field" style="margin:0;width:auto;padding:6px 12px;font-size:12px" onchange="renderUI()">
+          <div class="pnl">
+            <div class="ph">
+              <span class="pt">All Expenses</span>
+              <div style="display:flex;gap:6px;align-items:center">
+                <select id="fcat" class="fi" style="margin:0;width:auto;padding:5px 28px 5px 10px;font-size:11px" onchange="renderUI()">
                   <option value="">All Categories</option>
                   <option>🍔 Food</option><option>✈️ Transport</option><option>🏨 Stay</option>
                   <option>🎭 Fun</option><option>🛍️ Shopping</option><option>💊 Medical</option><option>📦 Other</option>
                 </select>
-                <select id="filter-member" class="field" style="margin:0;width:auto;padding:6px 12px;font-size:12px" onchange="renderUI()">
+                <select id="fpaid" class="fi" style="margin:0;width:auto;padding:5px 28px 5px 10px;font-size:11px" onchange="renderUI()">
                   <option value="">All Members</option>
                 </select>
               </div>
             </div>
-            <div class="panel-body" id="exp-list"></div>
+            <div class="toolbar">
+              <input type="search" id="esearch" class="si" placeholder="🔍 Search expenses…" oninput="renderUI()">
+              <select id="fsort" class="fi" style="margin:0;width:auto;padding:7px 28px 7px 10px;font-size:11px" onchange="renderUI()">
+                <option value="date-d">Newest</option>
+                <option value="date-a">Oldest</option>
+                <option value="amt-d">Highest ₹</option>
+                <option value="amt-a">Lowest ₹</option>
+              </select>
+            </div>
+            <div class="pb" id="exp-list" style="min-height:60px"></div>
           </div>
         </div>
         <div>
-          <div class="panel">
-            <div class="panel-head"><span class="panel-title">By Category</span></div>
-            <div class="panel-body" id="cat-list"></div>
+          <div class="pnl">
+            <div class="ph"><span class="pt">By Category</span></div>
+            <div class="pb" id="cat-list"></div>
           </div>
-          <div class="panel">
-            <div class="panel-head">
-              <span class="panel-title">Members</span>
-              <button class="btn btn-ghost btn-xs" onclick="openMemModal()">＋ Add</button>
+          <div class="pnl">
+            <div class="ph">
+              <span class="pt">Members</span>
+              <span style="font-size:11px;color:var(--sub2)" id="mem-ct-s"></span>
             </div>
-            <div class="panel-body" id="mem-sidebar"></div>
+            <div class="pb" id="mem-side"></div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- TAB: MEMBERS -->
-    <div id="t-members" class="hidden">
-      <div class="two-col">
-        <div class="panel">
-          <div class="panel-head">
-            <span class="panel-title">Trip Members</span>
-            <span style="font-size:12px;color:var(--sub)" id="mem-full-count"></span>
-          </div>
-          <div class="panel-body" id="mem-full-list"></div>
-          <div style="padding:0 18px 18px">
-            <div class="divider" style="margin-top:0"></div>
-            <label class="field-label" style="margin-bottom:6px;display:block">Add Member</label>
-            <div class="form-row">
-              <input type="text" id="new-mem" class="field" placeholder="Name" style="margin:0;flex:1"
-                onkeydown="if(event.key==='Enter')addMember()">
-              <button class="btn btn-lime" onclick="addMember()">Add</button>
-            </div>
-          </div>
-        </div>
-        <div class="panel">
-          <div class="panel-head"><span class="panel-title">Who Paid Most?</span></div>
-          <div class="panel-body" id="top-payers"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- TAB: SETTLE -->
-    <div id="t-settle" class="hidden">
-      <div class="two-col">
-        <div class="panel">
-          <div class="panel-head">
-            <span class="panel-title">Settlement Plan</span>
-            <button class="btn btn-ghost btn-sm" onclick="renderUI()">↺ Recalculate</button>
-          </div>
-          <div class="panel-body" id="settle-list"></div>
-        </div>
-        <div class="panel">
-          <div class="panel-head"><span class="panel-title">Settlement History</span></div>
-          <div class="panel-body" id="settle-hist"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- TAB: ANALYTICS -->
-    <div id="t-analytics" class="hidden">
-      <div class="two-col">
+    <!-- ── ANALYTICS TAB ── -->
+    <div id="tab-anal" class="hidden">
+      <div class="two">
         <div>
-          <div class="panel">
-            <div class="panel-head"><span class="panel-title">Spending Over Time</span></div>
-            <div class="panel-body">
-              <div class="bar-chart" id="bar-chart"></div>
+          <div class="pnl">
+            <div class="ph">
+              <span class="pt">Daily Spending</span>
+              <span style="font-size:11px;color:var(--sub2)">Last 14 days</span>
             </div>
+            <div class="pb"><div class="chart-wrap" id="daily-chart"></div></div>
           </div>
-          <div class="panel">
-            <div class="panel-head"><span class="panel-title">Category Breakdown</span></div>
-            <div class="panel-body" id="an-cats"></div>
+          <div class="pnl">
+            <div class="ph"><span class="pt">Spending Timeline</span></div>
+            <div class="pb" id="timeline" style="max-height:220px;overflow-y:auto"></div>
+          </div>
+          <div class="pnl">
+            <div class="ph"><span class="pt">Top Spenders</span></div>
+            <div class="pb" id="top-spenders"></div>
           </div>
         </div>
         <div>
-          <div class="panel">
-            <div class="panel-head"><span class="panel-title">Trip Summary</span></div>
-            <div class="panel-body">
-              <div class="analytics-grid" id="an-stats"></div>
+          <div class="pnl">
+            <div class="ph"><span class="pt">Budget Overview</span></div>
+            <div class="pb">
+              <div class="ring-wrap">
+                <svg width="80" height="80" viewBox="0 0 80 80" style="flex-shrink:0">
+                  <circle cx="40" cy="40" r="33" fill="none" stroke="var(--ink5)" stroke-width="7"/>
+                  <circle id="ring-c" cx="40" cy="40" r="33" fill="none" stroke="var(--lime)" stroke-width="7"
+                    stroke-linecap="round" stroke-dasharray="207.35" stroke-dashoffset="207.35"
+                    transform="rotate(-90 40 40)" style="transition:stroke-dashoffset .6s ease,stroke .4s"/>
+                </svg>
+                <div>
+                  <div class="ring-pct" id="ring-pct">0%</div>
+                  <div class="ring-lbl" id="ring-sub">of budget used</div>
+                </div>
+              </div>
+              <div id="budget-bd"></div>
             </div>
           </div>
-          <div class="panel">
-            <div class="panel-head"><span class="panel-title">Activity Log</span></div>
-            <div class="panel-body" id="activity-log"></div>
+          <div class="pnl">
+            <div class="ph"><span class="pt">Spending by Category</span></div>
+            <div class="pb" id="pie-bd"></div>
+          </div>
+          <div class="pnl">
+            <div class="ph"><span class="pt">Trip Summary</span></div>
+            <div class="pb" id="summary-panel"></div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-</div>
 
-<!-- ════ MODAL: ADD/EDIT EXPENSE ════ -->
-<div class="modal" id="exp-modal">
-  <div class="modal-box">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
-      <div class="modal-title" id="exp-modal-title" style="margin-bottom:0">💸 Add Expense</div>
-      <button class="btn btn-ghost btn-icon" onclick="closeModal('exp-modal')">✕</button>
-    </div>
-    <input type="hidden" id="edit-id">
-
-    <label class="field-label">Description *</label>
-    <input type="text" id="e-name" class="field" placeholder="e.g. Dinner at Gangotri Hotel">
-
-    <div class="form-grid" style="margin-bottom:14px">
-      <div>
-        <label class="field-label">Amount (₹) *</label>
-        <input type="number" id="e-amt" class="field" style="margin:0" placeholder="0" min="1" oninput="onAmtChange()">
+    <!-- ── MEMBERS TAB ── -->
+    <div id="tab-mem" class="hidden">
+      <div class="two">
+        <div>
+          <div class="pnl">
+            <div class="ph"><span class="pt">All Members</span><span style="font-size:11px;color:var(--sub2)" id="mem-full-ct"></span></div>
+            <div class="pb" id="mem-full-list"></div>
+            <div style="padding:0 16px 16px">
+              <div class="dvd" style="margin-top:0"></div>
+              <label style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:1.3px;margin-bottom:6px;display:block">Add Member</label>
+              <div style="display:flex;gap:8px">
+                <input type="text" id="new-mem" class="fi" placeholder="Name" style="margin:0;flex:1" onkeydown="if(event.key==='Enter')addMem()">
+                <button class="btn bl" onclick="addMem()">Add</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="pnl">
+            <div class="ph"><span class="pt">Who's Paid the Most</span></div>
+            <div class="pb" id="mem-rank"></div>
+          </div>
+          <div class="pnl">
+            <div class="ph"><span class="pt">Expense Count</span></div>
+            <div class="pb" id="mem-expcount"></div>
+          </div>
+        </div>
       </div>
-      <div>
-        <label class="field-label">Date</label>
-        <input type="date" id="e-date" class="field" style="margin:0">
+    </div>
+
+    <!-- ── SETTLE TAB ── -->
+    <div id="tab-settle" class="hidden">
+      <div class="two">
+        <div>
+          <div class="pnl">
+            <div class="ph">
+              <span class="pt">Settlement Plan</span>
+              <div style="display:flex;gap:8px;align-items:center">
+                <span style="font-size:11px;color:var(--sub2)" id="settle-sum"></span>
+                <button class="btn bg bsm" onclick="renderUI()">↺ Refresh</button>
+              </div>
+            </div>
+            <div class="pb" id="settle-list"></div>
+          </div>
+        </div>
+        <div>
+          <div class="pnl">
+            <div class="ph"><span class="pt">Balance Sheet</span></div>
+            <div class="pb" id="balance-sheet"></div>
+          </div>
+          <div class="pnl">
+            <div class="ph"><span class="pt">Settlement Progress</span></div>
+            <div class="pb" id="settle-progress"></div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="form-grid" style="margin-bottom:14px">
-      <div>
-        <label class="field-label">Category</label>
-        <select id="e-cat" class="field" style="margin:0">
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ══ ADD/EDIT EXPENSE MODAL ══ -->
+<div class="modal" id="m-exp">
+  <div class="mbox">
+    <div class="mtitle" id="m-exp-title">💸 Add Expense</div>
+    <input type="hidden" id="eid">
+    <div class="fl"><label>Description</label><input type="text" id="e-name" class="fi" placeholder="e.g. Gangotri Hotel dinner"></div>
+    <div class="fl"><label>Amount (₹)</label><input type="number" id="e-amt" class="fi" placeholder="0" min="1" oninput="onAmtChg()"></div>
+    <div class="g2">
+      <div class="fl"><label>Category</label>
+        <select id="e-cat" class="fi">
           <option>🍔 Food</option><option>✈️ Transport</option><option>🏨 Stay</option>
           <option>🎭 Fun</option><option>🛍️ Shopping</option><option>💊 Medical</option><option>📦 Other</option>
-        </select>
+        </select></div>
+      <div class="fl"><label>Date</label><input type="date" id="e-date" class="fi"></div>
+    </div>
+    <div class="fl"><label>Paid By</label><select id="e-paid" class="fi"></select></div>
+    <div class="fl"><label>Notes (optional)</label><input type="text" id="e-notes" class="fi" placeholder="Any note or tag"></div>
+    <div class="fl">
+      <label style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
+        <span style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:1.4px">Split Between</span>
+        <span style="font-size:11px;cursor:pointer;color:#b8a8ff;font-weight:700" onclick="selAll()">Select All</span>
+      </label>
+      <div class="mck-list" id="split-list"></div>
+    </div>
+    <div class="fl">
+      <label style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:1.4px;margin-bottom:7px;display:block">Split Type</label>
+      <div class="sptog">
+        <button class="spopt on" id="sp-eq" onclick="setSplit('equal')">⚖️ Equal</button>
+        <button class="spopt" id="sp-cu" onclick="setSplit('custom')">✏️ Custom</button>
+        <button class="spopt" id="sp-pc" onclick="setSplit('percent')">% Percent</button>
       </div>
-      <div>
-        <label class="field-label">Paid By *</label>
-        <select id="e-paid" class="field" style="margin:0"></select>
-      </div>
+      <div id="custom-area" class="hidden"></div>
     </div>
-
-    <label class="field-label">Notes (optional)</label>
-    <input type="text" id="e-notes" class="field" placeholder="Any extra detail">
-
-    <div class="divider"></div>
-
-    <label class="field-label">Split Type</label>
-    <div class="split-toggle" style="margin-bottom:14px">
-      <div class="split-opt on" id="sp-equal" onclick="setSplitType('equal')">⚖️ Equal Split</div>
-      <div class="split-opt" id="sp-custom" onclick="setSplitType('custom')">✏️ Custom Amount</div>
-      <div class="split-opt" id="sp-payer" onclick="setSplitType('payer')">👤 Payer Only</div>
+    <div class="dvd"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn bl" style="flex:1" id="btn-save">Save Expense</button>
+      <button class="btn bg" onclick="closeM('m-exp')">Cancel</button>
     </div>
-
-    <label class="field-label">Split Between</label>
-    <!-- Clean checkbox list — no chips -->
-    <div class="mem-select-list" id="mem-select-list"></div>
-
-    <!-- Custom split inputs -->
-    <div id="custom-split-area" class="hidden" style="margin-top:10px">
-      <label class="field-label">Enter amount per person</label>
-      <div class="custom-split-list" id="custom-split-list"></div>
-      <div style="font-size:11px;color:var(--sub);margin-top:6px" id="custom-total-hint"></div>
-    </div>
-
-    <div class="divider"></div>
-    <div class="form-row">
-      <button class="btn btn-lime" style="flex:1" id="btn-save">Save Expense</button>
-      <button class="btn btn-ghost" onclick="closeModal('exp-modal')">Cancel</button>
-    </div>
-    <p id="exp-err" class="err-text"></p>
   </div>
 </div>
 
-<!-- ════ MODAL: MEMBERS ════ -->
-<div class="modal" id="mem-modal">
-  <div class="modal-box">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
-      <div class="modal-title" style="margin-bottom:0">👥 Manage Members</div>
-      <button class="btn btn-ghost btn-icon" onclick="closeModal('mem-modal')">✕</button>
+<!-- ══ MEMBER MODAL ══ -->
+<div class="modal" id="m-mem">
+  <div class="mbox">
+    <div class="mtitle">👥 Trip Members</div>
+    <div id="m-mem-list"></div>
+    <div class="dvd"></div>
+    <label style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:1.4px;margin-bottom:7px;display:block">Add Member</label>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="new-mem2" class="fi" placeholder="Name" style="margin:0;flex:1" onkeydown="if(event.key==='Enter')addMem2()">
+      <button class="btn bl" onclick="addMem2()">Add</button>
     </div>
-    <div id="mem-modal-list"></div>
-    <div class="divider"></div>
-    <label class="field-label" style="margin-bottom:6px;display:block">Add New Member</label>
-    <div class="form-row">
-      <input type="text" id="new-mem2" class="field" placeholder="Name" style="margin:0;flex:1"
-        onkeydown="if(event.key==='Enter')addMember2()">
-      <button class="btn btn-lime" onclick="addMember2()">Add</button>
+    <div class="dvd"></div>
+    <button class="btn bg w100" onclick="closeM('m-mem')">Done</button>
+  </div>
+</div>
+
+<!-- ══ BUDGET MODAL ══ -->
+<div class="modal" id="m-budget">
+  <div class="mbox">
+    <div class="mtitle">⚙️ Trip Settings</div>
+    <div class="fl"><label>Trip Name</label><input type="text" id="b-name" class="fi" placeholder="Trip name"></div>
+    <div class="fl"><label>Total Budget ₹</label><input type="number" id="b-budget" class="fi" placeholder="0 = no limit"></div>
+    <div class="dvd"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn bl" style="flex:1" onclick="saveBudget()">Save Settings</button>
+      <button class="btn bg" onclick="closeM('m-budget')">Cancel</button>
     </div>
   </div>
 </div>
@@ -582,601 +588,606 @@ const db = getDatabase(initializeApp({
   projectId:"ak-events-2016"
 }));
 
-/* ─── STATE ─── */
-let S = {
-  gid:"", group:{}, expenses:{}, members:{}, settlements:{},
-  splitType:"equal", selMembers:[], pendingCode:""
-};
+/* ── STATE ── */
+let S = { gid:"", group:{}, expenses:{}, members:{}, settlements:{},
+          splitType:"equal", sel:[], pendCode:"" };
 
-/* ─── UTILS ─── */
-const fmt  = n => '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN');
-const today = () => new Date().toISOString().split('T')[0];
-const PAL   = ['#8b74ff','#3ecf8e','#ff6b8a','#c8f135','#5eead4','#fbbf24','#f97316','#e879f9'];
-const col   = n => { let h=0; for(const c of(n||'?')) h+=c.charCodeAt(0); return PAL[h%PAL.length]; };
-const names = () => Object.values(S.members).map(m=>m.name);
+/* ── UTILS ── */
+const fmt    = n => '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN');
+const today  = () => new Date().toISOString().split('T')[0];
+const PAL    = ['#7c5fff','#22d07a','#ff5273','#b8f724','#2dd4d4','#f7a825','#f97316','#e879f9'];
+const col    = n => { let h=0; for(const c of(n||'?'))h+=c.charCodeAt(0); return PAL[h%PAL.length]; };
+const names  = () => Object.values(S.members).map(m=>m.name);
+const $      = id => document.getElementById(id);
+const setT   = (id,t) => { const e=$(id); if(e) e.textContent=t; };
 
-function toast(msg, dur=2500) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), dur);
+function toast(msg, dur=2600){
+  const t=$('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),dur);
 }
-function setErr(id, msg) { const e=document.getElementById(id); if(e) e.textContent=msg; }
-function showLoad() { if(document.getElementById('__ld')) return; const d=document.createElement('div'); d.id='__ld'; d.className='loader-wrap'; d.innerHTML='<div class="loader"></div>'; document.body.appendChild(d); }
-function hideLoad() { document.getElementById('__ld')?.remove(); }
+function setErr(id,msg){ const e=$(id); if(e) e.textContent=msg; }
+function showLoad(msg=''){
+  if($('__ld'))return;
+  const d=document.createElement('div'); d.id='__ld'; d.className='ldwrap';
+  d.innerHTML=`<div class="ld"></div>${msg?`<div class="ld-txt">${msg}</div>`:''}`;
+  document.body.appendChild(d);
+}
+function hideLoad(){ $('__ld')?.remove(); }
 
-/* ─── NAVIGATION ─── */
-window.go = id => {
-  document.querySelectorAll('.auth-wrap').forEach(s => s.classList.add('hidden'));
-  document.getElementById(id).classList.remove('hidden');
-  // Auto-focus code inputs
-  if(id==='scr-login') setTimeout(()=>document.getElementById('l-code').focus(),100);
-  if(id==='scr-reg')   setTimeout(()=>document.getElementById('r-code').focus(),100);
-};
-window.closeModal = id => document.getElementById(id).classList.remove('on');
-window.switchTab  = (id, btn) => {
-  ['t-expenses','t-members','t-settle','t-analytics'].forEach(t => document.getElementById(t).classList.add('hidden'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on'));
-  document.getElementById(id).classList.remove('hidden');
-  btn.classList.add('on');
-  if(id==='t-analytics') renderAnalytics();
-};
-window.copyCode = () => {
-  navigator.clipboard?.writeText(String(S.group.loginCode)).then(() => toast('Code copied! 📋'));
+/* ── NAVIGATION ── */
+window.go      = id => { document.querySelectorAll('.scr').forEach(s=>s.classList.add('hidden')); $(id).classList.remove('hidden'); };
+window.closeM  = id => $(id).classList.remove('on');
+window.switchTab = (id,btn) => {
+  ['tab-exp','tab-anal','tab-mem','tab-settle'].forEach(t=>$(t).classList.add('hidden'));
+  document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));
+  $(id).classList.remove('hidden'); btn.classList.add('on');
+  if(id==='tab-anal') renderAnalytics();
 };
 
-/* ─── AUTH ─── */
-window.doLogin = async () => {
-  const code = document.getElementById('l-code').value.trim();
-  setErr('login-err','');
-  if(code.length!==4) return setErr('login-err','Enter a 4-digit code');
-  showLoad();
+/* ── AUTH ── */
+$('btn-login').onclick = doLogin;
+$('l-code').onkeydown  = e => { if(e.key==='Enter') doLogin(); };
+
+async function doLogin(){
+  const code=$('l-code').value.trim(); setErr('l-err','');
+  if(code.length!==4){ setErr('l-err','Enter a 4-digit code'); return; }
+  showLoad('Loading trip…');
   try {
-    const snap = await get(ref(db,'smartsplit/groups'));
-    hideLoad();
-    if(!snap.exists()) return setErr('login-err','No trips found — create one first.');
-    const entry = Object.entries(snap.val()).find(([,g]) => String(g.loginCode)===String(code));
-    if(!entry) return setErr('login-err','Invalid code. Try again.');
+    const snap=await get(ref(db,'smartsplit/groups')); hideLoad();
+    if(!snap.exists()){ setErr('l-err','No trips found — create one first.'); return; }
+    const entry=Object.entries(snap.val()).find(([,g])=>String(g.loginCode)===String(code));
+    if(!entry){ setErr('l-err','Invalid code. Try again.'); return; }
     S.gid=entry[0]; S.group=entry[1];
-    await loadAll(); launchApp();
-  } catch(e) { hideLoad(); setErr('login-err','Error: '+e.message); }
-};
+    await loadAll(); launch();
+  } catch(e){ hideLoad(); setErr('l-err','Error: '+e.message); }
+}
 
-window.doRegister = async () => {
-  const code = document.getElementById('r-code').value.trim();
-  setErr('reg-err','');
-  if(code.length!==4||isNaN(code)) return setErr('reg-err','Must be 4 digits');
+$('btn-reg').onclick = async () => {
+  const code=$('r-code').value.trim(); setErr('r-err','');
+  if(code.length!==4||isNaN(code)){ setErr('r-err','Must be 4 digits'); return; }
   showLoad();
   try {
-    const snap = await get(ref(db,'smartsplit/groups'));
-    hideLoad();
-    const taken = snap.exists() && Object.values(snap.val()).some(g => String(g.loginCode)===code);
-    if(taken) return setErr('reg-err','Code in use — try another');
-    S.pendingCode = code; go('scr-setup');
-  } catch(e) { hideLoad(); setErr('reg-err','Error: '+e.message); }
+    const snap=await get(ref(db,'smartsplit/groups')); hideLoad();
+    const taken=snap.exists()&&Object.values(snap.val()).some(g=>String(g.loginCode)===code);
+    if(taken){ setErr('r-err','Code in use — try another'); return; }
+    S.pendCode=code; go('s-setup');
+  } catch(e){ hideLoad(); setErr('r-err','Error: '+e.message); }
 };
 
-window.doSetup = async () => {
-  const name = document.getElementById('s-name').value.trim();
-  const budget = parseFloat(document.getElementById('s-budget').value)||0;
-  setErr('setup-err','');
-  if(!name) return setErr('setup-err','Enter a trip name');
+$('btn-setup').onclick = async () => {
+  const name=$('sn').value.trim(), budget=parseFloat($('sb').value)||0;
+  setErr('se-err','');
+  if(!name){ setErr('se-err','Enter a trip name'); return; }
   showLoad();
   try {
-    const gr = push(ref(db,'smartsplit/groups'));
-    S.gid=gr.key; S.group={ name, loginCode:S.pendingCode, budget, createdAt:today() };
+    const gr=push(ref(db,'smartsplit/groups'));
+    S.gid=gr.key; S.group={ name, loginCode:S.pendCode, budget };
     await set(gr, S.group);
     S.expenses={}; S.members={}; S.settlements={};
-    hideLoad(); launchApp();
-    toast('Trip created! Share code '+S.pendingCode+' 🎉',3500);
-    openMemModal();
-  } catch(e) { hideLoad(); setErr('setup-err','Error: '+e.message); }
+    hideLoad(); launch();
+    toast('Trip created! Share code '+S.pendCode+' 🎉',3500);
+    openMem();
+  } catch(e){ hideLoad(); setErr('se-err','Error: '+e.message); }
 };
 
-/* ─── LOAD DATA ─── */
-async function loadAll() {
-  showLoad();
+/* ── LOAD ── */
+async function loadAll(){
+  showLoad('Syncing data…');
   try {
-    const [eS,mS,sS,gS] = await Promise.all([
+    const [eS,mS,sS,gS]=await Promise.all([
       get(ref(db,'smartsplit/expenses')),
       get(ref(db,'smartsplit/members')),
       get(ref(db,`smartsplit/settlements/${S.gid}`)),
       get(ref(db,`smartsplit/groups/${S.gid}`))
     ]);
-    const ae = eS.exists() ? eS.val() : {};
-    S.expenses = Object.fromEntries(Object.entries(ae).filter(([,e]) => e.groupId===S.gid));
-    const am = mS.exists() ? mS.val() : {};
-    S.members = Object.fromEntries(Object.entries(am).filter(([,m]) => m.groupId===S.gid));
-    S.settlements = sS.exists() ? sS.val() : {};
-    if(gS.exists()) S.group = gS.val();
+    const ae=eS.exists()?eS.val():{};
+    S.expenses=Object.fromEntries(Object.entries(ae).filter(([,e])=>e.groupId===S.gid));
+    const am=mS.exists()?mS.val():{};
+    S.members=Object.fromEntries(Object.entries(am).filter(([,m])=>m.groupId===S.gid));
+    S.settlements=sS.exists()?sS.val():{};
+    if(gS.exists()) S.group=gS.val();
   } finally { hideLoad(); }
 }
 
-function launchApp() {
-  document.querySelectorAll('.auth-wrap').forEach(s => s.classList.add('hidden'));
-  document.getElementById('main-app').style.display = 'flex';
-  renderUI();
+function launch(){
+  document.querySelectorAll('.scr').forEach(s=>s.classList.add('hidden'));
+  $('app').style.display='flex'; renderUI();
 }
 
-/* ─── MEMBERS ─── */
-window.addMember  = async () => doAddMem(document.getElementById('new-mem'));
-window.addMember2 = async () => doAddMem(document.getElementById('new-mem2'));
-async function doAddMem(inp) {
-  const name = inp.value.trim();
-  if(!name) return toast('Enter a name');
-  if(names().some(n => n.toLowerCase()===name.toLowerCase())) return toast('Already in group');
-  await set(push(ref(db,'smartsplit/members')), { name, groupId:S.gid });
-  await loadAll(); inp.value='';
-  renderMemberPanels(); renderUI();
-  toast(`${name} added 👋`);
+/* ── COPY CODE ── */
+window.copyCode = () => {
+  navigator.clipboard?.writeText(String(S.group.loginCode)).then(()=>toast('Code copied! 📋')).catch(()=>{});
+};
+
+/* ── BUDGET MODAL ── */
+window.openBudgetEdit = () => {
+  $('b-name').value=S.group.name||'';
+  $('b-budget').value=S.group.budget||'';
+  $('m-budget').classList.add('on');
+};
+window.saveBudget = async () => {
+  const name=$('b-name').value.trim()||S.group.name;
+  const budget=parseFloat($('b-budget').value)||0;
+  await update(ref(db,`smartsplit/groups/${S.gid}`),{ name, budget });
+  S.group.name=name; S.group.budget=budget;
+  closeM('m-budget'); renderUI(); toast('Settings saved ✓');
+};
+
+/* ── EXPORT CSV ── */
+window.exportCSV = () => {
+  const rows=[['Date','Name','Category','Amount','Paid By','Notes','Split Between']];
+  Object.values(S.expenses).sort((a,b)=>(a.date||'').localeCompare(b.date||'')).forEach(e=>{
+    rows.push([e.date||'',e.name||'',e.category||'',e.amount||0,e.paidBy||'',e.notes||'',(e.splitBetween||[]).join('|')]);
+  });
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=`${S.group.name||'SmartSplit'}_expenses.csv`;
+  a.click(); toast('CSV exported 📄');
+};
+
+/* ── MEMBERS ── */
+window.openMem = () => { renderMemModal(); $('m-mem').classList.add('on'); };
+window.addMem  = async () => doAddMem($('new-mem'));
+window.addMem2 = async () => doAddMem($('new-mem2'));
+
+async function doAddMem(inp){
+  const name=inp.value.trim(); if(!name){ toast('Enter a name'); return; }
+  if(names().some(n=>n.toLowerCase()===name.toLowerCase())){ toast('Already in group'); return; }
+  await set(push(ref(db,'smartsplit/members')),{ name, groupId:S.gid });
+  await loadAll(); inp.value=''; renderMemModal(); renderUI(); toast(`${name} added 👋`);
 }
-window.removeMember = async id => {
-  if(!confirm('Remove this member?')) return;
+window.removeMem = async id => {
+  if(!confirm('Remove member?')) return;
   await remove(ref(db,`smartsplit/members/${id}`));
-  await loadAll(); renderMemberPanels(); renderUI();
-  toast('Member removed');
+  await loadAll(); renderMemModal(); renderUI(); toast('Removed');
 };
-window.openMemModal = () => { renderMemberPanels(); document.getElementById('mem-modal').classList.add('on'); };
-
-function renderMemberPanels() {
-  const rows = Object.entries(S.members).map(([id,m]) => `
-    <div class="mem-row">
-      <div class="mem-av" style="background:${col(m.name)};color:#0d0d12">${m.name[0].toUpperCase()}</div>
-      <div style="flex:1"><div class="mem-name">${m.name}</div><div class="mem-role">Member</div></div>
-      <button class="btn btn-rose btn-xs" onclick="removeMember('${id}')">Remove</button>
-    </div>`).join('') || '<div class="empty"><p>No members yet</p></div>';
-  document.getElementById('mem-modal-list').innerHTML = rows;
-  document.getElementById('mem-full-list').innerHTML  = rows;
-  document.getElementById('mem-full-count').textContent = Object.keys(S.members).length + ' people';
-
-  // Update member filter dropdown
-  const mf = document.getElementById('filter-member');
-  const cur = mf.value;
-  mf.innerHTML = '<option value="">All Members</option>' + names().map(n=>`<option ${n===cur?'selected':''}>${n}</option>`).join('');
+function renderMemModal(){
+  $('m-mem-list').innerHTML=Object.entries(S.members).map(([id,m])=>`
+    <div class="mr">
+      <div class="mav" style="background:${col(m.name)};width:34px;height:34px;font-size:13px">${m.name[0].toUpperCase()}</div>
+      <div style="flex:1"><div class="mname">${m.name}</div></div>
+      <button class="btn bg bxs" style="color:var(--rose)" onclick="removeMem('${id}')">✕</button>
+    </div>`).join('')||'<div class="empty"><p>No members yet</p></div>';
 }
 
-/* ─── EXPENSE FORM ─── */
-window.openAddModal = () => {
-  document.getElementById('edit-id').value = '';
-  document.getElementById('e-name').value = '';
-  document.getElementById('e-amt').value = '';
-  document.getElementById('e-date').value = today();
-  document.getElementById('e-notes').value = '';
-  document.getElementById('e-cat').value = '🍔 Food';
-  document.getElementById('exp-modal-title').textContent = '💸 Add Expense';
-  document.getElementById('btn-save').textContent = 'Save Expense';
-  document.getElementById('exp-err').textContent = '';
-  // Payer dropdown
-  const ns = names();
-  document.getElementById('e-paid').innerHTML = ns.map(n=>`<option>${n}</option>`).join('')
-    || '<option>— add members first —</option>';
-  // Init split
-  S.splitType = 'equal'; S.selMembers = [...ns];
-  setSplitType('equal');
-  renderMemSelectList();
-  document.getElementById('exp-modal').classList.add('on');
-};
-
-// Checkbox list — replaces chip UI
-function renderMemSelectList() {
-  const ns = names();
-  const amt = parseFloat(document.getElementById('e-amt').value)||0;
-  const selCount = S.selMembers.filter(n => ns.includes(n)).length || 1;
-  const perPerson = selCount ? amt/selCount : 0;
-
-  document.getElementById('mem-select-list').innerHTML = ns.map(n => {
-    const checked = S.selMembers.includes(n);
-    const shareStr = (S.splitType==='equal' && amt>0 && checked) ? fmt(perPerson) : '';
-    return `
-    <label class="mem-select-row" for="mchk-${n.replace(/\s/g,'_')}">
-      <input type="checkbox" id="mchk-${n.replace(/\s/g,'_')}" ${checked?'checked':''}
-        onchange="toggleMemSel('${n}',this.checked)">
-      <div class="mem-av" style="background:${col(n)};color:#0d0d12;width:28px;height:28px;font-size:11px">${n[0].toUpperCase()}</div>
-      <span class="mem-select-name">${n}</span>
-      ${shareStr?`<span class="mem-select-share">${shareStr}/person</span>`:''}
-    </label>`;
-  }).join('') || '<p style="padding:12px;font-size:13px;color:var(--sub)">Add members first via 👥</p>';
+/* ── EXPENSE FORM ── */
+function resetForm(){
+  $('eid').value=''; $('e-name').value=''; $('e-amt').value='';
+  $('e-cat').value='🍔 Food'; $('e-date').value=today();
+  $('e-notes').value=''; $('m-exp-title').textContent='💸 Add Expense';
+  $('btn-save').textContent='Save Expense';
+  fillPaidBy(''); S.splitType='equal'; S.sel=[...names()];
+  renderSplitList(); setSplit('equal');
 }
+function fillPaidBy(sel){
+  $('e-paid').innerHTML=names().map(n=>`<option ${n===sel?'selected':''}>${n}</option>`).join('');
+  if(!names().length) $('e-paid').innerHTML='<option>— add members first —</option>';
+}
+window.selAll = () => { S.sel=[...names()]; renderSplitList(); };
+window.onAmtChg = () => { if(S.splitType!=='equal') renderCustomArea(); };
 
-window.toggleMemSel = (name, checked) => {
-  if(checked) { if(!S.selMembers.includes(name)) S.selMembers.push(name); }
-  else { S.selMembers = S.selMembers.filter(n=>n!==name); }
-  renderMemSelectList();
-  if(S.splitType==='custom') renderCustomSplit();
+function renderSplitList(){
+  $('split-list').innerHTML=names().map(n=>`
+    <div class="mck ${S.sel.includes(n)?'on':''}" onclick="togMem('${n}',this)">
+      <div class="mck-cb"></div>
+      <div class="mck-av" style="background:${col(n)}">${n[0].toUpperCase()}</div>
+      <span class="mck-name" style="font-size:13px;font-weight:600">${n}</span>
+    </div>`).join('')||'<div style="padding:12px;color:var(--sub2);font-size:13px">Add members first via 👥</div>';
+}
+window.togMem = (name,el) => {
+  if(S.sel.includes(name)){
+    if(S.sel.length<=1){ toast('Need at least 1'); return; }
+    S.sel=S.sel.filter(n=>n!==name); el.classList.remove('on');
+  } else { S.sel.push(name); el.classList.add('on'); }
+  if(S.splitType!=='equal') renderCustomArea();
 };
-
-window.onAmtChange = () => {
-  renderMemSelectList();
-  if(S.splitType==='custom') renderCustomSplit();
+window.setSplit = type => {
+  S.splitType=type;
+  ['equal','custom','percent'].forEach(t=>$('sp-'+t.slice(0,2)).classList.toggle('on',t===type));
+  const ca=$('custom-area');
+  type==='equal'?ca.classList.add('hidden'):(ca.classList.remove('hidden'),renderCustomArea());
 };
-
-window.setSplitType = type => {
-  S.splitType = type;
-  ['equal','custom','payer'].forEach(t => document.getElementById('sp-'+t).classList.toggle('on', t===type));
-  const ca = document.getElementById('custom-split-area');
-  if(type==='custom') { ca.classList.remove('hidden'); renderCustomSplit(); }
-  else ca.classList.add('hidden');
-  // Payer-only: auto-select only payer
-  if(type==='payer') {
-    const payer = document.getElementById('e-paid').value;
-    S.selMembers = payer ? [payer] : S.selMembers;
-    renderMemSelectList();
-  } else {
-    renderMemSelectList();
+function renderCustomArea(){
+  const amt=parseFloat($('e-amt').value)||0;
+  if(S.splitType==='custom'){
+    const sh=S.sel.length?Math.round(amt/S.sel.length):0;
+    $('custom-area').innerHTML=S.sel.map(n=>`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+        <div style="flex:1;font-size:13px;font-weight:600">${n}</div>
+        <div style="font-size:12px;color:var(--sub2)">₹</div>
+        <input type="number" id="cs-${n.replace(/\s/g,'_')}" class="fi" value="${sh}" style="margin:0;width:100px;padding:7px 10px;font-size:13px">
+      </div>`).join('')+'<p style="font-size:10px;color:var(--sub);margin-top:4px">Values must total the expense amount</p>';
+  } else if(S.splitType==='percent'){
+    const pct=S.sel.length?Math.round(100/S.sel.length):0;
+    $('custom-area').innerHTML=S.sel.map((n,i)=>`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+        <div style="flex:1;font-size:13px;font-weight:600">${n}</div>
+        <input type="number" id="cs-${n.replace(/\s/g,'_')}" class="fi" value="${i===S.sel.length-1?100-(pct*(S.sel.length-1)):pct}" style="margin:0;width:80px;padding:7px 10px;font-size:13px" max="100">
+        <div style="font-size:12px;color:var(--sub2)">%</div>
+      </div>`).join('')+'<p style="font-size:10px;color:var(--sub);margin-top:4px">Percentages must total 100%</p>';
   }
-};
-window.setSplit = window.setSplitType; // alias
-
-function renderCustomSplit() {
-  const amt = parseFloat(document.getElementById('e-amt').value)||0;
-  const selected = S.selMembers.filter(n => names().includes(n));
-  const perPerson = selected.length ? Math.round(amt/selected.length) : 0;
-  document.getElementById('custom-split-list').innerHTML = selected.map(n => `
-    <div class="custom-split-row">
-      <div class="mem-av" style="background:${col(n)};color:#0d0d12;width:26px;height:26px;font-size:10px">${n[0].toUpperCase()}</div>
-      <span class="custom-split-name">${n}</span>
-      <input type="number" class="custom-split-input" id="cs-${n.replace(/\s/g,'_')}" value="${perPerson}"
-        oninput="updateCustomTotal()">
-    </div>`).join('');
-  updateCustomTotal();
 }
 
-window.updateCustomTotal = () => {
-  const amt = parseFloat(document.getElementById('e-amt').value)||0;
-  const selected = S.selMembers.filter(n => names().includes(n));
-  let total = 0;
-  selected.forEach(n => { total += parseFloat(document.getElementById('cs-'+n.replace(/\s/g,'_'))?.value)||0; });
-  const diff = Math.round(total - amt);
-  const hint = document.getElementById('custom-total-hint');
-  if(Math.abs(diff) < 1) hint.textContent = '✓ Total matches';
-  else hint.textContent = `Total: ${fmt(total)} (${diff>0?'+':''}${diff} vs ${fmt(amt)})`;
-  hint.style.color = Math.abs(diff)<1 ? 'var(--lime)' : 'var(--rose)';
-};
+/* ── SAVE EXPENSE ── */
+$('btn-save').onclick = async () => {
+  const editId=$('eid').value;
+  const name=$('e-name').value.trim(), amt=parseFloat($('e-amt').value);
+  const cat=$('e-cat').value, paidBy=$('e-paid').value;
+  const date=$('e-date').value||today(), notes=$('e-notes').value.trim();
 
-/* ─── SAVE EXPENSE ─── */
-document.getElementById('btn-save').onclick = async () => {
-  const editId  = document.getElementById('edit-id').value;
-  const name    = document.getElementById('e-name').value.trim();
-  const amt     = parseFloat(document.getElementById('e-amt').value);
-  const paidBy  = document.getElementById('e-paid').value;
-  const date    = document.getElementById('e-date').value || today();
-  const notes   = document.getElementById('e-notes').value.trim();
-  const cat     = document.getElementById('e-cat').value;
-  setErr('exp-err','');
+  if(!name)           return toast('Add a description');
+  if(!amt||amt<=0)    return toast('Enter a valid amount');
+  if(!paidBy)         return toast('Select who paid — add members first');
+  if(!S.sel.length)   return toast('Select at least one member');
 
-  if(!name)         return setErr('exp-err','Enter a description');
-  if(!amt||amt<=0)  return setErr('exp-err','Enter a valid amount');
-  if(!paidBy)       return setErr('exp-err','Select who paid — add members first');
-  const selected = S.selMembers.filter(n => names().includes(n));
-  if(!selected.length) return setErr('exp-err','Select at least one member to split with');
-
-  let splits = {};
-  if(S.splitType==='custom') {
-    let total = 0;
-    for(const n of selected) {
-      const v = parseFloat(document.getElementById('cs-'+n.replace(/\s/g,'_'))?.value)||0;
-      splits[n.replace(/\s/g,'_')] = { name:n, share:v }; total+=v;
-    }
-    if(Math.abs(total-amt)>1) return setErr('exp-err',`Split total ${fmt(total)} ≠ ${fmt(amt)}`);
-  } else {
-    const share = +(amt/selected.length).toFixed(2);
-    selected.forEach(n => splits[n.replace(/\s/g,'_')] = { name:n, share });
+  let splits={};
+  if(S.splitType==='equal'){
+    const sh=amt/S.sel.length;
+    S.sel.forEach(n=>splits[n.replace(/\s/g,'_')]={ name:n, share:+sh.toFixed(2) });
+  } else if(S.splitType==='custom'){
+    let tot=0;
+    for(const n of S.sel){ const v=parseFloat($(`cs-${n.replace(/\s/g,'_')}`)?.value)||0; splits[n.replace(/\s/g,'_')]={ name:n, share:v }; tot+=v; }
+    if(Math.abs(tot-amt)>1) return toast(`Split total ₹${Math.round(tot)} ≠ ₹${amt}`);
+  } else { // percent
+    let tot=0;
+    for(const n of S.sel){ const p=parseFloat($(`cs-${n.replace(/\s/g,'_')}`)?.value)||0; splits[n.replace(/\s/g,'_')]={ name:n, share:+(amt*p/100).toFixed(2) }; tot+=p; }
+    if(Math.abs(tot-100)>0.5) return toast(`Percentages total ${Math.round(tot)}% ≠ 100%`);
   }
 
-  const data = { name, amount:amt, category:cat, paidBy, date, notes, splits,
-                 splitType:S.splitType, splitBetween:selected, groupId:S.gid,
-                 savedAt: new Date().toISOString() };
+  const data={ name, amount:amt, category:cat, paidBy, date, notes, splits, splitType:S.splitType, splitBetween:S.sel, groupId:S.gid };
   showLoad();
   try {
-    if(editId) await update(ref(db,`smartsplit/expenses/${editId}`), data);
-    else       await set(push(ref(db,'smartsplit/expenses')), data);
-    toast(editId ? 'Updated ✓' : `${fmt(amt)} added ✓`);
-    closeModal('exp-modal');
-    await loadAll(); renderUI();
-  } catch(e) { setErr('exp-err','Error: '+e.message); }
-  finally { hideLoad(); }
+    editId ? await update(ref(db,`smartsplit/expenses/${editId}`),data) : await set(push(ref(db,'smartsplit/expenses')),data);
+    toast(editId?'Updated ✓':'Added ✓'); closeM('m-exp'); await loadAll(); renderUI();
+  } catch(e){ toast('Error: '+e.message); }
+  finally{ hideLoad(); }
 };
 
-/* ─── EDIT / DELETE ─── */
+/* ── OPEN ADD ── */
+window.openAdd = () => { resetForm(); $('m-exp').classList.add('on'); };
+
+/* ── EDIT/DELETE ── */
 window.editExp = async id => {
-  const e = S.expenses[id]; if(!e) return;
-  document.getElementById('edit-id').value = id;
-  document.getElementById('e-name').value  = e.name;
-  document.getElementById('e-amt').value   = e.amount;
-  document.getElementById('e-cat').value   = e.category;
-  document.getElementById('e-date').value  = e.date || today();
-  document.getElementById('e-notes').value = e.notes||'';
-  document.getElementById('exp-modal-title').textContent = '✏️ Edit Expense';
-  document.getElementById('btn-save').textContent = 'Update';
-  document.getElementById('exp-err').textContent = '';
-  const ns = names();
-  document.getElementById('e-paid').innerHTML = ns.map(n=>`<option ${n===e.paidBy?'selected':''}>${n}</option>`).join('');
-  S.splitType   = e.splitType || 'equal';
-  S.selMembers  = e.splitBetween || [...ns];
-  setSplitType(S.splitType);
-  document.getElementById('exp-modal').classList.add('on');
+  const e=S.expenses[id]; if(!e) return;
+  resetForm(); $('eid').value=id; $('e-name').value=e.name; $('e-amt').value=e.amount;
+  $('e-cat').value=e.category; $('e-date').value=e.date||today(); $('e-notes').value=e.notes||'';
+  fillPaidBy(e.paidBy); S.sel=e.splitBetween||[...names()]; renderSplitList();
+  setSplit(e.splitType||'equal'); $('m-exp-title').textContent='✏️ Edit Expense'; $('btn-save').textContent='Update';
+  $('m-exp').classList.add('on');
 };
-
 window.delExp = async id => {
   if(!confirm('Delete this expense?')) return;
   showLoad(); await remove(ref(db,`smartsplit/expenses/${id}`));
   await loadAll(); renderUI(); hideLoad(); toast('Deleted');
 };
 
-/* ─── SETTLE ─── */
+/* ── SETTLE ── */
 window.markSettled = async key => {
-  const done = S.settlements[key]?.settled;
-  await set(ref(db,`smartsplit/settlements/${S.gid}/${key}`), { settled:!done, date:today() });
-  await loadAll(); renderUI(); toast(done?'Undone':'Marked as paid ✓');
+  const done=S.settlements[key]?.settled;
+  await set(ref(db,`smartsplit/settlements/${S.gid}/${key}`),{ settled:!done });
+  await loadAll(); renderUI();
 };
 
-/* ─── BALANCE ENGINE ─── */
-function calcBalances() {
-  const ns = names(), exps = Object.values(S.expenses), bal={};
-  ns.forEach(n => bal[n]=0);
-  exps.forEach(e => {
-    if(e.paidBy) bal[e.paidBy] = (bal[e.paidBy]||0) + (e.amount||0);
-    if(e.splits) Object.values(e.splits).forEach(s => bal[s.name] = (bal[s.name]||0) - (s.share||0));
-    else if(e.splitBetween?.length) {
-      const sh = (e.amount||0)/e.splitBetween.length;
-      e.splitBetween.forEach(n => bal[n] = (bal[n]||0) - sh);
-    }
+function calcBalances(){
+  const ns=names(), exps=Object.values(S.expenses), bal={};
+  ns.forEach(n=>bal[n]=0);
+  exps.forEach(e=>{
+    if(e.paidBy) bal[e.paidBy]=(bal[e.paidBy]||0)+(e.amount||0);
+    if(e.splits) Object.values(e.splits).forEach(s=>bal[s.name]=(bal[s.name]||0)-(s.share||0));
+    else if(e.splitBetween?.length){ const sh=(e.amount||0)/e.splitBetween.length; e.splitBetween.forEach(n=>bal[n]=(bal[n]||0)-sh); }
   });
   return bal;
 }
-
-function calcSettlements() {
-  const bal = calcBalances();
-  const cred=[], debt=[];
-  Object.entries(bal).forEach(([n,v]) => {
-    if(v>0.5)  cred.push({name:n,amt:v});
-    else if(v<-0.5) debt.push({name:n,amt:-v});
-  });
+function calcSettle(){
+  const bal=calcBalances();
+  const cred=[],debt=[];
+  Object.entries(bal).forEach(([n,v])=>{ if(v>0.5)cred.push({name:n,amt:v}); else if(v<-0.5)debt.push({name:n,amt:-v}); });
   cred.sort((a,b)=>b.amt-a.amt); debt.sort((a,b)=>b.amt-a.amt);
   const txns=[]; let ci=0,di=0;
-  while(ci<cred.length&&di<debt.length) {
+  while(ci<cred.length&&di<debt.length){
     const c=cred[ci],d=debt[di],pay=Math.min(c.amt,d.amt);
     txns.push({from:d.name,to:c.name,amount:pay});
-    c.amt-=pay; d.amt-=pay;
-    if(c.amt<0.5) ci++; if(d.amt<0.5) di++;
+    c.amt-=pay; d.amt-=pay; if(c.amt<0.5)ci++; if(d.amt<0.5)di++;
   }
   return txns;
 }
 
-/* ═══════ RENDER ═══════ */
+/* ════════════════════ RENDER ════════════════════ */
 window.renderUI = () => {
-  const exps  = Object.values(S.expenses);
-  const total = exps.reduce((s,e) => s+(e.amount||0), 0);
-  const mc    = Object.keys(S.members).length;
-  const avg   = exps.length ? total/exps.length : 0;
+  const exps=Object.values(S.expenses);
+  const total=exps.reduce((s,e)=>s+(e.amount||0),0);
+  const mc=Math.max(names().length,1);
+  const todayStr=today();
+  const todayTotal=exps.filter(e=>e.date===todayStr).reduce((s,e)=>s+(e.amount||0),0);
+  const txns=calcSettle();
+  const pending=txns.filter(t=>!S.settlements[`${t.from}_${t.to}`.replace(/\s/g,'_')]?.settled).length;
 
-  // Topbar / hero
-  document.getElementById('trip-name-h').textContent = S.group.name||'Trip';
-  document.getElementById('chip-name').textContent   = S.group.name||'Trip';
-  document.getElementById('code-pill').textContent   = 'CODE: '+S.group.loginCode;
-  document.getElementById('trip-sub-txt').textContent = `${mc} members · ${exps.length} expenses`;
+  // Topbar / head
+  setT('tp-name',S.group.name||'Trip');
+  setT('tp-code',S.group.loginCode||'');
+  setT('pg-title',S.group.name||'Trip');
+  setT('pg-meta',`${mc} members · ${exps.length} expenses`);
+  setT('codepill',`CODE: ${S.group.loginCode}`);
 
   // Stats
-  document.getElementById('s-total').textContent    = fmt(total);
-  document.getElementById('s-txns').textContent     = exps.length+' transaction'+(exps.length!==1?'s':'');
-  document.getElementById('s-avg').textContent      = fmt(avg);
-  document.getElementById('s-members-sub').textContent = mc+' member'+(mc!==1?'s':'');
+  setT('sv-total',fmt(total));
+  setT('sv-txns',exps.length+' transaction'+(exps.length!==1?'s':''));
+  setT('sv-per',fmt(total/mc));
+  setT('sv-members',mc+' member'+(mc!==1?'s'+'  • equal split':'  • equal split'));
+  setT('sv-today',fmt(todayTotal));
+  setT('sv-settle',pending+' settlement'+(pending!==1?'s':'')+' pending');
 
-  const budget = S.group.budget||0;
-  if(budget>0) {
-    const left=budget-total, pct=Math.min(100,Math.round(total/budget*100));
-    document.getElementById('s-left').textContent = (left>=0?'':'-')+fmt(Math.abs(left));
-    document.getElementById('s-left').style.color = left<0?'var(--rose)':'var(--sky)';
-    document.getElementById('s-prog').style.width  = pct+'%';
-    document.getElementById('s-prog').style.background = pct>85?'var(--rose)':pct>60?'var(--amber)':'var(--sky)';
-  } else { document.getElementById('s-left').textContent='—'; document.getElementById('s-prog').style.width='0%'; }
+  const budget=S.group.budget||0;
+  if(budget>0){
+    const pct=Math.min(100,Math.round((total/budget)*100));
+    const left=budget-total;
+    setT('sv-budget',`${pct}%`);
+    setT('sv-bleft',(left>=0?'₹'+Math.round(left).toLocaleString('en-IN')+' left':'OVER BUDGET'));
+    const f=$('sv-bfill');
+    f.style.width=pct+'%';
+    f.style.background=pct>85?'var(--rose)':pct>60?'var(--amber)':'var(--sky)';
+    $('sv-budget').style.color=pct>85?'var(--rose)':pct>60?'var(--amber)':'var(--sky)';
+  } else {
+    setT('sv-budget','—'); setT('sv-bleft','No budget set');
+  }
 
-  const txns   = calcSettlements();
-  const pend   = txns.filter(t=>!S.settlements[`${t.from}_${t.to}`.replace(/\s/g,'_')]?.settled).length;
-  document.getElementById('s-pend').textContent     = pend;
-  document.getElementById('s-pend-sub').textContent = pend ? `Need to settle up` : 'All clear! 🎉';
+  // Update paid-by filter
+  $('fpaid').innerHTML='<option value="">All Members</option>'+names().map(n=>`<option>${n}</option>`).join('');
 
-  renderExpList(exps);
-  renderCats(exps, total);
-  renderMemSidebar(exps);
-  renderMemberPanels();
-  renderTopPayers(exps);
+  renderExpList(exps,total);
+  renderCatList(exps,total);
+  renderMemSide(exps);
+  renderMemTab(exps,total);
   renderSettleTab(txns);
+  setT('mem-ct-s',mc+' people');
 };
 
-function renderExpList(exps) {
-  const catFilter = document.getElementById('filter-cat').value;
-  const memFilter = document.getElementById('filter-member').value;
-  let sorted = [...exps].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  if(catFilter) sorted = sorted.filter(e=>e.category===catFilter);
-  if(memFilter) sorted = sorted.filter(e=>e.paidBy===memFilter||(e.splitBetween||[]).includes(memFilter));
+function renderExpList(exps,total){
+  const filter=$('fcat').value, paidFilter=$('fpaid').value;
+  const search=($('esearch').value||'').toLowerCase();
+  const sort=$('fsort').value;
+  let list=[...exps];
+  if(filter) list=list.filter(e=>e.category===filter);
+  if(paidFilter) list=list.filter(e=>e.paidBy===paidFilter);
+  if(search) list=list.filter(e=>(e.name||'').toLowerCase().includes(search)||(e.notes||'').toLowerCase().includes(search)||(e.paidBy||'').toLowerCase().includes(search));
+  list.sort((a,b)=>sort==='date-d'?(b.date||'').localeCompare(a.date||''):sort==='date-a'?(a.date||'').localeCompare(b.date||''):sort==='amt-d'?(b.amount||0)-(a.amount||0):(a.amount||0)-(b.amount||0));
 
-  const el = document.getElementById('exp-list');
-  if(!sorted.length) { el.innerHTML='<div class="empty"><div class="empty-icon">💸</div><p>No expenses match. Add your first!</p></div>'; return; }
-
-  el.innerHTML = sorted.map(e => {
-    const id = Object.keys(S.expenses).find(k=>S.expenses[k]===e)||'';
-    const splitters = e.splitBetween||[];
-    const perPerson = splitters.length ? e.amount/splitters.length : e.amount;
-    const emoji = e.category?.split(' ')[0]||'📦';
-    // Receipt-style split breakdown (shows each person's share)
-    const splitHtml = splitters.length > 1 ? `
-      <div class="split-breakdown">
-        ${splitters.map(n=>`
-          <div class="split-row">
-            <strong>${n}</strong>
-            <span>${e.splits?fmt(Object.values(e.splits).find(s=>s.name===n)?.share||0):fmt(perPerson)}</span>
-          </div>`).join('')}
-      </div>` : '';
+  const el=$('exp-list');
+  if(!list.length){ el.innerHTML='<div class="empty"><div class="empty-ico">💸</div><p>No expenses found</p></div>'; return; }
+  el.innerHTML=list.map(e=>{
+    const id=Object.keys(S.expenses).find(k=>S.expenses[k]===e)||'';
+    const perP=e.splitBetween?.length? `${fmt(e.amount/e.splitBetween.length)}/person`:'';
+    const splitLabel=S.splitType==='percent'?'%':S.splitType==='custom'?'custom':'equal';
     return `
-    <div class="exp-item">
-      <div class="exp-icon">${emoji}</div>
+    <div class="ei">
+      <div class="eico">${e.category?.split(' ')[0]||'📦'}</div>
       <div style="flex:1;min-width:0">
-        <div class="exp-name">${e.name}</div>
-        <div class="exp-meta">
-          ${e.category?.split(' ')[1]||''} · ${e.date||''} · paid by <strong style="color:var(--text)">${e.paidBy||'?'}</strong>
-          ${e.notes?` · <em style="color:var(--sub)">${e.notes}</em>`:''}
+        <div class="en">${e.name}</div>
+        <div class="em">${e.category?.split(' ')[1]||''} · ${e.date||''} · <strong style="color:var(--txt)">${e.paidBy||'?'}</strong> paid
+          ${perP?`· <span style="color:#b8a8ff">${perP}</span>`:''}
         </div>
-        <span class="exp-tag">${e.splitType==='payer'?'Payer only':splitters.length+' people'}</span>
-        ${splitHtml}
-        <div class="exp-actions">
-          <button class="btn btn-ghost btn-icon btn-sm" onclick="editExp('${id}')" title="Edit">✏️</button>
-          <button class="btn btn-ghost btn-icon btn-sm" style="color:var(--rose)" onclick="delExp('${id}')" title="Delete">🗑️</button>
-        </div>
+        ${e.notes?`<div class="enotes">${e.notes}</div>`:''}
+        ${e.splitBetween?.length?`<div class="em" style="margin-top:2px">Split: ${e.splitBetween.join(', ')}</div>`:''}
       </div>
-      <div style="flex-shrink:0;text-align:right;padding-left:8px">
-        <div class="exp-amount">${fmt(e.amount)}</div>
-        <div class="exp-per">${fmt(perPerson)}/person</div>
+      <div style="flex-shrink:0;text-align:right">
+        <div class="ea">${fmt(e.amount)}</div>
+        <div class="ebtns">
+          <button class="btn bg bxs" onclick="editExp('${id}')" title="Edit">✏️</button>
+          <button class="btn bg bxs" style="color:var(--rose)" onclick="delExp('${id}')" title="Delete">🗑️</button>
+        </div>
       </div>
     </div>`;
   }).join('');
 }
 
-function renderCats(exps, total) {
-  const cats={};
-  exps.forEach(e=>cats[e.category]=(cats[e.category]||0)+(e.amount||0));
-  document.getElementById('cat-list').innerHTML = Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`
-    <div class="cat-row">
-      <div class="cat-top"><span>${c}</span><span>${fmt(v)} <span style="color:var(--sub);font-size:11px">${total?Math.round(v/total*100):0}%</span></span></div>
-      <div class="cat-bar"><div class="cat-fill" style="width:${total?Math.min(100,v/total*100):0}%"></div></div>
-    </div>`).join('') || '<div class="empty"><p>No data yet</p></div>';
+function renderCatList(exps,total){
+  const cats={}; exps.forEach(e=>cats[e.category]=(cats[e.category]||0)+(e.amount||0));
+  $('cat-list').innerHTML=Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`
+    <div class="catrow">
+      <div class="cattop"><span>${c}</span><b>${fmt(v)} <span style="color:var(--sub);font-size:10px">${total?Math.round(v/total*100):0}%</span></b></div>
+      <div class="catbar"><div class="catfill" style="width:${total?Math.min(100,(v/total)*100):0}%"></div></div>
+    </div>`).join('')||'<div class="empty"><p>No data yet</p></div>';
 }
 
-function renderMemSidebar(exps) {
-  const bal = calcBalances();
-  document.getElementById('mem-sidebar').innerHTML = names().map(n => {
-    const net=bal[n]||0;
-    return `
-    <div class="mem-row">
-      <div class="mem-av" style="background:${col(n)};color:#0d0d12">${n[0].toUpperCase()}</div>
-      <div style="flex:1"><div class="mem-name">${n}</div></div>
-      <div class="${Math.abs(net)<1?'zero':net>0?'pos':'neg'}">${net>=0?'+':'-'}${fmt(Math.abs(net))}</div>
+function renderMemSide(exps){
+  const ns=names(); const paid={},owes={};
+  ns.forEach(n=>{ paid[n]=0; owes[n]=0; });
+  exps.forEach(e=>{
+    if(e.paidBy) paid[e.paidBy]=(paid[e.paidBy]||0)+(e.amount||0);
+    if(e.splits) Object.values(e.splits).forEach(s=>owes[s.name]=(owes[s.name]||0)+(s.share||0));
+    else if(e.splitBetween?.length){ const sh=(e.amount||0)/e.splitBetween.length; e.splitBetween.forEach(n=>owes[n]=(owes[n]||0)+sh); }
+  });
+  $('mem-side').innerHTML=ns.map(n=>{
+    const net=(paid[n]||0)-(owes[n]||0);
+    return `<div class="mr">
+      <div class="mav" style="background:${col(n)};width:34px;height:34px;font-size:13px">${n[0].toUpperCase()}</div>
+      <div style="flex:1"><div class="mname">${n}</div><div class="msub">paid ${fmt(paid[n]||0)}</div></div>
+      <div class="${net>=0?'pos':'neg'}" style="font-size:13px">${net>=0?'+':'-'}${fmt(net)}</div>
     </div>`;
-  }).join('') || '<div class="empty"><p>No members yet</p></div>';
+  }).join('')||'<div class="empty"><p>No members</p></div>';
 }
 
-function renderTopPayers(exps) {
-  const paid={};
-  exps.forEach(e=>{ if(e.paidBy) paid[e.paidBy]=(paid[e.paidBy]||0)+(e.amount||0); });
-  const sorted = Object.entries(paid).sort((a,b)=>b[1]-a[1]);
-  const maxP = sorted[0]?.[1]||1;
-  document.getElementById('top-payers').innerHTML = sorted.map(([n,v])=>`
-    <div style="margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;font-size:13px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <div class="mem-av" style="background:${col(n)};color:#0d0d12;width:26px;height:26px;font-size:11px">${n[0].toUpperCase()}</div>
-          <span>${n}</span>
-        </div>
-        <strong>${fmt(v)}</strong>
-      </div>
-      <div class="cat-bar"><div class="cat-fill" style="width:${v/maxP*100}%"></div></div>
-    </div>`).join('') || '<div class="empty"><p>No payments recorded yet</p></div>';
-}
+function renderMemTab(exps,total){
+  const ns=names(); const paid={},owes={},cnt={};
+  ns.forEach(n=>{ paid[n]=0; owes[n]=0; cnt[n]=0; });
+  exps.forEach(e=>{
+    if(e.paidBy){ paid[e.paidBy]=(paid[e.paidBy]||0)+(e.amount||0); cnt[e.paidBy]=(cnt[e.paidBy]||0)+1; }
+    if(e.splits) Object.values(e.splits).forEach(s=>owes[s.name]=(owes[s.name]||0)+(s.share||0));
+    else if(e.splitBetween?.length){ const sh=(e.amount||0)/e.splitBetween.length; e.splitBetween.forEach(n=>owes[n]=(owes[n]||0)+sh); }
+  });
 
-function renderSettleTab(txns) {
-  if(!txns) txns = calcSettlements();
-  const el = document.getElementById('settle-list');
-  const pending = txns.filter(t=>!S.settlements[`${t.from}_${t.to}`.replace(/\s/g,'_')]?.settled);
-  const done    = txns.filter(t=> S.settlements[`${t.from}_${t.to}`.replace(/\s/g,'_')]?.settled);
-
-  el.innerHTML = pending.length ? pending.map(t=>{
-    const key = `${t.from}_${t.to}`.replace(/\s/g,'_');
-    return `
-    <div class="settle-card">
-      <div class="settle-info">
-        <div class="mem-av" style="background:${col(t.from)};color:#0d0d12;width:34px;height:34px;font-size:13px">${t.from[0].toUpperCase()}</div>
-        <div>
-          <div style="font-weight:700;font-size:14px">${t.from}</div>
-          <div style="font-size:11px;color:var(--sub)">pays</div>
-        </div>
-        <div class="settle-arrow-line"></div>
-        <div>
-          <div style="font-weight:700;font-size:14px">${t.to}</div>
-          <div style="font-size:11px;color:var(--sub)">receives</div>
-        </div>
-        <div class="mem-av" style="background:${col(t.to)};color:#0d0d12;width:34px;height:34px;font-size:13px">${t.to[0].toUpperCase()}</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <div class="settle-amt">${fmt(t.amount)}</div>
-        <button class="btn btn-lime btn-sm" onclick="markSettled('${key}')">✓ Done</button>
-      </div>
-    </div>`;
-  }).join('') : '<div class="empty"><div class="empty-icon">🎉</div><p>All settled — no payments needed!</p></div>';
-
-  // History
-  const hist = document.getElementById('settle-hist');
-  hist.innerHTML = done.length ? done.map(t=>{
-    const key = `${t.from}_${t.to}`.replace(/\s/g,'_');
-    const sDate = S.settlements[key]?.date||'';
-    return `
-    <div class="settle-card done" style="opacity:.7">
-      <div class="settle-info">
-        <div class="mem-av" style="background:${col(t.from)};color:#0d0d12;width:30px;height:30px;font-size:12px">${t.from[0].toUpperCase()}</div>
-        <div style="font-size:13px"><strong>${t.from}</strong> → <strong>${t.to}</strong>${sDate?` <span style="color:var(--sub);font-size:11px">· ${sDate}</span>`:''}</div>
+  // Full member list
+  setT('mem-full-ct',ns.length+' people');
+  $('mem-full-list').innerHTML=Object.entries(S.members).map(([id,m])=>{
+    const net=(paid[m.name]||0)-(owes[m.name]||0);
+    return `<div class="mr">
+      <div class="mav" style="background:${col(m.name)};width:36px;height:36px;font-size:14px">${m.name[0].toUpperCase()}</div>
+      <div style="flex:1">
+        <div class="mname">${m.name}</div>
+        <div class="msub">Paid ${fmt(paid[m.name]||0)} · ${cnt[m.name]||0} expense${cnt[m.name]!==1?'s':''}</div>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
-        <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;color:var(--sky)">${fmt(t.amount)}</div>
-        <button class="btn btn-ghost btn-xs" onclick="markSettled('${key}')">Undo</button>
+        <span class="badge ${net>=0?'badge-g':'badge-r'}">${net>=0?'+':'-'}${fmt(net)}</span>
+        <button class="btn bg bxs" style="color:var(--rose)" onclick="removeMem('${id}')">✕</button>
       </div>
     </div>`;
-  }).join('') : '<div class="empty"><p>No completed settlements yet</p></div>';
+  }).join('')||'<div class="empty"><p>No members yet</p></div>';
+
+  // Rank by paid
+  $('mem-rank').innerHTML=ns.sort((a,b)=>(paid[b]||0)-(paid[a]||0)).map((n,i)=>{
+    const pct=total?Math.round((paid[n]||0)/total*100):0;
+    const medals=['🥇','🥈','🥉'];
+    return `<div style="margin-bottom:11px">
+      <div class="cattop">
+        <span style="display:flex;align-items:center;gap:6px">
+          <span>${medals[i]||'👤'}</span>
+          <span class="mav" style="background:${col(n)};width:22px;height:22px;font-size:10px">${n[0].toUpperCase()}</span>
+          ${n}
+        </span>
+        <b>${fmt(paid[n]||0)} <span style="color:var(--sub);font-size:10px">${pct}%</span></b>
+      </div>
+      <div class="catbar"><div class="catfill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('')||'<div class="empty"><p>No data</p></div>';
+
+  // Expense count
+  $('mem-expcount').innerHTML=ns.map(n=>`
+    <div class="row">
+      <span class="row-lbl" style="display:flex;align-items:center;gap:6px">
+        <span class="mav" style="background:${col(n)};width:22px;height:22px;font-size:10px">${n[0].toUpperCase()}</span>${n}
+      </span>
+      <span class="row-val">${cnt[n]||0} expense${cnt[n]!==1?'s':''}</span>
+    </div>`).join('')||'<div class="empty"><p>No data</p></div>';
 }
 
-/* ─── ANALYTICS ─── */
-function renderAnalytics() {
-  const exps  = Object.values(S.expenses);
-  const total = exps.reduce((s,e)=>s+(e.amount||0),0);
-  const mc    = names().length;
-  const budget = S.group.budget||0;
+function renderSettleTab(txns){
+  if(!txns) txns=calcSettle();
+  const pend=txns.filter(t=>!S.settlements[`${t.from}_${t.to}`.replace(/\s/g,'_')]?.settled).length;
+  setT('settle-sum',pend+' payment'+(pend!==1?'s':'')+' needed');
 
-  // Summary mini-stats
-  document.getElementById('an-stats').innerHTML = [
-    ['Total Spent', fmt(total), 'var(--lime)'],
-    ['Avg / Expense', fmt(exps.length?total/exps.length:0), 'var(--violet)'],
-    ['Avg / Member', fmt(mc?total/mc:0), 'var(--sky)'],
-    ['# Transactions', exps.length, 'var(--amber)'],
-    ['Budget Used', budget?Math.min(100,Math.round(total/budget*100))+'%':'N/A','var(--rose)'],
-    ['Members', mc, 'var(--text)'],
-  ].map(([l,v,c])=>`
-    <div class="mini-stat">
-      <div class="mini-stat-lbl">${l}</div>
-      <div class="mini-stat-val" style="color:${c}">${v}</div>
-    </div>`).join('');
+  // Settle list
+  const el=$('settle-list');
+  if(!txns.length){ el.innerHTML='<div class="empty"><div class="empty-ico">🎉</div><p>All settled up! No payments needed.</p></div>'; }
+  else el.innerHTML=txns.map(t=>{
+    const key=`${t.from}_${t.to}`.replace(/\s/g,'_');
+    const done=S.settlements[key]?.settled;
+    return `<div class="stlc ${done?'done':''}">
+      <div class="stlarr">
+        <div class="mav" style="background:${col(t.from)};width:32px;height:32px;font-size:12px">${t.from[0].toUpperCase()}</div>
+        <div><div style="font-weight:700;font-size:13px">${t.from}</div><div style="font-size:10px;color:var(--sub)">pays</div></div>
+        <div class="aline"></div>
+        <div><div style="font-weight:700;font-size:13px">${t.to}</div><div style="font-size:10px;color:var(--sub)">receives</div></div>
+        <div class="mav" style="background:${col(t.to)};width:32px;height:32px;font-size:12px">${t.to[0].toUpperCase()}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="stlamt">${fmt(t.amount)}</div>
+        <button class="btn bsm ${done?'bg':'bl'}" onclick="markSettled('${key}')">${done?'↩ Undo':'✓ Done'}</button>
+      </div>
+    </div>`;
+  }).join('');
 
-  // Bar chart by date (last 10 expenses)
-  const byDate={};
-  exps.forEach(e=>{ const d=(e.date||'?').slice(5); byDate[d]=(byDate[d]||0)+(e.amount||0); });
-  const dates=Object.entries(byDate).sort(([a],[b])=>a.localeCompare(b)).slice(-8);
-  const maxD = Math.max(...dates.map(([,v])=>v),1);
-  document.getElementById('bar-chart').innerHTML = dates.map(([d,v])=>`
-    <div class="bar-col">
-      <div class="bar-fill" style="height:${Math.round(v/maxD*72)}px" title="${fmt(v)}"></div>
-      <div class="bar-lbl">${d}</div>
-    </div>`).join('') || '<p style="color:var(--sub);font-size:13px">No data</p>';
+  // Balance sheet
+  const bal=calcBalances();
+  $('balance-sheet').innerHTML=Object.entries(bal).map(([n,v])=>`
+    <div class="row">
+      <span class="row-lbl" style="display:flex;align-items:center;gap:6px">
+        <span class="mav" style="background:${col(n)};width:22px;height:22px;font-size:10px">${n[0].toUpperCase()}</span>${n}
+      </span>
+      <span class="${v>=0?'pos':'neg'}" style="font-size:13px">${v>=0?'+':'-'}${fmt(v)}</span>
+    </div>`).join('')||'<div class="empty"><p>No data</p></div>';
 
-  // Category breakdown
-  const cats={};
-  exps.forEach(e=>cats[e.category]=(cats[e.category]||0)+(e.amount||0));
-  document.getElementById('an-cats').innerHTML = Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`
-    <div class="cat-row">
-      <div class="cat-top"><span>${c}</span><span>${fmt(v)} <span style="color:var(--sub);font-size:11px">${total?Math.round(v/total*100):0}%</span></span></div>
-      <div class="cat-bar"><div class="cat-fill" style="width:${total?Math.min(100,v/total*100):0}%"></div></div>
-    </div>`).join('') || '<div class="empty"><p>No expenses yet</p></div>';
-
-  // Activity log (recent 8)
-  const recent = [...exps].sort((a,b)=>(b.savedAt||'').localeCompare(a.savedAt||'')).slice(0,8);
-  document.getElementById('activity-log').innerHTML = recent.map(e=>`
-    <div class="history-item">
-      <div class="history-dot" style="background:${col(e.paidBy)}"></div>
-      <div style="flex:1;font-size:13px"><strong>${e.paidBy||'?'}</strong> added <em>${e.name}</em></div>
-      <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:13px;color:var(--lime)">${fmt(e.amount)}</div>
-      <div style="font-size:11px;color:var(--sub);margin-left:8px">${e.date||''}</div>
-    </div>`).join('') || '<div class="empty"><p>No activity yet</p></div>';
+  // Progress
+  const totalTxns=txns.length, doneTxns=txns.length-pend;
+  const pct=totalTxns?Math.round(doneTxns/totalTxns*100):100;
+  $('settle-progress').innerHTML=`
+    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
+      <span style="color:var(--sub2)">${doneTxns} of ${totalTxns} payments done</span>
+      <b>${pct}%</b>
+    </div>
+    <div class="sc-bar" style="height:6px;margin:0"><div class="sc-fill" style="width:${pct}%;background:${pct===100?'var(--green)':'var(--violet)'}"></div></div>
+    <div class="g3" style="margin-top:14px">
+      <div class="info-box"><div class="info-box-lbl">Total</div><div class="info-box-val">${totalTxns}</div></div>
+      <div class="info-box"><div class="info-box-lbl">Done</div><div class="info-box-val" style="color:var(--green)">${doneTxns}</div></div>
+      <div class="info-box"><div class="info-box-lbl">Pending</div><div class="info-box-val" style="color:${pend?'var(--rose)':'var(--green)}'}">${pend}</div></div>
+    </div>`;
 }
 
-/* ─── CLOSE MODALS ON BACKDROP ─── */
-document.querySelectorAll('.modal').forEach(m => {
-  m.addEventListener('click', e => { if(e.target===m) m.classList.remove('on'); });
-});
+/* ── ANALYTICS ── */
+function renderAnalytics(){
+  const exps=Object.values(S.expenses);
+  const total=exps.reduce((s,e)=>s+(e.amount||0),0);
+  const budget=S.group.budget||0;
+  const ns=names(); const paid={};
+  ns.forEach(n=>paid[n]=0);
+  exps.forEach(e=>{ if(e.paidBy) paid[e.paidBy]=(paid[e.paidBy]||0)+(e.amount||0); });
+
+  // Daily chart
+  const days=14; const dayMap={};
+  for(let i=days-1;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); dayMap[d.toISOString().split('T')[0]]=0; }
+  exps.forEach(e=>{ if(dayMap.hasOwnProperty(e.date)) dayMap[e.date]+=e.amount||0; });
+  const maxDay=Math.max(...Object.values(dayMap),1);
+  $('daily-chart').innerHTML=Object.entries(dayMap).map(([d,v])=>{
+    const h=Math.max(4,Math.round((v/maxDay)*120));
+    return `<div class="bcol"><div class="bfill" style="height:${h}px">${v>0?`<div class="btip">${fmt(v)}</div>`:''}</div><div class="blbl">${d.slice(5)}</div></div>`;
+  }).join('');
+
+  // Timeline — last 10 expenses
+  const sorted=[...exps].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,10);
+  $('timeline').innerHTML=sorted.map(e=>`
+    <div class="tl-item">
+      <div class="tl-dot" style="background:${col(e.paidBy||'?')}"></div>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:700">${e.name}</div>
+        <div style="font-size:10px;color:var(--sub2)">${e.date||''} · ${e.paidBy||'?'} · ${e.category||''}</div>
+      </div>
+      <div style="font-family:'Bricolage Grotesque';font-weight:800;font-size:13px;color:var(--lime)">${fmt(e.amount)}</div>
+    </div>`).join('')||'<div class="empty"><p>No expenses</p></div>';
+
+  // Top spenders
+  $('top-spenders').innerHTML=ns.sort((a,b)=>(paid[b]||0)-(paid[a]||0)).map(n=>{
+    const pct=total?Math.round((paid[n]||0)/total*100):0;
+    return `<div style="margin-bottom:10px">
+      <div class="cattop"><span style="display:flex;align-items:center;gap:7px">
+        <span class="mav" style="background:${col(n)};width:22px;height:22px;font-size:10px">${n[0].toUpperCase()}</span>${n}
+      </span><b>${fmt(paid[n]||0)} <span style="color:var(--sub);font-size:10px">${pct}%</span></b></div>
+      <div class="catbar"><div class="catfill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('')||'<div class="empty"><p>No data</p></div>';
+
+  // Budget ring
+  const pct=budget>0?Math.min(100,Math.round((total/budget)*100)):0;
+  const circ=207.35, fill=circ-(circ*pct/100);
+  const rc=$('ring-c'); rc.style.strokeDashoffset=fill; rc.style.stroke=pct>85?'var(--rose)':pct>60?'var(--amber)':'var(--lime)';
+  setT('ring-pct',pct+'%');
+  $('ring-sub').innerHTML=budget>0?`<b style="color:var(--txt)">${fmt(total)}</b> of ${fmt(budget)}`:'No budget set';
+  $('budget-bd').innerHTML=budget>0?`
+    <div class="g2" style="margin-top:12px">
+      <div class="info-box"><div class="info-box-lbl">Spent</div><div class="info-box-val" style="color:var(--rose)">${fmt(total)}</div></div>
+      <div class="info-box"><div class="info-box-lbl">Left</div><div class="info-box-val" style="color:var(--green)">${fmt(budget-total)}</div></div>
+    </div>`:'';
+
+  // Category pie
+  const cats={}; exps.forEach(e=>cats[e.category]=(cats[e.category]||0)+(e.amount||0));
+  $('pie-bd').innerHTML=Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`
+    <div class="catrow">
+      <div class="cattop"><span>${c}</span><b>${fmt(v)} <span style="color:var(--sub);font-size:10px">${total?Math.round(v/total*100):0}%</span></b></div>
+      <div class="catbar"><div class="catfill" style="width:${total?Math.min(100,(v/total)*100):0}%"></div></div>
+    </div>`).join('')||'<div class="empty"><p>No data</p></div>';
+
+  // Summary
+  const avgExp=exps.length?total/exps.length:0;
+  const maxE=exps.length?exps.reduce((m,e)=>e.amount>m.amount?e:m,exps[0]):null;
+  const minE=exps.length?exps.reduce((m,e)=>e.amount<m.amount?e:m,exps[0]):null;
+  const topPayer=ns.sort((a,b)=>(paid[b]||0)-(paid[a]||0))[0];
+  $('summary-panel').innerHTML=`
+    ${topPayer?`<div class="row"><span class="row-lbl">Top payer</span><span class="row-val">${topPayer} (${fmt(paid[topPayer]||0)})</span></div>`:''}
+    <div class="row"><span class="row-lbl">Avg per expense</span><span class="row-val">${fmt(avgExp)}</span></div>
+    <div class="row"><span class="row-lbl">Avg per person / day</span><span class="row-val">${fmt(total/Math.max(ns.length,1))}</span></div>
+    ${maxE?`<div class="row"><span class="row-lbl">Largest expense</span><span class="row-val">${maxE.name} (${fmt(maxE.amount)})</span></div>`:''}
+    ${minE&&minE!==maxE?`<div class="row"><span class="row-lbl">Smallest expense</span><span class="row-val">${minE.name} (${fmt(minE.amount)})</span></div>`:''}
+    <div class="row"><span class="row-lbl">Total members</span><span class="row-val">${ns.length}</span></div>`;
+}
 </script>
 </body>
 </html>
