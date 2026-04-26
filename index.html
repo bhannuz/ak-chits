@@ -313,7 +313,7 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
         <div class="sc-sub" id="sv-txns">0 transactions</div>
       </div>
       <div class="sc" style="--sc-ac:var(--sky)">
-        <div class="sc-lbl">📊 Budget</div>
+        <div class="sc-lbl">📊 Overall Budget</div>
         <div class="sc-val" id="sv-budget" style="color:var(--sky)">—</div>
         <div class="sc-sub" id="sv-bleft">No budget set</div>
         <div class="sc-bar"><div class="sc-fill" id="sv-bfill" style="width:0%;background:var(--sky)"></div></div>
@@ -901,12 +901,19 @@ window.renderUI = () => {
   if(budget>0){
     const pct=Math.min(100,Math.round((total/budget)*100));
     const left=budget-total;
-    setT('sv-budget',pct+'%');
-    setT('sv-bleft',(left>=0?fmt(left)+' left':'OVER BUDGET'));
-    const f=$('sv-bfill'); f.style.width=pct+'%';
-    f.style.background=pct>85?'var(--rose)':pct>60?'var(--amber)':'var(--sky)';
-    $('sv-budget').style.color=pct>85?'var(--rose)':pct>60?'var(--amber)':'var(--sky)';
-  } else { setT('sv-budget','—'); setT('sv-bleft','No budget set'); }
+    const bcolor=pct>85?'var(--rose)':pct>60?'var(--amber)':'var(--sky)';
+    // Big number = % of overall budget used
+    setT('sv-budget', pct+'%');
+    // Subtext = ₹left remaining (or over budget) out of total budget
+    setT('sv-bleft', left>=0 ? fmt(left)+' left of '+fmt(budget) : 'Over by '+fmt(-left));
+    const f=$('sv-bfill'); f.style.width=pct+'%'; f.style.background=bcolor;
+    $('sv-budget').style.color=bcolor;
+  } else {
+    setT('sv-budget','—');
+    setT('sv-bleft','No budget set');
+    $('sv-budget').style.color='var(--sky)';
+    $('sv-bfill').style.width='0%';
+  }
 
   $('fpaid').innerHTML='<option value="">All Members</option>'+ns().map(n=>`<option>${n}</option>`).join('');
   setT('mem-ct-s',mc+' people');
