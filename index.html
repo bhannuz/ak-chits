@@ -115,10 +115,24 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
 .sc-fill{height:100%;border-radius:2px;transition:width .6s ease;}
 
 /* TABS — scrollable horizontal on mobile */
-.tabrow{display:flex;gap:2px;background:var(--ink2);border:1px solid var(--rim);border-radius:10px;padding:3px;margin-bottom:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-shrink:0;}
+/* Tabs — sticky so always accessible while scrolling */
+.tabrow{
+  display:flex;gap:2px;
+  background:rgba(10,10,16,.95);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--rim);
+  padding:6px 14px;
+  margin:0 -14px 14px;          /* bleed to edges */
+  overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+  flex-shrink:0;
+  position:sticky;top:calc(54px + var(--safe-top));
+  z-index:90;
+}
 .tabrow::-webkit-scrollbar{display:none;}
-.tb{flex-shrink:0;padding:7px 13px;border-radius:7px;border:none;background:transparent;color:var(--sub);font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.tb{flex-shrink:0;padding:6px 14px;border-radius:7px;border:none;background:transparent;color:var(--sub);font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;}
 .tb.on{background:var(--ink3);color:var(--txt);box-shadow:0 2px 6px rgba(0,0,0,.4);}
+
+/* Each section — scroll-margin so sticky tabrow doesn't cover it */
+.sec{scroll-margin-top:calc(54px + 44px + var(--safe-top) + 8px);}
 
 /* PANELS */
 .pnl{background:var(--ink2);border:1px solid var(--rim);border-radius:var(--r);overflow:hidden;margin-bottom:10px;}
@@ -340,7 +354,7 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
     </div>
 
     <!-- ══ EXPENSES TAB ══ -->
-    <div id="t-exp">
+    <div id="t-exp" class="sec">
       <!-- Filters row -->
       <div class="pnl">
         <div class="ph" style="flex-wrap:wrap;gap:6px">
@@ -385,7 +399,7 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
     </div>
 
     <!-- ══ ANALYTICS TAB ══ -->
-    <div id="t-anal" class="hidden">
+    <div id="t-anal" class="sec">
       <div class="pnl">
         <div class="ph"><span class="pt">Daily Spending</span><span style="font-size:11px;color:var(--sub2)">Last 14 days</span></div>
         <div class="pb"><div class="chart-wrap" id="daily-chart"></div></div>
@@ -433,7 +447,7 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
     </div>
 
     <!-- ══ MEMBERS TAB ══ -->
-    <div id="t-mem" class="hidden">
+    <div id="t-mem" class="sec">
       <div class="pnl">
         <div class="ph">
           <span class="pt">Trip Members</span>
@@ -462,7 +476,7 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
     </div>
 
     <!-- ══ SETTLE TAB ══ -->
-    <div id="t-settle" class="hidden">
+    <div id="t-settle" class="sec">
       <div class="pnl">
         <div class="ph">
           <span class="pt">Settlement Plan</span>
@@ -603,20 +617,14 @@ function hideLoad(){ $('__ld')?.remove(); }
 window.go    = id => { document.querySelectorAll('.scr').forEach(s=>s.classList.add('hidden')); $(id).classList.remove('hidden'); };
 window.closeM= id => { $(id).classList.remove('on'); };
 
-/* TAB SWITCH — renders the right content */
+/* TAB SWITCH — scroll to section, highlight tab */
 window.switchTab = (id, btn) => {
-  ['t-exp','t-anal','t-mem','t-settle'].forEach(t=>$(t).classList.add('hidden'));
   document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));
-  $(id).classList.remove('hidden');
   btn.classList.add('on');
   S.activeTab = id;
-  // Trigger content render for the tab
-  const exps = Object.values(S.expenses);
-  const total = exps.reduce((s,e)=>s+(e.amount||0),0);
-  if(id==='t-exp')    { renderExpList(exps,total); renderCatList(exps,total); renderMemSide(exps); }
-  if(id==='t-anal')   renderAnalytics();
-  if(id==='t-mem')    renderMemTab(exps,total);
-  if(id==='t-settle') renderSettleTab();
+  // Scroll the section into view smoothly
+  const el = $(id);
+  if(el) el.scrollIntoView({ behavior:'smooth', block:'start' });
 };
 
 /* ── SESSION CACHE ─────────────────────────────────────────
@@ -978,15 +986,13 @@ window.renderUI = () => {
   $('fpaid').innerHTML='<option value="">All Members</option>'+ns().map(n=>`<option>${n}</option>`).join('');
   setT('mem-ct-s',mc+' people');
 
-  // Always render expenses tab content
+  // Render all sections — everything is always visible
   renderExpList(exps,total);
   renderCatList(exps,total);
   renderMemSide(exps);
-
-  // Render active tab's specific content
-  if(S.activeTab==='t-anal')   renderAnalytics();
-  if(S.activeTab==='t-mem')    renderMemTab(exps,total);
-  if(S.activeTab==='t-settle') renderSettleTab();
+  renderAnalytics();
+  renderMemTab(exps,total);
+  renderSettleTab();
 };
 
 function renderExpList(exps,total){
