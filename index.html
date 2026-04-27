@@ -288,21 +288,20 @@ select.fi{appearance:none;-webkit-appearance:none;background-image:url("data:ima
         <div class="sc-val" id="sv-total" style="color:var(--lime)">₹0</div>
         <div class="sc-sub" id="sv-txns">0 expenses</div>
       </div>
-      <div class="sc" style="--sc-ac:var(--sky)">
-        <div class="sc-lbl">📊 Budget</div>
-        <div class="sc-val" id="sv-budget" style="color:var(--sky)">—</div>
-        <div class="sc-sub" id="sv-bleft">not set</div>
-        <div class="sc-bar"><div class="sc-fill" id="sv-bfill" style="width:0%;background:var(--sky)"></div></div>
+      <div class="sc" style="--sc-ac:var(--amber)">
+        <div class="sc-lbl">📅 Today</div>
+        <div class="sc-val" id="sv-today" style="color:var(--amber)">₹0</div>
+        <div class="sc-sub" id="sv-today-sub">no expenses yet</div>
       </div>
       <div class="sc" style="--sc-ac:var(--violet)">
         <div class="sc-lbl">👤 Per Person</div>
         <div class="sc-val" id="sv-per" style="color:#c0b0ff">₹0</div>
         <div class="sc-sub" id="sv-mem">—</div>
       </div>
-      <div class="sc" style="--sc-ac:var(--amber)">
-        <div class="sc-lbl">✅ Settle</div>
-        <div class="sc-val" id="sv-settle" style="color:var(--amber)">0</div>
-        <div class="sc-sub" id="sv-settle-sub">pending</div>
+      <div class="sc" style="--sc-ac:var(--sky)">
+        <div class="sc-lbl">📊 Today's Top</div>
+        <div class="sc-val" id="sv-topcat" style="color:var(--sky);font-size:13px;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+        <div class="sc-sub" id="sv-topcat-sub">no category yet</div>
       </div>
     </div>
 
@@ -771,29 +770,44 @@ window.renderUI=()=>{
   const exps=Object.values(S.expenses),total=exps.reduce((s,e)=>s+(e.amount||0),0);
   const mc=Math.max(ns().length,1),todayStr=today();
   const todayAmt=exps.filter(e=>e.date===todayStr).reduce((s,e)=>s+(e.amount||0),0);
-  const txns=calcSettle(),pend=txns.filter(t=>!S.settlements[`${t.from}_${t.to}`.replace(/\s/g,'_')]?.settled).length;
 
   setT('t-tripname',S.group.name||'—');
   setT('pg-title',S.group.name||'Trip');
   setT('pg-meta',`${mc} member${mc!==1?'s':''} · ${exps.length} expense${exps.length!==1?'s':''}`);
   setT('sv-total',fmt(total));setT('sv-txns',exps.length+' expense'+(exps.length!==1?'s':''));
   setT('sv-per',fmt(total/mc));setT('sv-mem',mc+' member'+(mc!==1?'s':''));
-  setT('sv-settle',String(pend));setT('sv-settle-sub',pend?'pending':'all clear 🎉');
 
-  const budget=S.group.budget||0;
-  if(budget>0){
-    const pct=Math.min(100,Math.round((total/budget)*100)),left=budget-total;
-    const bc=pct>85?'var(--rose)':pct>60?'var(--amber)':'var(--sky)';
-    setT('sv-budget',pct+'%');
-    setT('sv-bleft',left>=0?fmt(left)+' left':'over budget');
-    const f=$('sv-bfill');f.style.width=pct+'%';f.style.background=bc;
-    $('sv-budget').style.color=bc;
-  }else{setT('sv-budget','—');setT('sv-bleft','not set');$('sv-budget').style.color='var(--sky)';$('sv-bfill').style.width='0%';}
+  // Card 2: Today's spend
+  const todayExps=exps.filter(e=>e.date===todayStr);
+  if(todayAmt>0){
+    setT('sv-today',fmt(todayAmt));
+    setT('sv-today-sub',todayExps.length+' expense'+(todayExps.length!==1?'s':''));
+    $('sv-today').style.color='var(--amber)';
+  }else{
+    setT('sv-today','₹0');setT('sv-today-sub','no expenses today');
+    $('sv-today').style.color='var(--sub2)';
+  }
+
+  // Card 4: Today's top category
+  const todayCats={};
+  todayExps.forEach(e=>todayCats[e.category]=(todayCats[e.category]||0)+(e.amount||0));
+  const todayCatEntries=Object.entries(todayCats).sort((a,b)=>b[1]-a[1]);
+  if(todayCatEntries.length){
+    const [topCat,topAmt]=todayCatEntries[0];
+    const catParts=topCat?.split(' ')||[];
+    const catIcon=catParts[0]||'📦', catName=catParts.slice(1).join(' ')||topCat;
+    setT('sv-topcat',catIcon+' '+catName);
+    const pct=todayAmt?Math.round(topAmt/todayAmt*100):100;
+    setT('sv-topcat-sub',fmt(topAmt)+' · '+pct+'% of today');
+    $('sv-topcat').style.color='var(--sky)';
+  }else{
+    setT('sv-topcat','—');setT('sv-topcat-sub','no category yet');
+    $('sv-topcat').style.color='var(--sub2)';
+  }
 
   $('fpaid').innerHTML='<option value="">All Members</option>'+ns().map(n=>`<option>${n}</option>`).join('');
 
   // Today strip
-  const todayExps=exps.filter(e=>e.date===todayStr);
   const strip=$('today-strip');
   if(!todayExps.length){strip.style.display='none';}
   else{
