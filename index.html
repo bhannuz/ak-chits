@@ -222,6 +222,27 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
 .ei-ico{font-size:30px;margin-bottom:8px;opacity:.4;}
 .toast{position:fixed;bottom:calc(24px + var(--safe-bot));left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink2);border:1px solid var(--rim);border-radius:40px;padding:10px 18px;font-weight:700;font-size:13px;z-index:99999;transition:transform .3s cubic-bezier(.34,1.56,.64,1);pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.5);white-space:nowrap;}
 .toast.show{transform:translateX(-50%) translateY(0);}
+
+/* TODAY STRIP */
+.today-strip{
+  background:var(--ink2);border:1px solid var(--rim);border-radius:var(--r);
+  margin-bottom:12px;overflow:hidden;
+}
+.today-hd{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:9px 14px;border-bottom:1px solid var(--rim);
+}
+.today-title{font-family:'Bricolage Grotesque',sans-serif;font-size:12px;font-weight:700;letter-spacing:-.1px;}
+.today-total{font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:800;color:var(--amber);}
+.today-list{padding:0 14px;}
+.today-list:empty::after{content:'No expenses today';display:block;padding:10px 0;font-size:12px;color:var(--sub);text-align:center;}
+.ti{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--rim3);}
+.ti:last-child{border-bottom:none;}
+.ti-ico{font-size:16px;width:28px;text-align:center;flex-shrink:0;}
+.ti-name{font-size:12px;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ti-who{font-size:10px;color:var(--sub2);flex-shrink:0;}
+.ti-amt{font-family:'Bricolage Grotesque',sans-serif;font-size:13px;font-weight:800;color:var(--lime);flex-shrink:0;margin-left:6px;}
+
 </style>
 </head>
 <body>
@@ -276,11 +297,10 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
 <!-- ══════ MAIN APP ══════ -->
 <div id="app" class="app">
 
-  <!-- TOPBAR — minimal on mobile -->
+  <!-- TOPBAR -->
   <nav class="topbar">
     <div class="t-left">
       <div class="t-brand"><span class="t-bs">Smart</span><span class="t-bd">Split</span></div>
-      <span class="t-tripname" id="tp-name"></span>
     </div>
     <div class="t-right">
       <button class="btn bg bsm" onclick="openMem()" aria-label="Members">👥</button>
@@ -294,10 +314,7 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
     <div class="trip-hd">
       <div class="trip-hd-left">
         <div class="trip-hd-title" id="pg-title">Trip</div>
-        <div class="trip-hd-meta">
-          <span style="font-size:11px;color:var(--sub2)" id="pg-meta"></span>
-          <span class="codepill" id="codepill" onclick="copyCode()">····</span>
-        </div>
+        <div style="font-size:11px;color:var(--sub2);margin-top:3px" id="pg-meta"></div>
       </div>
       <div class="trip-hd-right">
         <button class="btn bg bsm" onclick="openBudgetEdit()" title="Settings">⚙️</button>
@@ -324,10 +341,19 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
         <div class="sc-sub" id="sv-mem">equal split</div>
       </div>
       <div class="sc" style="--sc-ac:var(--amber)">
-        <div class="sc-lbl">⚡ Today</div>
-        <div class="sc-val" id="sv-today" style="color:var(--amber)">₹0</div>
-        <div class="sc-sub" id="sv-settle">0 pending</div>
+        <div class="sc-lbl">✅ Settlements</div>
+        <div class="sc-val" id="sv-settle" style="color:var(--amber)">0</div>
+        <div class="sc-sub" id="sv-settle-sub">pending</div>
       </div>
+    </div>
+
+    <!-- TODAY'S EXPENSES — compact strip -->
+    <div class="today-strip" id="today-strip">
+      <div class="today-hd">
+        <span class="today-title">📅 Today</span>
+        <span class="today-total" id="today-total">₹0</span>
+      </div>
+      <div id="today-list" class="today-list"></div>
     </div>
 
     <!-- TABS -->
@@ -885,17 +911,15 @@ window.renderUI = () => {
   const txns=calcSettle();
   const pend=txns.filter(t=>!S.settlements[`${t.from}_${t.to}`.replace(/\s/g,'_')]?.settled).length;
 
-  setT('tp-name',S.group.name||'');
   setT('pg-title',S.group.name||'Trip');
-  setT('pg-meta',`${mc} members · ${exps.length} expenses`);
-  setT('codepill',`CODE: ${S.group.loginCode||'····'}`);
+  setT('pg-meta',`${mc} member${mc!==1?'s':''} · ${exps.length} expense${exps.length!==1?'s':''}`);
 
   setT('sv-total',fmt(total));
   setT('sv-txns',exps.length+' transaction'+(exps.length!==1?'s':''));
   setT('sv-per',fmt(total/mc));
   setT('sv-mem',mc+' member'+(mc!==1?'s':''));
-  setT('sv-today',fmt(todayAmt));
-  setT('sv-settle',pend+' pending');
+  setT('sv-settle', String(pend));
+  setT('sv-settle-sub', pend ? 'need to settle' : 'all clear 🎉');
 
   const budget=S.group.budget||0;
   if(budget>0){
@@ -918,6 +942,9 @@ window.renderUI = () => {
   $('fpaid').innerHTML='<option value="">All Members</option>'+ns().map(n=>`<option>${n}</option>`).join('');
   setT('mem-ct-s',mc+' people');
 
+  // Today's expenses compact strip
+  renderTodayStrip(exps, todayStr, todayAmt);
+
   // Always render expenses tab content
   renderExpList(exps,total);
   renderCatList(exps,total);
@@ -928,6 +955,29 @@ window.renderUI = () => {
   if(S.activeTab==='t-mem')    renderMemTab(exps,total);
   if(S.activeTab==='t-settle') renderSettleTab();
 };
+
+function renderTodayStrip(exps, todayStr, todayAmt){
+  const todayExps = exps.filter(e => e.date === todayStr);
+  const strip = $('today-strip');
+
+  // Hide strip entirely if nothing today
+  if(!todayExps.length){
+    strip.style.display = 'none';
+    return;
+  }
+  strip.style.display = '';
+  setT('today-total', fmt(todayAmt));
+
+  $('today-list').innerHTML = todayExps
+    .sort((a,b) => (b.amount||0) - (a.amount||0))
+    .map(e => `
+      <div class="ti">
+        <span class="ti-ico">${e.category?.split(' ')[0]||'📦'}</span>
+        <span class="ti-name">${e.name}</span>
+        <span class="ti-who">${e.paidBy||'?'}</span>
+        <span class="ti-amt">${fmt(e.amount)}</span>
+      </div>`).join('');
+}
 
 function renderExpList(exps,total){
   const filter=$('fcat').value, paidF=$('fpaid').value;
