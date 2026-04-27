@@ -578,6 +578,8 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
       <button class="btn bl" style="flex:1" onclick="saveBudget()">Save</button>
       <button class="btn bg" onclick="closeM('m-budget')">Cancel</button>
     </div>
+    <div class="dvd"></div>
+    <button class="btn bg w100" style="color:var(--rose);font-size:12px" onclick="switchTrip()">🔄 Switch Trip / Log Out</button>
   </div>
 </div>
 
@@ -642,6 +644,52 @@ window.switchTab = (id, btn) => {
   if(id==='t-settle') renderSettleTab();
 };
 
+/* ── SESSION CACHE ─────────────────────────────────────────
+   Saves trip code + gid to localStorage with a timestamp.
+   On next open, if session is < SESSION_DAYS old, skip the
+   login screen entirely and go straight into the app.
+   To log out / switch trip: clear localStorage manually or
+   use the ⚙️ settings modal "Switch Trip" button.
+─────────────────────────────────────────────────────────── */
+const SESSION_DAYS = 5;           // ← change to 2 for every-2-days
+const SESSION_KEY  = 'ss_session';
+
+function saveSession(code, gid){
+  localStorage.setItem(SESSION_KEY, JSON.stringify({
+    code, gid, ts: Date.now()
+  }));
+}
+function clearSession(){
+  localStorage.removeItem(SESSION_KEY);
+}
+function loadSession(){
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if(!raw) return null;
+    const s = JSON.parse(raw);
+    const age = (Date.now() - s.ts) / (1000 * 60 * 60 * 24); // days
+    if(age > SESSION_DAYS){ clearSession(); return null; }
+    return s;
+  } catch { clearSession(); return null; }
+}
+
+/* Auto-restore session on page load */
+(async () => {
+  const sess = loadSession();
+  if(!sess) return; // no session → show start screen normally
+  showLoad('Welcome back…');
+  try {
+    const snap = await get(ref(db,'smartsplit/groups'));
+    hideLoad();
+    if(!snap.exists()){ clearSession(); return; }
+    const entry = Object.entries(snap.val()).find(([,g])=>String(g.loginCode)===String(sess.code));
+    if(!entry){ clearSession(); return; }
+    S.gid = entry[0]; S.group = entry[1];
+    await loadAll();
+    launch();
+  } catch { hideLoad(); clearSession(); }
+})();
+
 /* AUTH */
 $('btn-login').onclick = doLogin;
 $('l-code').onkeydown  = e => { if(e.key==='Enter') doLogin(); };
@@ -656,6 +704,7 @@ async function doLogin(){
     const entry=Object.entries(snap.val()).find(([,g])=>String(g.loginCode)===String(code));
     if(!entry){ setErr('l-err','Invalid code. Try again.'); return; }
     S.gid=entry[0]; S.group=entry[1];
+    saveSession(code, S.gid);   // ← persist session
     await loadAll(); launch();
   } catch(e){ hideLoad(); setErr('l-err','Error: '+e.message); }
 }
@@ -681,6 +730,7 @@ $('btn-setup').onclick = async () => {
     S.gid=gr.key; S.group={ name, loginCode:S.pendCode, budget };
     await set(gr, S.group);
     S.expenses={}; S.members={}; S.settlements={};
+    saveSession(S.pendCode, S.gid);   // ← persist session
     hideLoad(); launch();
     toast('Trip created! Share code '+S.pendCode+' 🎉',3500);
     openMem();
@@ -727,6 +777,18 @@ window.saveBudget = async () => {
   await update(ref(db,`smartsplit/groups/${S.gid}`),{ name, budget });
   S.group.name=name; S.group.budget=budget;
   closeM('m-budget'); renderUI(); toast('Saved ✓');
+};
+
+window.switchTrip = () => {
+  if(!confirm('Switch to a different trip? You can re-enter the code anytime.')) return;
+  clearSession();
+  closeM('m-budget');
+  $('app').style.display='none';
+  go('s-start');
+  // Reset state
+  S.gid=''; S.group={}; S.expenses={}; S.members={}; S.settlements={};
+  S.activeTab='t-exp';
+  $('l-code').value='';
 };
 
 /* EXPORT CSV */
