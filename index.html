@@ -925,7 +925,10 @@ window.renderUI = () => {
   // Per-person inline row
   setT('sv-per', fmt(total/mc));
 
-  $('fpaid').innerHTML='<option value="">All Members</option>'+ns().map(n=>`<option>${n}</option>`).join('');
+  // Repopulate member filter but preserve current selection
+  const _fpaid=$('fpaid'), _prev=_fpaid.value;
+  _fpaid.innerHTML='<option value="">All Members</option>'+ns().map(n=>`<option>${n}</option>`).join('');
+  if(_prev) _fpaid.value=_prev;   // restore selection after repopulate
   setT('mem-ct-s',mc+' people');
 
   // Render ALL content before any visibility toggling
