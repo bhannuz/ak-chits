@@ -115,24 +115,18 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
 .sc-fill{height:100%;border-radius:2px;transition:width .6s ease;}
 
 /* TABS — scrollable horizontal on mobile */
-/* Tabs — sticky so always accessible while scrolling */
+/* Tabs — simple toggle bar, no sticky */
 .tabrow{
   display:flex;gap:2px;
-  background:rgba(10,10,16,.95);backdrop-filter:blur(16px);
-  border-bottom:1px solid var(--rim);
-  padding:6px 14px;
-  margin:0 -14px 14px;          /* bleed to edges */
+  background:var(--ink2);border:1px solid var(--rim);
+  border-radius:10px;padding:3px;
+  margin-bottom:12px;
   overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
-  flex-shrink:0;
-  position:sticky;top:calc(54px + var(--safe-top));
-  z-index:90;
 }
 .tabrow::-webkit-scrollbar{display:none;}
-.tb{flex-shrink:0;padding:6px 14px;border-radius:7px;border:none;background:transparent;color:var(--sub);font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.tb{flex:1;padding:8px 10px;border-radius:7px;border:none;background:transparent;color:var(--sub);font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;text-align:center;}
 .tb.on{background:var(--ink3);color:var(--txt);box-shadow:0 2px 6px rgba(0,0,0,.4);}
-
-/* Each section — scroll-margin so sticky tabrow doesn't cover it */
-.sec{scroll-margin-top:calc(54px + 44px + var(--safe-top) + 8px);}
+.sec{} /* no scroll-margin needed */
 
 /* PANELS */
 .pnl{background:var(--ink2);border:1px solid var(--rim);border-radius:var(--r);overflow:hidden;margin-bottom:10px;}
@@ -345,17 +339,15 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
       <span class="per-val" id="sv-per">₹0</span>
     </div>
 
-    <!-- TABS -->
+    <!-- TABS — 3 toggles, proper show/hide -->
     <div class="tabrow">
-      <button class="tb on"  onclick="switchTab('t-exp',this)">💸 Expenses</button>
-      <button class="tb"     onclick="switchTab('t-anal',this)">📈 Analytics</button>
-      <button class="tb"     onclick="switchTab('t-mem',this)">👥 Members</button>
-      <button class="tb"     onclick="switchTab('t-settle',this)">✅ Settle Up</button>
+      <button class="tb on" onclick="switchTab('t-exp',this)">💸 Expenses</button>
+      <button class="tb"    onclick="switchTab('t-anal',this)">📈 Analytics</button>
+      <button class="tb"    onclick="switchTab('t-people',this)">👥 People</button>
     </div>
 
     <!-- ══ EXPENSES TAB ══ -->
     <div id="t-exp" class="sec">
-      <!-- Filters row -->
       <div class="pnl">
         <div class="ph" style="flex-wrap:wrap;gap:6px">
           <span class="pt">All Expenses</span>
@@ -381,8 +373,6 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
         </div>
         <div class="pb" id="exp-list"></div>
       </div>
-
-      <!-- Category + Members shown BELOW expenses on mobile (stacked), beside on desktop -->
       <div class="two">
         <div class="pnl">
           <div class="ph"><span class="pt">By Category</span></div>
@@ -398,59 +388,39 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
       </div>
     </div>
 
-    <!-- ══ ANALYTICS TAB ══ -->
-    <div id="t-anal" class="sec">
+    <!-- ══ ANALYTICS TAB — last 3 days ══ -->
+    <div id="t-anal" class="sec hidden">
+      <!-- 3-day daily chart -->
       <div class="pnl">
-        <div class="ph"><span class="pt">Daily Spending</span><span style="font-size:11px;color:var(--sub2)">Last 14 days</span></div>
-        <div class="pb"><div class="chart-wrap" id="daily-chart"></div></div>
-      </div>
-      <div class="two">
-        <div>
-          <div class="pnl">
-            <div class="ph"><span class="pt">Top Spenders</span></div>
-            <div class="pb" id="top-spenders"></div>
-          </div>
-          <div class="pnl">
-            <div class="ph"><span class="pt">Spending Timeline</span></div>
-            <div class="pb" id="timeline" style="max-height:200px;overflow-y:auto"></div>
-          </div>
+        <div class="ph">
+          <span class="pt">Last 3 Days</span>
+          <span style="font-size:11px;color:var(--sub2)" id="anal-range"></span>
         </div>
-        <div>
-          <div class="pnl">
-            <div class="ph"><span class="pt">Budget Overview</span></div>
-            <div class="pb">
-              <div class="ring-wrap">
-                <svg width="72" height="72" viewBox="0 0 72 72" style="flex-shrink:0">
-                  <circle cx="36" cy="36" r="29" fill="none" stroke="var(--ink5)" stroke-width="6"/>
-                  <circle id="ring-c" cx="36" cy="36" r="29" fill="none" stroke="var(--lime)" stroke-width="6"
-                    stroke-linecap="round" stroke-dasharray="182.2" stroke-dashoffset="182.2"
-                    transform="rotate(-90 36 36)" style="transition:stroke-dashoffset .6s ease,stroke .4s"/>
-                </svg>
-                <div>
-                  <div class="ring-pct" id="ring-pct">0%</div>
-                  <div class="ring-lbl" id="ring-sub">of budget used</div>
-                </div>
-              </div>
-              <div id="budget-bd"></div>
-            </div>
-          </div>
-          <div class="pnl">
-            <div class="ph"><span class="pt">By Category</span></div>
-            <div class="pb" id="pie-bd"></div>
-          </div>
-          <div class="pnl">
-            <div class="ph"><span class="pt">Trip Summary</span></div>
-            <div class="pb" id="summary-panel"></div>
-          </div>
+        <div class="pb">
+          <div class="chart-wrap" id="daily-chart" style="height:90px"></div>
+          <div id="day-breakdown"></div>
+        </div>
+      </div>
+      <!-- Category + top spender side by side -->
+      <div class="two">
+        <div class="pnl">
+          <div class="ph"><span class="pt">Categories (3 days)</span></div>
+          <div class="pb" id="pie-bd"></div>
+        </div>
+        <div class="pnl">
+          <div class="ph"><span class="pt">Top Spender</span></div>
+          <div class="pb" id="top-spenders"></div>
         </div>
       </div>
     </div>
 
-    <!-- ══ MEMBERS TAB ══ -->
-    <div id="t-mem" class="sec">
+    <!-- ══ PEOPLE TAB = Members + Settle combined ══ -->
+    <div id="t-people" class="sec hidden">
+
+      <!-- Members list + add -->
       <div class="pnl">
         <div class="ph">
-          <span class="pt">Trip Members</span>
+          <span class="pt">Members</span>
           <span style="font-size:11px;color:var(--sub2)" id="mem-full-ct"></span>
         </div>
         <div class="pb" id="mem-full-list"></div>
@@ -463,36 +433,26 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
           </div>
         </div>
       </div>
-      <div class="two">
-        <div class="pnl">
-          <div class="ph"><span class="pt">Who Paid the Most</span></div>
-          <div class="pb" id="mem-rank"></div>
-        </div>
-        <div class="pnl">
-          <div class="ph"><span class="pt">Expense Count</span></div>
-          <div class="pb" id="mem-expcount"></div>
-        </div>
-      </div>
-    </div>
 
-    <!-- ══ SETTLE TAB ══ -->
-    <div id="t-settle" class="sec">
+      <!-- Who paid the most -->
+      <div class="pnl">
+        <div class="ph"><span class="pt">Who Paid the Most</span></div>
+        <div class="pb" id="mem-rank"></div>
+      </div>
+
+      <!-- Settlement plan -->
       <div class="pnl">
         <div class="ph">
-          <span class="pt">Settlement Plan</span>
+          <span class="pt">Settle Up</span>
           <span style="font-size:11px;color:var(--sub2)" id="settle-sum"></span>
         </div>
         <div class="pb" id="settle-list"></div>
       </div>
-      <div class="two">
-        <div class="pnl">
-          <div class="ph"><span class="pt">Balance Sheet</span></div>
-          <div class="pb" id="balance-sheet"></div>
-        </div>
-        <div class="pnl">
-          <div class="ph"><span class="pt">Progress</span></div>
-          <div class="pb" id="settle-progress"></div>
-        </div>
+
+      <!-- Balance sheet -->
+      <div class="pnl">
+        <div class="ph"><span class="pt">Balance Sheet</span></div>
+        <div class="pb" id="balance-sheet"></div>
       </div>
     </div>
 
@@ -617,14 +577,19 @@ function hideLoad(){ $('__ld')?.remove(); }
 window.go    = id => { document.querySelectorAll('.scr').forEach(s=>s.classList.add('hidden')); $(id).classList.remove('hidden'); };
 window.closeM= id => { $(id).classList.remove('on'); };
 
-/* TAB SWITCH — scroll to section, highlight tab */
+/* TAB SWITCH — toggle show/hide, highlight active tab, render content */
 window.switchTab = (id, btn) => {
-  document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));
+  ['t-exp','t-anal','t-people'].forEach(t => $(t).classList.add('hidden'));
+  document.querySelectorAll('.tb').forEach(b => b.classList.remove('on'));
+  $(id).classList.remove('hidden');
   btn.classList.add('on');
   S.activeTab = id;
-  // Scroll the section into view smoothly
-  const el = $(id);
-  if(el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+  // Render the newly shown tab
+  const exps = Object.values(S.expenses);
+  const total = exps.reduce((s,e) => s+(e.amount||0), 0);
+  if(id === 't-exp')    { renderExpList(exps,total); renderCatList(exps,total); renderMemSide(exps); }
+  if(id === 't-anal')   renderAnalytics();
+  if(id === 't-people') { renderPeopleTab(exps,total); renderSettleTab(); }
 };
 
 /* ── SESSION CACHE ─────────────────────────────────────────
@@ -986,13 +951,13 @@ window.renderUI = () => {
   $('fpaid').innerHTML='<option value="">All Members</option>'+ns().map(n=>`<option>${n}</option>`).join('');
   setT('mem-ct-s',mc+' people');
 
-  // Render all sections — everything is always visible
-  renderExpList(exps,total);
-  renderCatList(exps,total);
+  // Always render expenses (default tab)
+  renderExpList(exps, total);
+  renderCatList(exps, total);
   renderMemSide(exps);
-  renderAnalytics();
-  renderMemTab(exps,total);
-  renderSettleTab();
+  // Render active tab content if not expenses
+  if(S.activeTab === 't-anal')   renderAnalytics();
+  if(S.activeTab === 't-people') { renderPeopleTab(exps, total); renderSettleTab(); }
 };
 
 function renderExpList(exps,total){
@@ -1054,7 +1019,7 @@ function renderMemSide(exps){
   }).join('')||'<div class="empty" style="padding:16px"><p>No members</p></div>';
 }
 
-function renderMemTab(exps,total){
+function renderPeopleTab(exps,total){
   const names=ns(); const paid={},owes={},cnt={};
   names.forEach(n=>{ paid[n]=0; owes[n]=0; cnt[n]=0; });
   exps.forEach(e=>{
@@ -1127,72 +1092,81 @@ function renderSettleTab(){
 }
 
 function renderAnalytics(){
-  const exps=Object.values(S.expenses);
-  const total=exps.reduce((s,e)=>s+(e.amount||0),0);
-  const budget=S.group.budget||0;
-  const names=ns(); const paid={};
-  names.forEach(n=>paid[n]=0);
-  exps.forEach(e=>{ if(e.paidBy) paid[e.paidBy]=(paid[e.paidBy]||0)+(e.amount||0); });
+  const allExps = Object.values(S.expenses);
+  const names   = ns();
 
-  // Daily chart
-  const days=14, dayMap={};
-  for(let i=days-1;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); dayMap[d.toISOString().split('T')[0]]=0; }
-  exps.forEach(e=>{ if(dayMap.hasOwnProperty(e.date)) dayMap[e.date]+=e.amount||0; });
-  const maxDay=Math.max(...Object.values(dayMap),1);
-  $('daily-chart').innerHTML=Object.entries(dayMap).map(([d,v])=>{
-    const h=Math.max(2,Math.round((v/maxDay)*100));
-    return `<div class="bcol"><div class="bfill" style="height:${h}px">${v>0?`<div class="btip">${fmt(v)}</div>`:''}</div><div class="blbl">${d.slice(5)}</div></div>`;
+  // Build last 3 days date strings
+  const days3 = [];
+  for(let i=2;i>=0;i--){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    days3.push(d.toISOString().split('T')[0]);
+  }
+
+  // Filter to only last 3 days
+  const exps  = allExps.filter(e => days3.includes(e.date));
+  const total = exps.reduce((s,e)=>s+(e.amount||0),0);
+
+  // Range label e.g. "24 Apr – 26 Apr"
+  const fmtDate = d => { const [,m,day]=d.split('-'); const mo=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return `${parseInt(day)} ${mo[parseInt(m)]}`; };
+  setT('anal-range', `${fmtDate(days3[0])} – ${fmtDate(days3[2])}`);
+
+  // 3-bar chart
+  const maxAmt = Math.max(...days3.map(d=>exps.filter(e=>e.date===d).reduce((s,e)=>s+(e.amount||0),0)),1);
+  $('daily-chart').innerHTML = days3.map(d=>{
+    const dayExps = exps.filter(e=>e.date===d);
+    const v       = dayExps.reduce((s,e)=>s+(e.amount||0),0);
+    const h       = Math.max(4, Math.round((v/maxAmt)*80));
+    const label   = fmtDate(d);
+    return `<div class="bcol">
+      <div class="bfill" style="height:${h}px">${v>0?`<div class="btip">${fmt(v)}</div>`:''}</div>
+      <div class="blbl">${label}</div>
+    </div>`;
   }).join('');
 
-  // Top spenders
-  $('top-spenders').innerHTML=names.sort((a,b)=>(paid[b]||0)-(paid[a]||0)).map((n,i)=>{
-    const pct=total?Math.round((paid[n]||0)/total*100):0;
-    return `<div style="margin-bottom:10px">
-      <div class="cattop"><span style="display:flex;align-items:center;gap:6px">${['🥇','🥈','🥉'][i]||'•'}<span class="mav" style="background:${col(n)};width:20px;height:20px;font-size:9px">${n[0].toUpperCase()}</span>${n}</span><b>${fmt(paid[n]||0)}</b></div>
-      <div class="catbar"><div class="catfill" style="width:${pct}%"></div></div>
-    </div>`;
-  }).join('')||'<div class="empty" style="padding:16px"><p>No data</p></div>';
-
-  // Timeline
-  const sorted=[...exps].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,10);
-  $('timeline').innerHTML=sorted.map(e=>`
-    <div class="row">
-      <span style="display:flex;align-items:center;gap:8px;min-width:0">
-        <span style="width:8px;height:8px;border-radius:50%;background:${col(e.paidBy||'?')};flex-shrink:0;display:inline-block"></span>
-        <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600">${e.name}</span>
+  // Per-day breakdown below chart
+  $('day-breakdown').innerHTML = days3.map(d=>{
+    const dayExps = exps.filter(e=>e.date===d);
+    if(!dayExps.length) return `<div class="row"><span class="rl">${fmtDate(d)}</span><span style="color:var(--sub2);font-size:11px">No expenses</span></div>`;
+    const dayTotal = dayExps.reduce((s,e)=>s+(e.amount||0),0);
+    return `<div class="row">
+      <span class="rl">${fmtDate(d)}</span>
+      <span style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:11px;color:var(--sub2)">${dayExps.length} expense${dayExps.length!==1?'s':''}</span>
+        <b style="font-family:'Bricolage Grotesque';font-size:14px;color:var(--lime)">${fmt(dayTotal)}</b>
       </span>
-      <span style="font-family:'Bricolage Grotesque';font-weight:800;font-size:13px;color:var(--lime);flex-shrink:0;margin-left:8px">${fmt(e.amount)}</span>
-    </div>`).join('')||'<div class="empty" style="padding:16px"><p>No expenses</p></div>';
+    </div>`;
+  }).join('');
 
-  // Budget ring
-  const pct=budget>0?Math.min(100,Math.round((total/budget)*100)):0;
-  const circ=182.2, fill=circ-(circ*pct/100);
-  const rc=$('ring-c'); rc.style.strokeDashoffset=fill; rc.style.stroke=pct>85?'var(--rose)':pct>60?'var(--amber)':'var(--lime)';
-  setT('ring-pct',pct+'%');
-  $('ring-sub').innerHTML=budget>0?`${fmt(total)} of ${fmt(budget)}`:'No budget set';
-  $('budget-bd').innerHTML=budget>0?`<div class="g2" style="margin-top:10px">
-    <div class="ibox"><div class="ibox-l">Spent</div><div class="ibox-v" style="color:var(--rose)">${fmt(total)}</div></div>
-    <div class="ibox"><div class="ibox-l">Left</div><div class="ibox-v" style="color:var(--green)">${fmt(budget-total)}</div></div>
-  </div>`:'';
-
-  // Pie
-  const cats={}; exps.forEach(e=>cats[e.category]=(cats[e.category]||0)+(e.amount||0));
-  $('pie-bd').innerHTML=Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`
+  // Category breakdown (3-day)
+  const cats={};
+  exps.forEach(e=>cats[e.category]=(cats[e.category]||0)+(e.amount||0));
+  $('pie-bd').innerHTML = Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`
     <div class="catrow">
       <div class="cattop"><span>${c}</span><b>${fmt(v)} <span style="color:var(--sub);font-size:10px">${total?Math.round(v/total*100):0}%</span></b></div>
       <div class="catbar"><div class="catfill" style="width:${total?Math.min(100,(v/total)*100):0}%"></div></div>
-    </div>`).join('')||'<div class="empty" style="padding:16px"><p>No data</p></div>';
+    </div>`).join('')||'<div class="empty" style="padding:16px"><p>No expenses in last 3 days</p></div>';
 
-  // Summary
-  const avgExp=exps.length?total/exps.length:0;
-  const maxE=exps.length?exps.reduce((m,e)=>e.amount>m.amount?e:m,exps[0]):null;
-  $('summary-panel').innerHTML=`
-    <div class="row"><span class="rl">Total spend</span><span class="rv" style="color:var(--lime)">${fmt(total)}</span></div>
-    <div class="row"><span class="rl">Avg per expense</span><span class="rv">${fmt(avgExp)}</span></div>
-    <div class="row"><span class="rl">Avg per person</span><span class="rv">${fmt(total/Math.max(names.length,1))}</span></div>
-    ${maxE?`<div class="row"><span class="rl">Largest</span><span class="rv" style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right">${maxE.name} (${fmt(maxE.amount)})</span></div>`:''}
-    <div class="row"><span class="rl">Members</span><span class="rv">${names.length}</span></div>
-    <div class="row"><span class="rl">Transactions</span><span class="rv">${exps.length}</span></div>`;
+  // Top spender (3-day)
+  const paid={};
+  names.forEach(n=>paid[n]=0);
+  exps.forEach(e=>{ if(e.paidBy) paid[e.paidBy]=(paid[e.paidBy]||0)+(e.amount||0); });
+  $('top-spenders').innerHTML = names
+    .filter(n=>(paid[n]||0)>0)
+    .sort((a,b)=>(paid[b]||0)-(paid[a]||0))
+    .map((n,i)=>{
+      const pct=total?Math.round((paid[n]||0)/total*100):0;
+      return `<div style="margin-bottom:10px">
+        <div class="cattop">
+          <span style="display:flex;align-items:center;gap:6px">
+            ${['🥇','🥈','🥉'][i]||'•'}
+            <span class="mav" style="background:${col(n)};width:20px;height:20px;font-size:9px">${n[0].toUpperCase()}</span>
+            ${n}
+          </span>
+          <b>${fmt(paid[n]||0)}</b>
+        </div>
+        <div class="catbar"><div class="catfill" style="width:${pct}%"></div></div>
+      </div>`;
+    }).join('')||'<div class="empty" style="padding:16px"><p>No spend in last 3 days</p></div>';
 }
 </script>
 </body>
