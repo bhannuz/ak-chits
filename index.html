@@ -261,7 +261,7 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
     <p class="stag">Enter your 4-digit trip code</p>
     <div class="fl"><input type="tel" id="l-code" class="fi fi-code" maxlength="4" placeholder="····" autocomplete="off"></div>
     <button class="btn bl w100" id="btn-login">Unlock Trip →</button>
-    <button class="btn bg w100 mt8" onclick="go('s-start')">← Back</button>
+    <button class="btn bg w100 mt8" onclick="go('s-reg')">✈️ Create New Trip</button>
     <p id="l-err" class="err"></p>
   </div>
 </div>
@@ -273,7 +273,7 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
     <p class="stag">Pick a 4-digit code for your crew</p>
     <div class="fl"><input type="tel" id="r-code" class="fi fi-code" maxlength="4" placeholder="1234" autocomplete="off"></div>
     <button class="btn bl w100" id="btn-reg">Continue →</button>
-    <button class="btn bg w100 mt8" onclick="go('s-start')">← Back</button>
+    <button class="btn bg w100 mt8" onclick="go('s-login')">← Back</button>
     <p id="r-err" class="err"></p>
   </div>
 </div>
@@ -525,7 +525,9 @@ let S = { gid:"", group:{}, expenses:{}, members:{}, settlements:{},
           splitType:"equal", sel:[], pendCode:"", activeTab:"t-exp" };
 
 /* UTILS */
-const fmt   = n => '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN');
+const fmt     = n => '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN');
+// Convert YYYY-MM-DD → DDMMYYYY for display everywhere
+const fmtDate = d => { if(!d) return ''; const [y,m,day]=d.split('-'); return `${day}-${m}-${y}`; };
 const today = () => new Date().toISOString().split('T')[0];
 const PAL   = ['#7c5fff','#22d07a','#ff5273','#b8f724','#2dd4d4','#f7a825','#f97316','#e879f9'];
 const col   = n => { let h=0; for(const c of(n||'?'))h+=c.charCodeAt(0); return PAL[h%PAL.length]; };
@@ -598,21 +600,25 @@ function loadSession(){
   } catch { clearSession(); return null; }
 }
 
-/* Auto-restore session on page load */
+/* Auto-restore session on page load, or go straight to code entry for new users */
 (async () => {
   const sess = loadSession();
-  if(!sess) return; // no session → show start screen normally
+  if(!sess) {
+    // No saved session — go directly to code entry (skip start screen)
+    go('s-login');
+    return;
+  }
   showLoad('Welcome back…');
   try {
     const snap = await get(ref(db,'smartsplit/groups'));
     hideLoad();
-    if(!snap.exists()){ clearSession(); return; }
+    if(!snap.exists()){ clearSession(); go('s-login'); return; }
     const entry = Object.entries(snap.val()).find(([,g])=>String(g.loginCode)===String(sess.code));
-    if(!entry){ clearSession(); return; }
+    if(!entry){ clearSession(); go('s-login'); return; }
     S.gid = entry[0]; S.group = entry[1];
     await loadAll();
     launch();
-  } catch { hideLoad(); clearSession(); }
+  } catch { hideLoad(); clearSession(); go('s-login'); }
 })();
 
 /* AUTH */
@@ -720,7 +726,7 @@ window.switchTrip = () => {
 window.exportCSV = () => {
   const rows=[['Date','Name','Category','Amount','Paid By','Notes','Split Between']];
   Object.values(S.expenses).sort((a,b)=>(a.date||'').localeCompare(b.date||'')).forEach(e=>{
-    rows.push([e.date||'',e.name||'',e.category||'',e.amount||0,e.paidBy||'',e.notes||'',(e.splitBetween||[]).join('|')]);
+    rows.push([fmtDate(e.date)||'',e.name||'',e.category||'',e.amount||0,e.paidBy||'',e.notes||'',(e.splitBetween||[]).join('|')]);
   });
   const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
   const a=document.createElement('a');
@@ -960,7 +966,7 @@ function renderExpList(exps,total){
       <div class="eico">${e.category?.split(' ')[0]||'📦'}</div>
       <div style="flex:1;min-width:0">
         <div class="en" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.name}</div>
-        <div class="em">${e.category?.split(' ')[1]||''} · ${e.date||''} · <strong style="color:var(--txt)">${e.paidBy||'?'}</strong>${perP?` · <span style="color:#b8a8ff">${perP}</span>`:''}</div>
+        <div class="em">${e.category?.split(' ')[1]||''} · ${fmtDate(e.date)} · <strong style="color:var(--txt)">${e.paidBy||'?'}</strong>${perP?` · <span style="color:#b8a8ff">${perP}</span>`:''}</div>
         ${e.notes?`<div class="em" style="font-style:italic;opacity:.7">${e.notes}</div>`:''}
       </div>
       <div style="flex-shrink:0;text-align:right;min-width:60px">
