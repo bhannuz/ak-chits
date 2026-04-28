@@ -1017,30 +1017,40 @@ function renderPeopleTab(exps,total){
     if(e.splits) Object.values(e.splits).forEach(s=>owes[s.name]=(owes[s.name]||0)+(s.share||0));
     else if(e.splitBetween?.length){ const sh=(e.amount||0)/e.splitBetween.length; e.splitBetween.forEach(n=>owes[n]=(owes[n]||0)+sh); }
   });
-  setT('mem-full-ct',names.length+' people');
-  $('mem-full-list').innerHTML=Object.entries(S.members).map(([id,m])=>{
+
+  // Member list with net balance
+  setT('mem-full-ct', names.length+' people');
+  $('mem-full-list').innerHTML = Object.entries(S.members).map(([id,m])=>{
     const net=(paid[m.name]||0)-(owes[m.name]||0);
     return `<div class="mr">
       <div class="mav" style="background:${col(m.name)};width:34px;height:34px;font-size:13px">${m.name[0].toUpperCase()}</div>
-      <div style="flex:1"><div class="mname">${m.name}</div><div class="msub">Paid ${fmt(paid[m.name]||0)} · ${cnt[m.name]||0} exp</div></div>
+      <div style="flex:1">
+        <div class="mname">${m.name}</div>
+        <div class="msub">Paid ${fmt(paid[m.name]||0)} · ${cnt[m.name]||0} expense${cnt[m.name]!==1?'s':''}</div>
+      </div>
       <div style="display:flex;align-items:center;gap:6px">
         <span class="badge ${net>=0?'bg-g':'bg-r'}">${net>=0?'+':'-'}${fmt(net)}</span>
         <button class="btn bg bxs" style="color:var(--rose)" onclick="removeMem('${id}')">✕</button>
       </div>
     </div>`;
-  }).join('')||'<div class="empty"><p>No members yet</p></div>';
-  $('mem-rank').innerHTML=names.sort((a,b)=>(paid[b]||0)-(paid[a]||0)).map((n,i)=>{
+  }).join('')||'<div class="empty"><p>No members yet. Add members above.</p></div>';
+
+  // Who paid most ranking
+  const el=$('mem-rank');
+  if(el) el.innerHTML = [...names].sort((a,b)=>(paid[b]||0)-(paid[a]||0)).map((n,i)=>{
     const pct=total?Math.round((paid[n]||0)/total*100):0;
-    return `<div style="margin-bottom:10px">
-      <div class="cattop"><span style="display:flex;align-items:center;gap:6px"><span>${['🥇','🥈','🥉'][i]||'👤'}</span><span class="mav" style="background:${col(n)};width:20px;height:20px;font-size:9px">${n[0].toUpperCase()}</span>${n}</span><b>${fmt(paid[n]||0)}</b></div>
-      <div class="catbar"><div class="catfill" style="width:${pct}%"></div></div>
+    return `<div style="margin-bottom:11px">
+      <div class="cattop">
+        <span style="display:flex;align-items:center;gap:7px">
+          <span>${['🥇','🥈','🥉'][i]||'•'}</span>
+          <span class="mav" style="background:${col(n)};width:22px;height:22px;font-size:10px">${n[0].toUpperCase()}</span>
+          <span>${n}</span>
+        </span>
+        <b style="color:var(--lime)">${fmt(paid[n]||0)} <span style="color:var(--sub);font-size:10px">${pct}%</span></b>
+      </div>
+      <div class="catbar" style="margin-top:4px"><div class="catfill" style="width:${pct}%"></div></div>
     </div>`;
-  }).join('')||'<div class="empty" style="padding:16px"><p>No data</p></div>';
-  $('mem-expcount').innerHTML=names.map(n=>`
-    <div class="row">
-      <span class="rl" style="display:flex;align-items:center;gap:6px"><span class="mav" style="background:${col(n)};width:20px;height:20px;font-size:9px">${n[0].toUpperCase()}</span>${n}</span>
-      <span class="rv">${cnt[n]||0} exp</span>
-    </div>`).join('')||'<div class="empty" style="padding:16px"><p>No data</p></div>';
+  }).join('')||'<div class="empty" style="padding:16px"><p>No expenses yet</p></div>';
 }
 
 function renderSettleTab(){
@@ -1070,15 +1080,7 @@ function renderSettleTab(){
   $('balance-sheet').innerHTML=Object.entries(bal).map(([n,v])=>`
     <div class="row"><span class="rl" style="display:flex;align-items:center;gap:6px"><span class="mav" style="background:${col(n)};width:20px;height:20px;font-size:9px">${n[0].toUpperCase()}</span>${n}</span>
     <span class="${v>=0?'pos':'neg'}" style="font-size:13px">${v>=0?'+':'-'}${fmt(v)}</span></div>`).join('')||'<div class="empty" style="padding:16px"><p>No data</p></div>';
-  const done=txns.length-pend, pct=txns.length?Math.round(done/txns.length*100):100;
-  $('settle-progress').innerHTML=`
-    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px"><span class="rl">${done}/${txns.length} done</span><b>${pct}%</b></div>
-    <div class="sc-bar" style="height:5px;margin:0 0 12px"><div class="sc-fill" style="width:${pct}%;background:${pct===100?'var(--green)':'var(--violet)'}"></div></div>
-    <div class="g3">
-      <div class="ibox"><div class="ibox-l">Total</div><div class="ibox-v">${txns.length}</div></div>
-      <div class="ibox"><div class="ibox-l">Done</div><div class="ibox-v" style="color:var(--green)">${done}</div></div>
-      <div class="ibox"><div class="ibox-l">Left</div><div class="ibox-v" style="color:${pend?'var(--rose)':'var(--green)}'}">${pend}</div></div>
-    </div>`;
+  // settle-progress panel removed from HTML — no write needed
 }
 
 </script>
