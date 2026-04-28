@@ -387,27 +387,9 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
       </div>
     </div>
 
-    <!-- ══ ANALYTICS TAB — last 3 days ══ -->
-        <div class="pb">
-          <div class="chart-wrap" id="daily-chart" style="height:90px"></div>
-          <div id="day-breakdown"></div>
-        </div>
-      </div>
-      <!-- Category + top spender side by side -->
-      <div class="two">
-        <div class="pnl">
-          <div class="ph"><span class="pt">Categories (3 days)</span></div>
-          <div class="pb" id="pie-bd"></div>
-        </div>
-        <div class="pnl">
-          <div class="ph"><span class="pt">Top Spender</span></div>
-          <div class="pb" id="top-spenders"></div>
-        </div>
-      </div>
-    </div>
 
     <!-- ══ PEOPLE TAB = Members + Settle combined ══ -->
-    <div id="t-people" class="sec hidden">
+    <div id="t-people" class="sec">
 
       <!-- Members list + add -->
       <div class="pnl">
@@ -569,18 +551,22 @@ function hideLoad(){ $('__ld')?.remove(); }
 window.go    = id => { document.querySelectorAll('.scr').forEach(s=>s.classList.add('hidden')); $(id).classList.remove('hidden'); };
 window.closeM= id => { $(id).classList.remove('on'); };
 
-/* TAB SWITCH — toggle show/hide, highlight active tab, render content */
+/* TAB SWITCH — render first, then toggle visibility */
 window.switchTab = (id, btn) => {
+  S.activeTab = id;
+  const exps  = Object.values(S.expenses);
+  const total = exps.reduce((s,e) => s+(e.amount||0), 0);
+  // Render ALL tab content while everything is still in DOM
+  renderExpList(exps,total);
+  renderCatList(exps,total);
+  renderMemSide(exps);
+  renderPeopleTab(exps,total);
+  renderSettleTab();
+  // Now toggle visibility
   ['t-exp','t-people'].forEach(t => $(t).classList.add('hidden'));
   document.querySelectorAll('.tb').forEach(b => b.classList.remove('on'));
   $(id).classList.remove('hidden');
   btn.classList.add('on');
-  S.activeTab = id;
-  // Render the newly shown tab
-  const exps = Object.values(S.expenses);
-  const total = exps.reduce((s,e) => s+(e.amount||0), 0);
-  renderExpList(exps,total); renderCatList(exps,total); renderMemSide(exps);
-  renderPeopleTab(exps,total); renderSettleTab();
 };
 
 /* ── SESSION CACHE ─────────────────────────────────────────
@@ -942,12 +928,15 @@ window.renderUI = () => {
   $('fpaid').innerHTML='<option value="">All Members</option>'+ns().map(n=>`<option>${n}</option>`).join('');
   setT('mem-ct-s',mc+' people');
 
-  // Always render ALL tabs so data is never empty when switching
+  // Render ALL content before any visibility toggling
   renderExpList(exps, total);
   renderCatList(exps, total);
   renderMemSide(exps);
   renderPeopleTab(exps, total);
   renderSettleTab();
+  // Ensure only active tab is visible
+  ['t-exp','t-people'].forEach(t => $(t).classList.add('hidden'));
+  $(S.activeTab).classList.remove('hidden');
 };
 
 function renderExpList(exps,total){
