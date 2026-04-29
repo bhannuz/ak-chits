@@ -179,19 +179,57 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
 .sc-bar{height:2px;background:var(--ink5);border-radius:2px;margin-top:8px;overflow:hidden;}
 .sc-fill{height:100%;border-radius:2px;transition:width .6s ease;}
 
-/* TABS — scrollable horizontal on mobile */
-/* Tabs — simple toggle bar, no sticky */
+/* ── TABS ── */
 .tabrow{
-  display:flex;gap:2px;
-  background:var(--ink2);border:1px solid var(--rim);
-  border-radius:10px;padding:3px;
-  margin-bottom:12px;
-  overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:8px;
+  padding:0;margin-bottom:16px;
+  background:transparent;border:none;
 }
-.tabrow::-webkit-scrollbar{display:none;}
-.tb{flex:1;padding:8px 10px;border-radius:7px;border:none;background:transparent;color:var(--sub);font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;text-align:center;}
-.tb.on{background:var(--ink3);color:var(--txt);box-shadow:0 2px 6px rgba(0,0,0,.4);}
-.sec{} /* no scroll-margin needed */
+/* Each tab is a full card-style button */
+.tb{
+  position:relative;overflow:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  padding:14px 10px;border-radius:14px;border:1.5px solid var(--rim);
+  background:var(--ink2);
+  color:rgba(255,255,255,.35);
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:12px;font-weight:700;
+  cursor:pointer;white-space:nowrap;text-align:center;
+  transition:all .22s ease;
+  letter-spacing:.3px;
+}
+.tb-icon{font-size:22px;display:block;margin-bottom:2px;opacity:.35;transition:all .22s ease;}
+.tb:not(.on):hover{
+  border-color:rgba(255,255,255,.14);
+  color:rgba(255,255,255,.55);
+  background:var(--ink3);
+}
+.tb:not(.on):hover .tb-icon{opacity:.55;}
+/* Active tab — glowing gradient */
+.tb.on{
+  background:linear-gradient(145deg,#1a0e3a 0%,#2d1060 50%,#1a1060 100%);
+  border-color:rgba(139,92,246,.6);
+  color:#fff;
+  box-shadow:
+    0 0 0 1px rgba(139,92,246,.3),
+    0 8px 24px rgba(124,95,255,.35),
+    inset 0 1px 0 rgba(255,255,255,.08);
+}
+.tb.on .tb-icon{opacity:1;}
+/* Glowing top edge on active tab */
+.tb.on::before{
+  content:'';position:absolute;top:0;left:10%;right:10%;height:2px;
+  background:linear-gradient(90deg,transparent,var(--violet),#a78bfa,transparent);
+  border-radius:0 0 4px 4px;
+}
+/* Subtle shimmer line */
+.tb.on::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.04) 0%,transparent 60%);
+  pointer-events:none;
+}
+.sec{}
 
 /* PANELS */
 .pnl{background:var(--ink2);border:1px solid var(--rim);border-radius:var(--r);overflow:hidden;margin-bottom:10px;}
@@ -563,10 +601,14 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
       <span class="per-val" id="sv-per">₹0</span>
     </div>
 
-    <!-- TABS — 3 toggles, proper show/hide -->
+    <!-- TABS -->
     <div class="tabrow">
-      <button class="tb on" onclick="switchTab('t-exp',this)">💸 Expenses</button>
-      <button class="tb"    onclick="switchTab('t-people',this)">👥 People</button>
+      <button class="tb on" onclick="switchTab('t-exp',this)">
+        <span class="tb-icon">💸</span>Expenses
+      </button>
+      <button class="tb" onclick="switchTab('t-people',this)">
+        <span class="tb-icon">👥</span>People
+      </button>
     </div>
 
     <!-- ══ EXPENSES TAB ══ -->
