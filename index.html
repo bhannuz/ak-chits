@@ -1533,10 +1533,22 @@ function renderPeopleTab(exps,total){
     else if(e.splitBetween?.length){ const sh=(e.amount||0)/e.splitBetween.length; e.splitBetween.forEach(n=>owes[n]=(owes[n]||0)+sh); }
   });
 
+  // Adjust balances for settled transactions
+  const txns = calcSettle();
+  const settledAdj = {};
+  names.forEach(n => settledAdj[n] = 0);
+  txns.forEach(t => {
+    const key = `${t.from}_${t.to}`.replace(/\s/g,'_');
+    if (S.settlements[key]?.settled) {
+      settledAdj[t.from] = (settledAdj[t.from] || 0) + t.amount;
+      settledAdj[t.to]   = (settledAdj[t.to]   || 0) - t.amount;
+    }
+  });
+
   // Member list with net balance
   setT('mem-full-ct', names.length+' people');
   $('mem-full-list').innerHTML = Object.entries(S.members).map(([id,m])=>{
-    const net=(paid[m.name]||0)-(owes[m.name]||0);
+    const net=((paid[m.name]||0)-(owes[m.name]||0)) + (settledAdj[m.name]||0);
     return `<div class="mr">
       <div class="mav" style="background:${col(m.name)};width:34px;height:34px;font-size:13px">${m.name[0].toUpperCase()}</div>
       <div style="flex:1">
