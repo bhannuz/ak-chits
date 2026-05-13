@@ -1,0 +1,24 @@
+/* ================================================================
+   tokens.css  —  Design Tokens & Reset
+   ✏️  Edit colours, fonts, radii here to retheme the whole app.
+================================================================ */
+:root{
+  --ink:#0a0a10; --ink2:#111118; --ink3:#18181f; --ink4:#21212c; --ink5:#2a2a38;
+  --rim:rgba(255,255,255,.07); --rim2:rgba(255,255,255,.04); --rim3:rgba(255,255,255,.02);
+  --txt:#eeeef8; --sub:#6b6b90; --sub2:#9090b8;
+  --lime:#b8f724; --violet:#7c5fff; --rose:#ff5273;
+  --sky:#2dd4d4;  --amber:#f7a825; --green:#22d07a;
+  --r:12px; --rsm:8px;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bot:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;background:var(--ink);}
+body{font-family:'Plus Jakarta Sans',sans-serif;color:var(--txt);}
+.hidden{display:none!important;}
+/* Ambient glow blobs */
+.gb{position:fixed;inset:0;pointer-events:none;z-index:0;}
+.gb::before{content:'';position:absolute;width:500px;height:500px;border-radius:50%;
+  background:radial-gradient(circle,rgba(124,95,255,.08) 0%,transparent 70%);top:-150px;right:-100px;}
+.gb::after{content:'';position:absolute;width:400px;height:400px;border-radius:50%;
+  background:radial-gradient(circle,rgba(43,212,212,.05) 0%,transparent 70%);bottom:-80px;left:-80px;}

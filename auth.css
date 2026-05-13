@@ -1,0 +1,99 @@
+/* ================================================================
+   auth.css  —  Login / Register / Setup screens + forms + buttons
+   ✏️  Edit hero panel gradient, form card, mobile layout here.
+================================================================ */
+/* ── AUTH — full-screen split layout ── */
+.scr{
+  position:fixed;inset:0;z-index:9000;
+  display:flex;align-items:stretch;
+  background:var(--ink);
+  overflow-y:auto;
+}
+
+/* Left hero panel — logo + brand fill */
+.auth-hero{
+  display:none;
+  flex:1;position:relative;overflow:hidden;
+  background:linear-gradient(145deg,#0d0620 0%,#1a0840 40%,#0d1f40 100%);
+  align-items:center;justify-content:center;flex-direction:column;
+  padding:40px;
+}
+@media(min-width:700px){.auth-hero{display:flex;}}
+.auth-hero::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 80% 60% at 30% 40%,rgba(124,95,255,.35) 0%,transparent 65%),
+    radial-gradient(ellipse 60% 80% at 80% 70%,rgba(43,212,212,.18) 0%,transparent 60%),
+    radial-gradient(ellipse 50% 50% at 60% 10%,rgba(184,247,36,.12) 0%,transparent 55%);
+}
+.auth-hero::after{
+  content:'';position:absolute;inset:0;
+  background-image:
+    radial-gradient(circle,rgba(255,255,255,.12) 1px,transparent 1px),
+    radial-gradient(circle,rgba(255,255,255,.06) 1px,transparent 1px);
+  background-size:40px 40px, 20px 20px;
+  background-position:0 0, 10px 10px;
+}
+.auth-hero-content{position:relative;z-index:1;text-align:center;}
+.auth-hero-logo{width:200px;height:auto;filter:drop-shadow(0 0 40px rgba(124,95,255,.7)) drop-shadow(0 0 80px rgba(43,212,212,.3));margin-bottom:20px;animation:heroFloat 4s ease-in-out infinite;}
+@keyframes heroFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+.auth-hero-title{font-family:'Bricolage Grotesque',sans-serif;font-size:38px;font-weight:800;letter-spacing:-2px;line-height:1;background:linear-gradient(135deg,#fff 40%,#b8a8ff 70%,var(--lime));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:10px;}
+.auth-hero-sub{font-size:15px;color:rgba(255,255,255,.5);font-weight:500;max-width:260px;line-height:1.5;}
+.auth-hero-pills{display:flex;gap:8px;justify-content:center;margin-top:24px;flex-wrap:wrap;}
+.auth-pill{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;color:rgba(255,255,255,.6);}
+
+/* Right form panel */
+.auth-form-wrap{
+  display:flex;align-items:center;justify-content:center;
+  padding:24px 20px;
+  padding-top:calc(24px + var(--safe-top));
+  padding-bottom:calc(24px + var(--safe-bot));
+  background:var(--ink);
+  min-height:100%;
+  width:100%;
+}
+@media(min-width:700px){.auth-form-wrap{width:400px;min-width:400px;flex:none;background:var(--ink2);border-left:1px solid var(--rim);}}
+.abox{
+  position:relative;width:100%;max-width:360px;
+  background:transparent;
+  padding:0;
+}
+@media(min-width:700px){
+  .abox{background:transparent;padding:0;border:none;box-shadow:none;}
+}
+.abox::before{display:none;}
+/* Mobile: card style */
+@media(max-width:699px){
+  .auth-form-wrap{background:var(--ink);}
+  .abox{background:var(--ink2);border:1px solid var(--rim);border-radius:20px;padding:28px 24px;box-shadow:0 32px 64px rgba(0,0,0,.7);}
+  .abox::before{content:'';display:block;position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(124,95,255,.6),transparent);}
+}
+/* Mobile logo above form */
+.auth-mobile-logo{display:flex;flex-direction:column;align-items:center;margin-bottom:20px;}
+@media(min-width:700px){.auth-mobile-logo{display:none;}}
+.logo{font-family:'Bricolage Grotesque',sans-serif;font-size:26px;font-weight:800;letter-spacing:-1.5px;}
+.logo-s{background:linear-gradient(120deg,#fff 30%,#a98fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.logo-d{color:var(--lime);-webkit-text-fill-color:var(--lime);}
+.stag{font-size:13px;color:var(--sub2);margin-top:4px;margin-bottom:24px;}
+
+/* FORM */
+.fl{margin-bottom:11px;}
+.fl label{font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:1.4px;margin-bottom:5px;display:block;}
+.fi{width:100%;padding:11px 13px;background:var(--ink3);border:1px solid var(--rim);border-radius:var(--rsm);color:var(--txt);font-size:15px;font-family:'Plus Jakarta Sans',sans-serif;outline:none;transition:border-color .18s;-webkit-appearance:none;}
+.fi:focus{border-color:rgba(124,95,255,.6);box-shadow:0 0 0 3px rgba(124,95,255,.12);}
+.fi option{background:var(--ink3);}
+.fi-code{letter-spacing:16px;font-size:26px;text-align:center;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;}
+select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b6b90' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 18px;border-radius:var(--rsm);border:none;cursor:pointer;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;transition:all .15s;white-space:nowrap;-webkit-appearance:none;}
+.btn:active{transform:scale(.96);opacity:.85;}
+.bl{background:var(--lime);color:#0a0a10;}
+.bg{background:rgba(255,255,255,.05);border:1px solid var(--rim);color:var(--txt);}
+.bv{background:rgba(124,95,255,.15);border:1px solid rgba(124,95,255,.3);color:#b8a8ff;}
+.br{background:rgba(255,82,115,.12);border:1px solid rgba(255,82,115,.25);color:var(--rose);}
+.bsm{padding:6px 11px;font-size:12px;border-radius:7px;}
+.bxs{padding:4px 8px;font-size:11px;border-radius:6px;}
+.w100{width:100%;}
+.mt8{margin-top:8px;}
+.err{color:var(--rose);font-size:12px;margin-top:8px;font-weight:600;min-height:16px;}
