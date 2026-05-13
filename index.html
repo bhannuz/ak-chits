@@ -382,6 +382,32 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
 .adm-chevron.open{transform:rotate(180deg);}
 
 
+/* ── DAY GROUP TOGGLE ── */
+.day-group { margin-bottom: 8px; border-radius: var(--r); overflow: hidden; border: 1px solid var(--rim); }
+.day-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; cursor: pointer; user-select: none;
+  background: var(--ink3); transition: background .15s;
+}
+.day-header:active { background: var(--ink4); }
+.day-header-left { display: flex; align-items: center; gap: 10px; }
+.day-label {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 13px; font-weight: 800; letter-spacing: -.2px;
+}
+.day-badge {
+  font-size: 10px; font-weight: 700; color: var(--sub2);
+  background: var(--ink4); border-radius: 20px; padding: 2px 8px;
+}
+.day-total {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 14px; font-weight: 800; color: var(--lime);
+}
+.day-chevron { font-size: 11px; color: var(--sub); transition: transform .2s; }
+.day-chevron.open { transform: rotate(180deg); }
+.day-body { background: var(--ink2); }
+.day-body.collapsed { display: none; }
+
 </style>
 </head>
 <body>
@@ -705,7 +731,10 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
     <div class="mtitle" id="m-exp-title">💸 Add Expense</div>
     <input type="hidden" id="eid">
     <div class="fl"><label>Description</label><input type="text" id="e-name" class="fi" placeholder="e.g. Hotel dinner"></div>
-    <div class="fl"><label>Amount (₹)</label><input type="number" id="e-amt" class="fi" placeholder="0" min="1" inputmode="numeric" oninput="onAmtChg()"></div>
+    <div class="g2">
+      <div class="fl"><label>Amount (₹)</label><input type="number" id="e-amt" class="fi" placeholder="0" min="1" inputmode="numeric" oninput="onAmtChg()"></div>
+      <div class="fl"><label>Paid By</label><select id="e-paid" class="fi"></select></div>
+    </div>
     <div class="g2">
       <div class="fl"><label>Category</label>
         <select id="e-cat" class="fi">
@@ -714,7 +743,6 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
         </select></div>
       <div class="fl"><label>Date</label><input type="date" id="e-date" class="fi"></div>
     </div>
-    <div class="fl"><label>Paid By</label><select id="e-paid" class="fi"></select></div>
     <div class="fl"><label>Notes (optional)</label><input type="text" id="e-notes" class="fi" placeholder="Any note"></div>
     <div class="fl">
       <label style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
@@ -1377,36 +1405,97 @@ window.renderUI = () => {
 };
 
 function renderExpList(exps,total){
-  const filter=$('fcat').value, paidF=$('fpaid').value;
-  const search=($('esearch').value||'').toLowerCase();
-  const sort=$('fsort').value;
-  let list=[...exps];
-  if(filter) list=list.filter(e=>e.category===filter);
-  if(paidF)  list=list.filter(e=>e.paidBy===paidF);
-  if(search) list=list.filter(e=>[(e.name||''),(e.notes||''),(e.paidBy||'')].some(f=>f.toLowerCase().includes(search)));
-  list.sort((a,b)=>sort==='date-d'?(b.date||'').localeCompare(a.date||''):sort==='date-a'?(a.date||'').localeCompare(b.date||''):sort==='amt-d'?(b.amount||0)-(a.amount||0):(a.amount||0)-(b.amount||0));
-  const el=$('exp-list');
-  if(!list.length){ el.innerHTML='<div class="empty"><div class="ei-ico">💸</div><p>No expenses found</p></div>'; return; }
-  el.innerHTML=list.map(e=>{
-    const id=Object.keys(S.expenses).find(k=>S.expenses[k]===e)||'';
-    const perP=e.splitBetween?.length?fmt(e.amount/e.splitBetween.length)+'/person':'';
-    return `<div class="ei">
-      <div class="eico">${e.category?.split(' ')[0]||'📦'}</div>
-      <div style="flex:1;min-width:0">
-        <div class="en" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.name}</div>
-        <div class="em">${e.category?.split(' ')[1]||''} · ${fmtDate(e.date)} · <strong style="color:var(--txt)">${e.paidBy||'?'}</strong>${perP?` · <span style="color:#b8a8ff">${perP}</span>`:''}</div>
-        ${e.notes?`<div class="em" style="font-style:italic;opacity:.7">${e.notes}</div>`:''}
-      </div>
-      <div style="flex-shrink:0;text-align:right;min-width:60px">
-        <div class="ea">${fmt(e.amount)}</div>
-        <div class="ebtns">
-          <button class="btn bg bxs" onclick="editExp('${id}')">✏️</button>
-          <button class="btn bg bxs" style="color:var(--rose)" onclick="delExp('${id}')">🗑️</button>
+  const filter = $('fcat').value, paidF = $('fpaid').value;
+  const search = ($('esearch').value||'').toLowerCase();
+  const el     = $('exp-list');
+  const todayStr = today();
+
+  // Apply filters
+  let list = [...exps];
+  if(filter) list = list.filter(e=>e.category===filter);
+  if(paidF)  list = list.filter(e=>e.paidBy===paidF);
+  if(search) list = list.filter(e=>[(e.name||''),(e.notes||''),(e.paidBy||'')].some(f=>f.toLowerCase().includes(search)));
+
+  if(!list.length){
+    el.innerHTML='<div class="empty"><div class="ei-ico">💸</div><p>No expenses found</p></div>';
+    return;
+  }
+
+  // Sort by date descending, then by firebase key (insertion order) descending within same day
+  list.sort((a,b) => {
+    const dc = (b.date||'').localeCompare(a.date||'');
+    return dc !== 0 ? dc : 0; // same date keeps original order
+  });
+
+  // Group by date
+  const groups = {};
+  list.forEach(e => {
+    const d = e.date || 'Unknown';
+    if(!groups[d]) groups[d] = [];
+    groups[d].push(e);
+  });
+
+  // Build day label helper
+  const dayLabel = d => {
+    if(d === 'Unknown') return 'Unknown Date';
+    if(d === todayStr) return '📅 Today';
+    const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+    if(d === yesterday.toISOString().split('T')[0]) return '⏪ Yesterday';
+    return fmtDate(d);
+  };
+
+  el.innerHTML = Object.entries(groups).map(([date, items]) => {
+    const dayTotal = items.reduce((s,e)=>s+(e.amount||0),0);
+    const isToday  = date === todayStr;
+    const label    = dayLabel(date);
+    const count    = items.length;
+
+    const rows = items.map(e => {
+      const id  = Object.keys(S.expenses).find(k=>S.expenses[k]===e)||'';
+      const perP= e.splitBetween?.length ? fmt(e.amount/e.splitBetween.length)+'/person' : '';
+      return `<div class="ei" style="padding-left:14px;padding-right:14px">
+        <div class="eico">${e.category?.split(' ')[0]||'📦'}</div>
+        <div style="flex:1;min-width:0">
+          <div class="en" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.name}</div>
+          <div class="em">
+            ${e.category?.split(' ')[1]||''}
+            · <strong style="color:var(--txt)">${e.paidBy||'?'}</strong>
+            ${perP?`· <span style="color:#b8a8ff">${perP}</span>`:''}
+          </div>
+          ${e.notes?`<div class="em" style="font-style:italic;opacity:.7">${e.notes}</div>`:''}
+        </div>
+        <div style="flex-shrink:0;text-align:right;min-width:60px">
+          <div class="ea">${fmt(e.amount)}</div>
+          <div class="ebtns">
+            <button class="btn bg bxs" onclick="editExp('${id}')">✏️</button>
+            <button class="btn bg bxs" style="color:var(--rose)" onclick="delExp('${id}')">🗑️</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    return `<div class="day-group">
+      <div class="day-header" onclick="toggleDayGroup(this)">
+        <div class="day-header-left">
+          <span class="day-label">${label}</span>
+          <span class="day-badge">${count} item${count!==1?'s':''}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="day-total">${fmt(dayTotal)}</span>
+          <span class="day-chevron ${isToday?'open':''}">▾</span>
         </div>
       </div>
+      <div class="day-body ${isToday?'':'collapsed'}">${rows}</div>
     </div>`;
   }).join('');
 }
+
+window.toggleDayGroup = el => {
+  const body    = el.nextElementSibling;
+  const chevron = el.querySelector('.day-chevron');
+  body.classList.toggle('collapsed');
+  chevron.classList.toggle('open');
+};
 
 function renderCatList(exps,total){
   const cats={}; exps.forEach(e=>cats[e.category]=(cats[e.category]||0)+(e.amount||0));
@@ -1480,33 +1569,78 @@ function renderPeopleTab(exps,total){
 }
 
 function renderSettleTab(){
-  const txns=calcSettle();
-  const pend=txns.filter(t=>!S.settlements[`${t.from}_${t.to}`.replace(/\s/g,'_')]?.settled).length;
-  setT('settle-sum',pend+' payment'+(pend!==1?'s':'')+' needed');
-  const el=$('settle-list');
-  if(!txns.length){ el.innerHTML='<div class="empty"><div class="ei-ico">🎉</div><p>All settled up!</p></div>'; }
-  else el.innerHTML=txns.map(t=>{
-    const key=`${t.from}_${t.to}`.replace(/\s/g,'_');
-    const done=S.settlements[key]?.settled;
-    return `<div class="stlc ${done?'done':''}">
-      <div class="stlarr">
-        <div class="mav" style="background:${col(t.from)};width:28px;height:28px;font-size:11px">${t.from[0].toUpperCase()}</div>
-        <div style="min-width:0"><div style="font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px">${t.from}</div><div style="font-size:10px;color:var(--sub)">pays</div></div>
-        <div class="aline"></div>
-        <div style="min-width:0"><div style="font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px">${t.to}</div><div style="font-size:10px;color:var(--sub)">gets</div></div>
-        <div class="mav" style="background:${col(t.to)};width:28px;height:28px;font-size:11px">${t.to[0].toUpperCase()}</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:7px;flex-shrink:0">
-        <div class="stlamt">${fmt(t.amount)}</div>
-        <button class="btn bsm ${done?'bg':'bl'}" onclick="markSettled('${key}')">${done?'↩':'✓'}</button>
-      </div>
-    </div>`;
-  }).join('');
-  const bal=calcBal();
-  $('balance-sheet').innerHTML=Object.entries(bal).map(([n,v])=>`
-    <div class="row"><span class="rl" style="display:flex;align-items:center;gap:6px"><span class="mav" style="background:${col(n)};width:20px;height:20px;font-size:9px">${n[0].toUpperCase()}</span>${n}</span>
-    <span class="${v>=0?'pos':'neg'}" style="font-size:13px">${v>=0?'+':'-'}${fmt(v)}</span></div>`).join('')||'<div class="empty" style="padding:16px"><p>No data</p></div>';
-  // settle-progress panel removed from HTML — no write needed
+  const txns = calcSettle();
+  const done_count = txns.filter(t => S.settlements[`${t.from}_${t.to}`.replace(/\s/g,'_')]?.settled).length;
+  const pend = txns.length - done_count;
+
+  // Summary header
+  setT('settle-sum', pend > 0
+    ? `${pend} payment${pend!==1?'s':''} pending`
+    : txns.length ? '🎉 All settled!' : 'No settlements needed'
+  );
+
+  const el = $('settle-list');
+  if(!txns.length){
+    el.innerHTML = `<div class="empty"><div class="ei-ico">🎉</div>
+      <p style="font-weight:700;font-size:14px;color:var(--txt);margin-bottom:4px">All Settled Up!</p>
+      <p style="font-size:12px">No payments needed between members.</p></div>`;
+  } else {
+    // Separate pending vs done
+    const pending = txns.filter(t => !S.settlements[`${t.from}_${t.to}`.replace(/\s/g,'_')]?.settled);
+    const settled = txns.filter(t =>  S.settlements[`${t.from}_${t.to}`.replace(/\s/g,'_')]?.settled);
+
+    const card = (t, done) => {
+      const key = `${t.from}_${t.to}`.replace(/\s/g,'_');
+      return `<div class="stlc ${done?'done':''}" style="${done?'':'border-color:rgba(124,95,255,.25);'}">
+        <div class="stlarr">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+            <div class="mav" style="background:${col(t.from)};width:32px;height:32px;font-size:13px">${t.from[0].toUpperCase()}</div>
+            <div style="font-size:10px;font-weight:700;color:var(--txt);max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center">${t.from}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;padding:0 6px">
+            <div style="font-size:10px;color:var(--sub)">pays</div>
+            <div style="display:flex;align-items:center;gap:0;width:100%">
+              <div style="flex:1;height:2px;background:linear-gradient(90deg,var(--violet),var(--lime));border-radius:2px;"></div>
+              <span style="font-size:9px;color:var(--lime)">▶</span>
+            </div>
+            <div class="stlamt" style="font-size:16px">${fmt(t.amount)}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+            <div class="mav" style="background:${col(t.to)};width:32px;height:32px;font-size:13px">${t.to[0].toUpperCase()}</div>
+            <div style="font-size:10px;font-weight:700;color:var(--txt);max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center">${t.to}</div>
+          </div>
+        </div>
+        <button class="btn bsm ${done?'bg':'bl'}" style="flex-shrink:0;min-width:56px" onclick="markSettled('${key}')">
+          ${done ? '↩ Undo' : '✓ Done'}
+        </button>
+      </div>`;
+    };
+
+    el.innerHTML =
+      (pending.length ? pending.map(t=>card(t,false)).join('') : '') +
+      (settled.length ? `
+        <div style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:1.2px;margin:14px 0 8px;padding-top:10px;border-top:1px solid var(--rim)">
+          ✓ Settled (${settled.length})
+        </div>
+        ${settled.map(t=>card(t,true)).join('')}` : '');
+  }
+
+  // Balance sheet
+  const bal = calcBal();
+  const bsEl = $('balance-sheet');
+  if(bsEl) bsEl.innerHTML = Object.entries(bal)
+    .sort((a,b) => b[1]-a[1])
+    .map(([n,v]) => `
+      <div class="row">
+        <span class="rl" style="display:flex;align-items:center;gap:8px">
+          <span class="mav" style="background:${col(n)};width:26px;height:26px;font-size:10px">${n[0].toUpperCase()}</span>
+          <span style="font-weight:600">${n}</span>
+        </span>
+        <span class="${v>=0?'pos':'neg'}" style="font-size:14px;font-family:'Bricolage Grotesque',sans-serif">
+          ${v>=0?'+':'-'}${fmt(v)}
+        </span>
+      </div>`
+    ).join('') || '<div class="empty" style="padding:16px"><p>No data</p></div>';
 }
 
 </script>
