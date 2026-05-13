@@ -1,0 +1,82 @@
+<!-- ================================================================
+     views/modals.html  —  Expense, Members, Budget/Settings modals
+     ✏️  Expense categories: <select id="e-cat"> options
+     ✏️  Split type buttons: id="sp-eq" / "sp-cu" / "sp-pc"
+     ✏️  Add new modal by copying a .modal block
+================================================================ -->
+<!-- ══ ADD/EDIT EXPENSE MODAL ══ -->
+<div class="modal" id="m-exp">
+  <div class="mbox">
+    <div class="mtitle" id="m-exp-title">💸 Add Expense</div>
+    <input type="hidden" id="eid">
+    <div class="fl"><label>Description</label><input type="text" id="e-name" class="fi" placeholder="e.g. Hotel dinner"></div>
+    <div class="g2">
+      <div class="fl"><label>Amount (₹)</label><input type="number" id="e-amt" class="fi" placeholder="0" min="1" inputmode="numeric" oninput="onAmtChg()"></div>
+      <div class="fl"><label>Paid By</label><select id="e-paid" class="fi"></select></div>
+    </div>
+    <div class="g2">
+      <div class="fl"><label>Category</label>
+        <select id="e-cat" class="fi">
+          <option>🍔 Food</option><option>✈️ Transport</option><option>🏨 Stay</option>
+          <option>🎭 Fun</option><option>🛍️ Shopping</option><option>💊 Medical</option><option>📦 Other</option>
+        </select></div>
+      <div class="fl"><label>Date</label><input type="date" id="e-date" class="fi"></div>
+    </div>
+    <div class="fl"><label>Notes (optional)</label><input type="text" id="e-notes" class="fi" placeholder="Any note"></div>
+    <div class="fl">
+      <label style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
+        <span style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:1.4px">Split Between</span>
+        <span style="font-size:11px;cursor:pointer;color:#b8a8ff;font-weight:700" onclick="selAll()">Select All</span>
+      </label>
+      <div class="mck-list" id="split-list"></div>
+    </div>
+    <div class="fl">
+      <label style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:1.4px;margin-bottom:7px;display:block">Split Type</label>
+      <div class="sptog">
+        <button class="spopt on" id="sp-eq" onclick="setSplit('equal')">⚖️ Equal</button>
+        <button class="spopt" id="sp-cu" onclick="setSplit('custom')">✏️ Custom</button>
+        <button class="spopt" id="sp-pc" onclick="setSplit('percent')">% Share</button>
+      </div>
+      <div id="custom-area" class="hidden"></div>
+    </div>
+    <div class="dvd"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn bl" style="flex:1" id="btn-save">Save</button>
+      <button class="btn bg" onclick="closeM('m-exp')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MEMBER MODAL ══ -->
+<div class="modal" id="m-mem">
+  <div class="mbox">
+    <div class="mtitle">👥 Trip Members</div>
+    <div id="m-mem-list"></div>
+    <div class="dvd"></div>
+    <label style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:1.4px;margin-bottom:7px;display:block">Add Member</label>
+    <div style="display:flex;gap:7px">
+      <input type="text" id="new-mem2" class="fi" placeholder="Name" style="margin:0;flex:1" onkeydown="if(event.key==='Enter')addMem2()">
+      <button class="btn bl" onclick="addMem2()">Add</button>
+    </div>
+    <div class="dvd"></div>
+    <button class="btn bg w100" onclick="closeM('m-mem')">Done</button>
+  </div>
+</div>
+
+<!-- ══ BUDGET/SETTINGS MODAL ══ -->
+<div class="modal" id="m-budget">
+  <div class="mbox">
+    <div class="mtitle">⚙️ Trip Settings</div>
+    <div class="fl"><label>Trip Name</label><input type="text" id="b-name" class="fi" placeholder="Trip name"></div>
+    <div class="fl"><label>Total Budget ₹ (0 = no limit)</label><input type="number" id="b-budget" class="fi" placeholder="0" inputmode="numeric"></div>
+    <div class="dvd"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn bl" style="flex:1" onclick="saveBudget()">Save</button>
+      <button class="btn bg" onclick="closeM('m-budget')">Cancel</button>
+    </div>
+    <div class="dvd"></div>
+    <button class="btn bg w100" style="color:var(--rose);font-size:12px" onclick="switchTrip()">🔄 Switch Trip / Log Out</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
