@@ -243,6 +243,9 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
 
 /* TOOLBAR / SEARCH */
 .tbar{padding:8px 14px 0;display:flex;gap:7px;align-items:center;}
+.dchip{padding:5px 11px;border-radius:20px;border:1px solid var(--rim);background:var(--ink3);color:var(--sub2);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;font-family:'Plus Jakarta Sans',sans-serif;}
+.dchip:active{transform:scale(.95);}
+.dchip.on{background:rgba(124,95,255,.18);border-color:rgba(124,95,255,.45);color:#b8a8ff;}
 .si{flex:1;padding:8px 11px;background:var(--ink3);border:1px solid var(--rim);border-radius:var(--rsm);color:var(--txt);font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;outline:none;-webkit-appearance:none;}
 .si:focus{border-color:rgba(124,95,255,.5);}
 .si::placeholder{color:var(--sub);}
@@ -662,6 +665,23 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
             <option value="amt-a">Lowest ₹</option>
           </select>
         </div>
+        <!-- DATE RANGE FILTER -->
+        <div style="padding:0 14px 10px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;gap:6px;flex-wrap:wrap" id="dchips">
+            <button class="dchip on" data-range="5d" onclick="setDRange(this,'5d')">Last 5 days</button>
+            <button class="dchip" data-range="7d" onclick="setDRange(this,'7d')">7 days</button>
+            <button class="dchip" data-range="30d" onclick="setDRange(this,'30d')">30 days</button>
+            <button class="dchip" data-range="all" onclick="setDRange(this,'all')">All</button>
+            <button class="dchip" data-range="custom" onclick="setDRange(this,'custom')">📅 Custom</button>
+          </div>
+          <div id="custom-drange" style="display:none">
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+              <input type="date" id="dr-from" class="fi" style="margin:0;flex:1;min-width:120px;padding:7px 10px;font-size:12px" onchange="renderUI()">
+              <span style="color:var(--sub);font-size:12px">→</span>
+              <input type="date" id="dr-to" class="fi" style="margin:0;flex:1;min-width:120px;padding:7px 10px;font-size:12px" onchange="renderUI()">
+            </div>
+          </div>
+        </div>
         <div class="pb" id="exp-list"></div>
       </div>
       <div class="two">
@@ -816,7 +836,7 @@ const db = getDatabase(initializeApp({
 
 /* STATE */
 let S = { gid:"", group:{}, expenses:{}, members:{}, settlements:{},
-          splitType:"equal", sel:[], pendCode:"", activeTab:"t-exp" };
+          splitType:"equal", sel:[], pendCode:"", activeTab:"t-exp", dateRange:"5d" };
 
 /* UTILS */
 const fmt     = n => '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN');
@@ -1404,6 +1424,27 @@ window.renderUI = () => {
   $(S.activeTab).classList.remove('hidden');
 };
 
+window.setDRange = (btn, range) => {
+  S.dateRange = range;
+  document.querySelectorAll('.dchip').forEach(c => c.classList.remove('on'));
+  btn.classList.add('on');
+  const cdiv = document.getElementById('custom-drange');
+  cdiv.style.display = range === 'custom' ? 'block' : 'none';
+  renderUI();
+};
+
+function getDateBounds() {
+  const r = S.dateRange;
+  if (r === 'all') return { from: null, to: null };
+  if (r === 'custom') {
+    return { from: document.getElementById('dr-from')?.value || null,
+             to:   document.getElementById('dr-to')?.value   || null };
+  }
+  const days = r === '5d' ? 5 : r === '7d' ? 7 : 30;
+  const from = new Date(); from.setDate(from.getDate() - (days - 1));
+  return { from: from.toISOString().split('T')[0], to: null };
+}
+
 function renderExpList(exps,total){
   const filter = $('fcat').value, paidF = $('fpaid').value;
   const search = ($('esearch').value||'').toLowerCase();
@@ -1416,8 +1457,17 @@ function renderExpList(exps,total){
   if(paidF)  list = list.filter(e=>e.paidBy===paidF);
   if(search) list = list.filter(e=>[(e.name||''),(e.notes||''),(e.paidBy||'')].some(f=>f.toLowerCase().includes(search)));
 
+  // Date range filter
+  const { from: drFrom, to: drTo } = getDateBounds();
+  const olderCount = drFrom ? list.filter(e => e.date && e.date < drFrom).length : 0;
+  if(drFrom) list = list.filter(e => !e.date || e.date >= drFrom);
+  if(drTo)   list = list.filter(e => !e.date || e.date <= drTo);
+
   if(!list.length){
-    el.innerHTML='<div class="empty"><div class="ei-ico">💸</div><p>No expenses found</p></div>';
+    const hint = olderCount > 0
+      ? `<p>No expenses in this range.</p><p style="margin-top:6px;font-size:12px;color:var(--sub2)">${olderCount} older expense${olderCount!==1?'s':''} — tap <b style="color:#b8a8ff">All</b> or <b style="color:#b8a8ff">📅 Custom</b> to see them.</p>`
+      : '<p>No expenses found</p>';
+    el.innerHTML=`<div class="empty"><div class="ei-ico">💸</div>${hint}</div>`;
     return;
   }
 
@@ -1487,7 +1537,12 @@ function renderExpList(exps,total){
       </div>
       <div class="day-body ${isToday?'':'collapsed'}">${rows}</div>
     </div>`;
-  }).join('');
+  }).join('') + (olderCount > 0 && S.dateRange !== 'all'
+    ? `<div style="text-align:center;padding:14px 0 4px;color:var(--sub2);font-size:12px;font-weight:600">
+        ${olderCount} older expense${olderCount!==1?'s':''} not shown ·
+        <span style="color:#b8a8ff;cursor:pointer" onclick="document.querySelector('.dchip[data-range=all]').click()">Show all</span>
+      </div>`
+    : '');
 }
 
 window.toggleDayGroup = el => {
