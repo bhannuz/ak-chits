@@ -1637,8 +1637,16 @@ function renderSettleTab(){
         ${settled.map(t=>card(t,true)).join('')}` : '');
   }
 
-  // Balance sheet
+  // Balance sheet — adjusted for settled transactions
   const bal = calcBal();
+  const allTxns = calcSettle();
+  allTxns.forEach(t => {
+    const key = `${t.from}_${t.to}`.replace(/\s/g,'_');
+    if (S.settlements[key]?.settled) {
+      bal[t.from] = (bal[t.from] || 0) + t.amount;
+      bal[t.to]   = (bal[t.to]   || 0) - t.amount;
+    }
+  });
   const bsEl = $('balance-sheet');
   if(bsEl) bsEl.innerHTML = Object.entries(bal)
     .sort((a,b) => b[1]-a[1])
@@ -1648,8 +1656,8 @@ function renderSettleTab(){
           <span class="mav" style="background:${col(n)};width:26px;height:26px;font-size:10px">${n[0].toUpperCase()}</span>
           <span style="font-weight:600">${n}</span>
         </span>
-        <span class="${v>=0?'pos':'neg'}" style="font-size:14px;font-family:'Bricolage Grotesque',sans-serif">
-          ${v>=0?'+':'-'}${fmt(v)}
+        <span class="${Math.abs(v)<0.5?'':''}${v>=-0.5?'pos':'neg'}" style="font-size:14px;font-family:'Bricolage Grotesque',sans-serif">
+          ${Math.abs(v)<0.5 ? '✓ 0.00' : (v>=0?'+':'-')+fmt(Math.abs(v))}
         </span>
       </div>`
     ).join('') || '<div class="empty" style="padding:16px"><p>No data</p></div>';
