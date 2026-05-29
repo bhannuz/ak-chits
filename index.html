@@ -689,13 +689,7 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
           <div class="ph"><span class="pt">By Category</span></div>
           <div class="pb" id="cat-list"></div>
         </div>
-        <div class="pnl">
-          <div class="ph">
-            <span class="pt">Members Balance</span>
-            <span style="font-size:11px;color:var(--sub2)" id="mem-ct-s"></span>
-          </div>
-          <div class="pb" id="mem-side"></div>
-        </div>
+
       </div>
     </div>
 
@@ -735,11 +729,7 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
         <div class="pb" id="settle-list"></div>
       </div>
 
-      <!-- Balance sheet -->
-      <div class="pnl">
-        <div class="ph"><span class="pt">Balance Sheet</span></div>
-        <div class="pb" id="balance-sheet"></div>
-      </div>
+
     </div>
 
   </div><!-- /main -->
@@ -875,7 +865,6 @@ window.switchTab = (id, btn) => {
   // Render ALL tab content while everything is still in DOM
   renderExpList(exps,total);
   renderCatList(exps,total);
-  renderMemSide(exps);
   renderPeopleTab(exps,total);
   renderSettleTab();
   // Now toggle visibility
@@ -1411,12 +1400,10 @@ window.renderUI = () => {
   const _fpaid=$('fpaid'), _prev=_fpaid.value;
   _fpaid.innerHTML='<option value="">All Members</option>'+ns().map(n=>`<option>${n}</option>`).join('');
   if(_prev) _fpaid.value=_prev;   // restore selection after repopulate
-  setT('mem-ct-s',mc+' people');
 
   // Render ALL content before any visibility toggling
   renderExpList(exps, total);
   renderCatList(exps, total);
-  renderMemSide(exps);
   renderPeopleTab(exps, total);
   renderSettleTab();
   // Ensure only active tab is visible
@@ -1561,23 +1548,6 @@ function renderCatList(exps,total){
     </div>`).join('')||'<div class="empty" style="padding:16px"><p>No data yet</p></div>';
 }
 
-function renderMemSide(exps){
-  const names=ns(); const paid={},owes={};
-  names.forEach(n=>{ paid[n]=0; owes[n]=0; });
-  exps.forEach(e=>{
-    if(e.paidBy) paid[e.paidBy]=(paid[e.paidBy]||0)+(e.amount||0);
-    if(e.splits) Object.values(e.splits).forEach(s=>owes[s.name]=(owes[s.name]||0)+(s.share||0));
-    else if(e.splitBetween?.length){ const sh=(e.amount||0)/e.splitBetween.length; e.splitBetween.forEach(n=>owes[n]=(owes[n]||0)+sh); }
-  });
-  $('mem-side').innerHTML=names.map(n=>{
-    const net=(paid[n]||0)-(owes[n]||0);
-    return `<div class="mr">
-      <div class="mav" style="background:${col(n)};width:32px;height:32px;font-size:12px">${n[0].toUpperCase()}</div>
-      <div style="flex:1"><div class="mname">${n}</div><div class="msub">paid ${fmt(paid[n]||0)}</div></div>
-      <div class="${net>=0?'pos':'neg'}" style="font-size:13px">${net>=0?'+':'-'}${fmt(net)}</div>
-    </div>`;
-  }).join('')||'<div class="empty" style="padding:16px"><p>No members</p></div>';
-}
 
 function renderPeopleTab(exps,total){
   const names=ns(); const paid={},owes={},cnt={};
@@ -1692,31 +1662,8 @@ function renderSettleTab(){
         ${settled.map(t=>card(t,true)).join('')}` : '');
   }
 
-  // Balance sheet — adjusted for settled transactions
-  const bal = calcBal();
-  const allTxns = calcSettle();
-  allTxns.forEach(t => {
-    const key = `${t.from}_${t.to}`.replace(/\s/g,'_');
-    if (S.settlements[key]?.settled) {
-      bal[t.from] = (bal[t.from] || 0) + t.amount;
-      bal[t.to]   = (bal[t.to]   || 0) - t.amount;
-    }
-  });
-  const bsEl = $('balance-sheet');
-  if(bsEl) bsEl.innerHTML = Object.entries(bal)
-    .sort((a,b) => b[1]-a[1])
-    .map(([n,v]) => `
-      <div class="row">
-        <span class="rl" style="display:flex;align-items:center;gap:8px">
-          <span class="mav" style="background:${col(n)};width:26px;height:26px;font-size:10px">${n[0].toUpperCase()}</span>
-          <span style="font-weight:600">${n}</span>
-        </span>
-        <span class="${Math.abs(v)<0.5?'':''}${v>=-0.5?'pos':'neg'}" style="font-size:14px;font-family:'Bricolage Grotesque',sans-serif">
-          ${Math.abs(v)<0.5 ? '✓ 0.00' : (v>=0?'+':'-')+fmt(Math.abs(v))}
-        </span>
-      </div>`
-    ).join('') || '<div class="empty" style="padding:16px"><p>No data</p></div>';
 }
+
 
 </script>
 </body>
