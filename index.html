@@ -285,6 +285,52 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
 .aline{width:28px;height:2px;background:linear-gradient(90deg,var(--violet),var(--lime));border-radius:2px;position:relative;flex-shrink:0;}
 .aline::after{content:'▶';position:absolute;right:-7px;top:-7px;font-size:8px;color:var(--lime);}
 
+/* BALANCE TABLE */
+#bal-table th, #bal-table td {
+  padding: 9px 12px;
+  font-size: 12px;
+  text-align: right;
+  border-bottom: 1px solid var(--rim3);
+  white-space: nowrap;
+}
+#bal-table th {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.1px;
+  color: var(--sub);
+  background: var(--ink3);
+  position: sticky;
+  top: 0;
+}
+#bal-table th:first-child, #bal-table td:first-child {
+  text-align: left;
+  position: sticky;
+  left: 0;
+  background: var(--ink2);
+  z-index: 2;
+  min-width: 110px;
+}
+#bal-table th:first-child { background: var(--ink3); z-index: 3; }
+#bal-table tbody tr:hover td { background: rgba(255,255,255,.025); }
+#bal-table tbody tr:hover td:first-child { background: rgba(30,25,50,.95); }
+#bal-table tfoot td {
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--txt);
+  background: var(--ink3);
+  border-top: 2px solid var(--rim);
+  border-bottom: none;
+}
+#bal-table tfoot td:first-child { background: var(--ink3); }
+.bt-mem { display:flex; align-items:center; gap:7px; }
+.bt-pos { color: var(--green); font-family:'Bricolage Grotesque',sans-serif; font-weight:800; }
+.bt-neg { color: var(--rose);  font-family:'Bricolage Grotesque',sans-serif; font-weight:800; }
+.bt-dep { color: var(--amber); font-family:'Bricolage Grotesque',sans-serif; font-weight:800; }
+.bt-zero{ color: var(--sub2);  font-family:'Bricolage Grotesque',sans-serif; font-weight:800; }
+.bt-rmv { background:none;border:none;cursor:pointer;color:var(--sub);font-size:12px;padding:1px 3px;border-radius:4px;line-height:1; }
+.bt-rmv:hover { color:var(--rose); }
+
 /* MODAL */
 .modal{position:fixed;inset:0;z-index:20000;background:rgba(0,0,0,.8);backdrop-filter:blur(10px);display:none;align-items:flex-end;justify-content:center;padding:0;}
 @media(min-width:500px){.modal{align-items:center;padding:20px;}}
@@ -694,36 +740,39 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
     </div>
 
 
-    <!-- ══ PEOPLE TAB = Members + Settle combined ══ -->
+    <!-- ══ PEOPLE TAB = Summary Table + Settle ══ -->
     <div id="t-people" class="sec">
 
-      <!-- Members list + add -->
+      <!-- Balance Summary Table -->
       <div class="pnl">
-        <div class="ph">
-          <span class="pt">Members</span>
+        <div class="ph" style="flex-wrap:wrap;gap:8px">
+          <span class="pt">💳 Balance Summary</span>
           <span style="font-size:11px;color:var(--sub2)" id="mem-full-ct"></span>
         </div>
-        <div class="pb" id="mem-full-list"></div>
-        <div style="padding:0 14px 14px">
-          <div class="dvd" style="margin-top:0"></div>
-          <label style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:1.4px;margin-bottom:6px;display:block">Add Member</label>
+        <!-- Scrollable table wrapper -->
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+          <table id="bal-table" style="width:100%;border-collapse:collapse;min-width:480px;">
+            <thead>
+              <tr id="bal-thead"></tr>
+            </thead>
+            <tbody id="bal-tbody"></tbody>
+            <tfoot id="bal-tfoot"></tfoot>
+          </table>
+        </div>
+        <!-- Add Member -->
+        <div style="padding:10px 14px 14px">
+          <div class="dvd" style="margin-top:0;margin-bottom:10px"></div>
           <div style="display:flex;gap:7px">
-            <input type="text" id="new-mem" class="fi" placeholder="Name" style="margin:0;flex:1" onkeydown="if(event.key==='Enter')addMem()">
+            <input type="text" id="new-mem" class="fi" placeholder="Add member…" style="margin:0;flex:1" onkeydown="if(event.key==='Enter')addMem()">
             <button class="btn bl" onclick="addMem()">Add</button>
           </div>
         </div>
       </div>
 
-      <!-- Who paid the most -->
-      <div class="pnl">
-        <div class="ph"><span class="pt">Who Paid the Most</span></div>
-        <div class="pb" id="mem-rank"></div>
-      </div>
-
       <!-- Settlement plan -->
       <div class="pnl">
         <div class="ph">
-          <span class="pt">Settle Up</span>
+          <span class="pt">⚖️ Settle Up</span>
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:11px;color:var(--sub2)" id="settle-sum"></span>
             <button class="btn bv bxs" onclick="openDeposit()">+ Deposit</button>
@@ -731,7 +780,6 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
         </div>
         <div class="pb" id="settle-list"></div>
       </div>
-
 
     </div>
 
@@ -1603,60 +1651,83 @@ function renderCatList(exps,total){
 }
 
 
-function renderPeopleTab(exps,total){
-  const names=ns(); const paid={},owes={},cnt={};
-  names.forEach(n=>{ paid[n]=0; owes[n]=0; cnt[n]=0; });
+function renderPeopleTab(exps, total){
+  const names = ns();
+  if(!names.length){
+    setT('mem-full-ct','0 people');
+    $('bal-thead').innerHTML = '';
+    $('bal-tbody').innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--sub2);font-size:12px">No members yet — add someone below.</td></tr>';
+    $('bal-tfoot').innerHTML = '';
+    return;
+  }
+
+  // Per-member totals from expenses
+  const paid={}, owes={}, depAmt={}, cnt={};
+  names.forEach(n=>{ paid[n]=0; owes[n]=0; depAmt[n]=0; cnt[n]=0; });
+
   exps.forEach(e=>{
     if(e.paidBy){ paid[e.paidBy]=(paid[e.paidBy]||0)+(e.amount||0); cnt[e.paidBy]=(cnt[e.paidBy]||0)+1; }
     if(e.splits) Object.values(e.splits).forEach(s=>owes[s.name]=(owes[s.name]||0)+(s.share||0));
     else if(e.splitBetween?.length){ const sh=(e.amount||0)/e.splitBetween.length; e.splitBetween.forEach(n=>owes[n]=(owes[n]||0)+sh); }
   });
 
-  // Adjust balances for settled transactions
-  const txns = calcSettle();
-  const settledAdj = {};
-  names.forEach(n => settledAdj[n] = 0);
-  txns.forEach(t => {
-    const key = `${t.from}_${t.to}`.replace(/\s/g,'_');
-    if (S.settlements[key]?.settled) {
-      settledAdj[t.from] = (settledAdj[t.from] || 0) + t.amount;
-      settledAdj[t.to]   = (settledAdj[t.to]   || 0) - t.amount;
-    }
+  // Deposits per member
+  Object.values(S.deposits||{}).forEach(d=>{
+    if(d.member) depAmt[d.member]=(depAmt[d.member]||0)+(d.amount||0);
   });
 
-  // Member list with net balance
-  setT('mem-full-ct', names.length+' people');
-  $('mem-full-list').innerHTML = Object.entries(S.members).map(([id,m])=>{
-    const net=((paid[m.name]||0)-(owes[m.name]||0)) + (settledAdj[m.name]||0);
-    return `<div class="mr">
-      <div class="mav" style="background:${col(m.name)};width:34px;height:34px;font-size:13px">${m.name[0].toUpperCase()}</div>
-      <div style="flex:1">
-        <div class="mname">${m.name}</div>
-        <div class="msub">Paid ${fmt(paid[m.name]||0)} · ${cnt[m.name]||0} expense${cnt[m.name]!==1?'s':''}</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <span class="badge ${net>=0?'bg-g':'bg-r'}">${net>=0?'+':'-'}${fmt(net)}</span>
-        <button class="btn bg bxs" style="color:var(--rose)" onclick="removeMem('${id}')">✕</button>
-      </div>
-    </div>`;
-  }).join('')||'<div class="empty"><p>No members yet. Add members above.</p></div>';
+  const hasDeposits = Object.values(depAmt).some(v=>v>0);
 
-  // Who paid most ranking
-  const el=$('mem-rank');
-  if(el) el.innerHTML = [...names].sort((a,b)=>(paid[b]||0)-(paid[a]||0)).map((n,i)=>{
-    const pct=total?Math.round((paid[n]||0)/total*100):0;
-    return `<div style="margin-bottom:11px">
-      <div class="cattop">
-        <span style="display:flex;align-items:center;gap:7px">
-          <span>${['🥇','🥈','🥉'][i]||'•'}</span>
-          <span class="mav" style="background:${col(n)};width:22px;height:22px;font-size:10px">${n[0].toUpperCase()}</span>
-          <span>${n}</span>
-        </span>
-        <b style="color:var(--lime)">${fmt(paid[n]||0)} <span style="color:var(--sub);font-size:10px">${pct}%</span></b>
-      </div>
-      <div class="catbar" style="margin-top:4px"><div class="catfill" style="width:${pct}%"></div></div>
-    </div>`;
-  }).join('')||'<div class="empty" style="padding:16px"><p>No expenses yet</p></div>';
+  setT('mem-full-ct', names.length+' people');
+
+  // Build thead
+  const thCols = ['Member','Paid (Exp)', hasDeposits?'Deposits':'', 'Share Owed', 'Net Balance', ''];
+  $('bal-thead').innerHTML = thCols.filter(Boolean).map((h,i)=>
+    `<th style="${i===0?'':''}${i===thCols.filter(Boolean).length-1?'width:36px;':''}">${h}</th>`
+  ).join('');
+
+  // Build tbody rows
+  let totPaid=0, totDep=0, totOwes=0;
+  $('bal-tbody').innerHTML = Object.entries(S.members).map(([id,m])=>{
+    const n = m.name;
+    const p  = paid[n]||0;
+    const d  = depAmt[n]||0;
+    const o  = owes[n]||0;
+    const net = p + d - o;
+    totPaid+=p; totDep+=d; totOwes+=o;
+
+    const netClass = net>0.5?'bt-pos':net<-0.5?'bt-neg':'bt-zero';
+    const netSign  = net>0.5?'+':net<-0.5?'−':'';
+
+    const depCell = hasDeposits
+      ? `<td class="bt-dep">${d>0?fmt(d):'—'}</td>` : '';
+
+    return `<tr>
+      <td>
+        <div class="bt-mem">
+          <div class="mav" style="background:${col(n)};width:26px;height:26px;font-size:11px;flex-shrink:0">${n[0].toUpperCase()}</div>
+          <span style="font-weight:700;font-size:12px">${n}</span>
+        </div>
+      </td>
+      <td style="color:var(--lime);font-family:'Bricolage Grotesque',sans-serif;font-weight:800">${fmt(p)}</td>
+      ${depCell}
+      <td style="color:var(--sub2)">${fmt(o)}</td>
+      <td><span class="${netClass}">${netSign}${fmt(Math.abs(net))}</span></td>
+      <td style="text-align:center"><button class="bt-rmv" onclick="removeMem('${id}')" title="Remove">✕</button></td>
+    </tr>`;
+  }).join('');
+
+  // Build tfoot totals
+  const netTot = totPaid + totDep - totOwes;
+  const depTotCell = hasDeposits ? `<td class="bt-dep">${fmt(totDep)}</td>` : '';
+  $('bal-tfoot').innerHTML = `<tr>
+    <td>Total</td>
+    <td style="color:var(--lime)">${fmt(totPaid)}</td>
+    ${depTotCell}
+    <td style="color:var(--sub2)">${fmt(totOwes)}</td>
+    <td style="color:${Math.abs(netTot)<1?'var(--sub2)':'var(--txt)'}">${fmt(netTot)}</td>
+    <td></td>
+  </tr>`;
 }
 
 function renderSettleTab(){
@@ -1722,25 +1793,50 @@ function renderSettleTab(){
         ${settled.map(t=>card(t,true)).join('')}` : '');
   }
 
-  // Deposits section
+  // Deposits section — tabular
   let depsHtml = '';
   if(deps.length){
     depsHtml = `
       <div style="padding-top:12px;margin-top:4px;border-top:1px solid var(--rim)">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <div style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:1.2px">💰 Mid-Trip Deposits (${deps.length})</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:1.2px">💰 Mid-Trip Deposits</div>
           <div style="font-size:11px;font-weight:700;color:var(--amber)">${fmt(totalDeposited)} total</div>
         </div>
-        ${deps.sort((a,b)=>(a[1].date||'').localeCompare(b[1].date||'')).map(([id,d])=>`
-          <div style="display:flex;align-items:center;gap:9px;padding:8px 10px;background:rgba(247,168,37,.07);border:1px solid rgba(247,168,37,.18);border-radius:8px;margin-bottom:6px">
-            <div class="mav" style="background:${col(d.member)};width:28px;height:28px;font-size:11px;flex-shrink:0">${(d.member||'?')[0].toUpperCase()}</div>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:12px;font-weight:700;color:var(--txt)">${d.member}</div>
-              <div style="font-size:10px;color:var(--sub2)">${d.note||'Cash deposit'} · ${fmtDate(d.date)||''}</div>
-            </div>
-            <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:800;color:var(--amber);flex-shrink:0">${fmt(d.amount)}</div>
-            <button class="btn bg bxs" style="color:var(--rose);flex-shrink:0" onclick="delDeposit('${id}')">✕</button>
-          </div>`).join('')}
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;min-width:300px">
+            <thead>
+              <tr>
+                <th style="text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--sub);padding:6px 10px;background:var(--ink3);border-radius:6px 0 0 0">Member</th>
+                <th style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--sub);padding:6px 10px;background:var(--ink3);text-align:right">Amount</th>
+                <th style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--sub);padding:6px 10px;background:var(--ink3);text-align:left">Note</th>
+                <th style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--sub);padding:6px 10px;background:var(--ink3);text-align:right;border-radius:0 6px 0 0">Date</th>
+                <th style="background:var(--ink3);padding:6px 6px;width:32px"></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${deps.sort((a,b)=>(a[1].date||'').localeCompare(b[1].date||'')).map(([id,d])=>`
+                <tr style="border-bottom:1px solid var(--rim3)">
+                  <td style="padding:8px 10px">
+                    <div style="display:flex;align-items:center;gap:7px">
+                      <div class="mav" style="background:${col(d.member)};width:24px;height:24px;font-size:10px;flex-shrink:0">${(d.member||'?')[0].toUpperCase()}</div>
+                      <span style="font-size:12px;font-weight:700">${d.member||'—'}</span>
+                    </div>
+                  </td>
+                  <td style="text-align:right;font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:800;color:var(--amber);padding:8px 10px">${fmt(d.amount)}</td>
+                  <td style="text-align:left;font-size:11px;color:var(--sub2);padding:8px 10px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.note||'—'}</td>
+                  <td style="text-align:right;font-size:11px;color:var(--sub2);padding:8px 10px">${fmtDate(d.date)||'—'}</td>
+                  <td style="padding:8px 6px;text-align:center"><button class="btn bg bxs" style="color:var(--rose);padding:3px 7px" onclick="delDeposit('${id}')">✕</button></td>
+                </tr>`).join('')}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td style="padding:8px 10px;font-weight:800;font-size:12px;border-top:2px solid var(--rim)">Total</td>
+                <td style="text-align:right;font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:800;color:var(--amber);padding:8px 10px;border-top:2px solid var(--rim)">${fmt(totalDeposited)}</td>
+                <td colspan="3" style="border-top:2px solid var(--rim)"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
       </div>`;
   }
 
