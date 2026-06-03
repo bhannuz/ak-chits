@@ -1802,42 +1802,42 @@ function renderSettleTab(){
           <div style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:1.2px">💰 Mid-Trip Deposits</div>
           <div style="font-size:11px;font-weight:700;color:var(--amber)">${fmt(totalDeposited)} total</div>
         </div>
-        <div style="overflow-x:auto">
-          <table style="width:100%;border-collapse:collapse;min-width:300px">
-            <thead>
-              <tr>
-                <th style="text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--sub);padding:6px 10px;background:var(--ink3);border-radius:6px 0 0 0">Member</th>
-                <th style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--sub);padding:6px 10px;background:var(--ink3);text-align:right">Amount</th>
-                <th style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--sub);padding:6px 10px;background:var(--ink3);text-align:left">Note</th>
-                <th style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--sub);padding:6px 10px;background:var(--ink3);text-align:right;border-radius:0 6px 0 0">Date</th>
-                <th style="background:var(--ink3);padding:6px 6px;width:32px"></th>
-              </tr>
-            </thead>
-            <tbody>
-              ${deps.sort((a,b)=>(a[1].date||'').localeCompare(b[1].date||'')).map(([id,d])=>`
-                <tr style="border-bottom:1px solid var(--rim3)">
-                  <td style="padding:8px 10px">
-                    <div style="display:flex;align-items:center;gap:7px">
-                      <div class="mav" style="background:${col(d.member)};width:24px;height:24px;font-size:10px;flex-shrink:0">${(d.member||'?')[0].toUpperCase()}</div>
-                      <span style="font-size:12px;font-weight:700">${d.member||'—'}</span>
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr>
+              <th style="text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--sub);padding:6px 10px;background:var(--ink3)">Member</th>
+              <th style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--sub);padding:6px 10px;background:var(--ink3);text-align:right;white-space:nowrap">Amount</th>
+              <th style="background:var(--ink3);padding:6px 6px;width:32px"></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${deps.sort((a,b)=>(a[1].date||'').localeCompare(b[1].date||'')).map(([id,d])=>`
+              <tr style="border-bottom:1px solid var(--rim3)">
+                <td style="padding:8px 10px">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <div class="mav" style="background:${col(d.member)};width:28px;height:28px;font-size:11px;flex-shrink:0">${(d.member||'?')[0].toUpperCase()}</div>
+                    <div>
+                      <div style="font-size:12px;font-weight:700;color:var(--txt)">${d.member||'—'}</div>
+                      <div style="font-size:11px;color:var(--sub2);margin-top:2px">
+                        ${d.note?`<span>${d.note}</span><span style="margin:0 5px;opacity:.4">·</span>`:''}
+                        <span>${fmtDate(d.date)||'—'}</span>
+                      </div>
                     </div>
-                  </td>
-                  <td style="text-align:right;font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:800;color:var(--amber);padding:8px 10px">${fmt(d.amount)}</td>
-                  <td style="text-align:left;font-size:11px;color:var(--sub2);padding:8px 10px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.note||'—'}</td>
-                  <td style="text-align:right;font-size:11px;color:var(--sub2);padding:8px 10px">${fmtDate(d.date)||'—'}</td>
-                  <td style="padding:8px 6px;text-align:center"><button class="btn bg bxs" style="color:var(--rose);padding:3px 7px" onclick="delDeposit('${id}')">✕</button></td>
-                </tr>`).join('')}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td style="padding:8px 10px;font-weight:800;font-size:12px;border-top:2px solid var(--rim)">Total</td>
-                <td style="text-align:right;font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:800;color:var(--amber);padding:8px 10px;border-top:2px solid var(--rim)">${fmt(totalDeposited)}</td>
-                <td colspan="3" style="border-top:2px solid var(--rim)"></td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </div>`;
+                  </div>
+                </td>
+                <td style="text-align:right;font-family:'Bricolage Grotesque',sans-serif;font-size:15px;font-weight:800;color:var(--amber);padding:8px 10px;white-space:nowrap">${fmt(d.amount)}</td>
+                <td style="padding:8px 6px;text-align:center"><button class="btn bg bxs" style="color:var(--rose);padding:3px 7px" onclick="delDeposit('${id}')">✕</button></td>
+              </tr>`).join('')}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td style="padding:8px 10px;font-weight:800;font-size:12px;border-top:2px solid var(--rim)">Total</td>
+              <td style="text-align:right;font-family:'Bricolage Grotesque',sans-serif;font-size:15px;font-weight:800;color:var(--amber);padding:8px 10px;border-top:2px solid var(--rim);white-space:nowrap">${fmt(totalDeposited)}</td>
+              <td style="border-top:2px solid var(--rim)"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>`; 
   }
 
   el.innerHTML = settleHtml + depsHtml;
