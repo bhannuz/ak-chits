@@ -724,7 +724,10 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
       <div class="pnl">
         <div class="ph">
           <span class="pt">Settle Up</span>
-          <span style="font-size:11px;color:var(--sub2)" id="settle-sum"></span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;color:var(--sub2)" id="settle-sum"></span>
+            <button class="btn bv bxs" onclick="openDeposit()">+ Deposit</button>
+          </div>
         </div>
         <div class="pb" id="settle-list"></div>
       </div>
@@ -810,6 +813,24 @@ select.fi{appearance:none;-webkit-appearance:none;cursor:pointer;background-imag
   </div>
 </div>
 
+<!-- ══ DEPOSIT MODAL ══ -->
+<div class="modal" id="m-dep">
+  <div class="mbox">
+    <div class="mtitle">💰 Record Deposit</div>
+    <p style="font-size:12px;color:var(--sub2);margin-bottom:14px;margin-top:-8px">Member paid cash mid-trip — this reduces what they owe in the final settlement.</p>
+    <div class="g2">
+      <div class="fl"><label>Member</label><select id="dep-who" class="fi"></select></div>
+      <div class="fl"><label>Amount (₹)</label><input type="number" id="dep-amt" class="fi" placeholder="0" min="1" inputmode="numeric"></div>
+    </div>
+    <div class="fl"><label>Note (optional)</label><input type="text" id="dep-note" class="fi" placeholder="e.g. Cash handed to Rahul"></div>
+    <div class="dvd"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn bl" style="flex:1" onclick="saveDeposit()">Save Deposit</button>
+      <button class="btn bg" onclick="closeM('m-dep')">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script type="module">
@@ -825,7 +846,7 @@ const db = getDatabase(initializeApp({
 }));
 
 /* STATE */
-let S = { gid:"", group:{}, expenses:{}, members:{}, settlements:{},
+let S = { gid:"", group:{}, expenses:{}, members:{}, settlements:{}, deposits:{},
           splitType:"equal", sel:[], pendCode:"", activeTab:"t-exp", dateRange:"5d" };
 
 /* UTILS */
@@ -1136,17 +1157,19 @@ $('btn-setup').onclick = async () => {
 async function loadAll(){
   showLoad('Syncing…');
   try {
-    const [eS,mS,sS,gS]=await Promise.all([
+    const [eS,mS,sS,gS,dS]=await Promise.all([
       get(ref(db,'smartsplit/expenses')),
       get(ref(db,'smartsplit/members')),
       get(ref(db,`smartsplit/settlements/${S.gid}`)),
-      get(ref(db,`smartsplit/groups/${S.gid}`))
+      get(ref(db,`smartsplit/groups/${S.gid}`)),
+      get(ref(db,`smartsplit/deposits/${S.gid}`))
     ]);
     const ae=eS.exists()?eS.val():{};
     S.expenses=Object.fromEntries(Object.entries(ae).filter(([,e])=>e.groupId===S.gid));
     const am=mS.exists()?mS.val():{};
     S.members=Object.fromEntries(Object.entries(am).filter(([,m])=>m.groupId===S.gid));
     S.settlements=sS.exists()?sS.val():{};
+    S.deposits=dS.exists()?dS.val():{};
     if(gS.exists()) S.group=gS.val();
   } finally { hideLoad(); }
 }
@@ -1182,7 +1205,7 @@ window.switchTrip = () => {
   $('app').style.display='none';
   go('s-start');
   // Reset state
-  S.gid=''; S.group={}; S.expenses={}; S.members={}; S.settlements={};
+  S.gid=''; S.group={}; S.expenses={}; S.members={}; S.settlements={}; S.deposits={};
   S.activeTab='t-exp';
   $('l-code').value='';
 };
@@ -1329,6 +1352,33 @@ window.delExp = async id => {
   await loadAll(); renderUI(); hideLoad(); toast('Deleted');
 };
 
+/* DEPOSITS */
+window.openDeposit = () => {
+  $('dep-who').innerHTML = ns().map(n=>`<option>${n}</option>`).join('');
+  $('dep-amt').value=''; $('dep-note').value='';
+  $('m-dep').classList.add('on');
+};
+window.saveDeposit = async () => {
+  const who=$('dep-who').value, amt=parseFloat($('dep-amt').value);
+  const note=$('dep-note').value.trim();
+  if(!who) return toast('Select a member');
+  if(!amt||amt<=0) return toast('Enter a valid amount');
+  showLoad();
+  try {
+    await set(push(ref(db,`smartsplit/deposits/${S.gid}`)),{
+      member:who, amount:amt, note, date:today(), groupId:S.gid
+    });
+    toast('Deposit recorded ✓'); closeM('m-dep'); await loadAll(); renderUI();
+  } catch(e){ toast('Error: '+e.message); }
+  finally { hideLoad(); }
+};
+window.delDeposit = async id => {
+  if(!confirm('Remove this deposit?')) return;
+  showLoad();
+  await remove(ref(db,`smartsplit/deposits/${S.gid}/${id}`));
+  await loadAll(); renderUI(); hideLoad(); toast('Deposit removed');
+};
+
 /* SETTLE */
 window.markSettled = async key => {
   const done=S.settlements[key]?.settled;
@@ -1342,6 +1392,10 @@ function calcBal(){
     if(e.paidBy) bal[e.paidBy]=(bal[e.paidBy]||0)+(e.amount||0);
     if(e.splits) Object.values(e.splits).forEach(s=>bal[s.name]=(bal[s.name]||0)-(s.share||0));
     else if(e.splitBetween?.length){ const sh=(e.amount||0)/e.splitBetween.length; e.splitBetween.forEach(n=>bal[n]=(bal[n]||0)-sh); }
+  });
+  // Deposits: member paid cash mid-trip → reduces their debt (increases their balance)
+  Object.values(S.deposits||{}).forEach(d=>{
+    if(d.member && bal[d.member]!==undefined) bal[d.member]=(bal[d.member]||0)+(d.amount||0);
   });
   return bal;
 }
@@ -1610,6 +1664,10 @@ function renderSettleTab(){
   const done_count = txns.filter(t => S.settlements[`${t.from}_${t.to}`.replace(/\s/g,'_')]?.settled).length;
   const pend = txns.length - done_count;
 
+  // Deposits summary
+  const deps = Object.entries(S.deposits||{});
+  const totalDeposited = deps.reduce((s,[,d])=>s+(d.amount||0),0);
+
   // Summary header
   setT('settle-sum', pend > 0
     ? `${pend} payment${pend!==1?'s':''} pending`
@@ -1617,12 +1675,14 @@ function renderSettleTab(){
   );
 
   const el = $('settle-list');
+
+  // Build settle cards
+  let settleHtml = '';
   if(!txns.length){
-    el.innerHTML = `<div class="empty"><div class="ei-ico">🎉</div>
+    settleHtml = `<div class="empty"><div class="ei-ico">🎉</div>
       <p style="font-weight:700;font-size:14px;color:var(--txt);margin-bottom:4px">All Settled Up!</p>
       <p style="font-size:12px">No payments needed between members.</p></div>`;
   } else {
-    // Separate pending vs done
     const pending = txns.filter(t => !S.settlements[`${t.from}_${t.to}`.replace(/\s/g,'_')]?.settled);
     const settled = txns.filter(t =>  S.settlements[`${t.from}_${t.to}`.replace(/\s/g,'_')]?.settled);
 
@@ -1653,7 +1713,7 @@ function renderSettleTab(){
       </div>`;
     };
 
-    el.innerHTML =
+    settleHtml =
       (pending.length ? pending.map(t=>card(t,false)).join('') : '') +
       (settled.length ? `
         <div style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:1.2px;margin:14px 0 8px;padding-top:10px;border-top:1px solid var(--rim)">
@@ -1662,6 +1722,29 @@ function renderSettleTab(){
         ${settled.map(t=>card(t,true)).join('')}` : '');
   }
 
+  // Deposits section
+  let depsHtml = '';
+  if(deps.length){
+    depsHtml = `
+      <div style="padding-top:12px;margin-top:4px;border-top:1px solid var(--rim)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:1.2px">💰 Mid-Trip Deposits (${deps.length})</div>
+          <div style="font-size:11px;font-weight:700;color:var(--amber)">${fmt(totalDeposited)} total</div>
+        </div>
+        ${deps.sort((a,b)=>(a[1].date||'').localeCompare(b[1].date||'')).map(([id,d])=>`
+          <div style="display:flex;align-items:center;gap:9px;padding:8px 10px;background:rgba(247,168,37,.07);border:1px solid rgba(247,168,37,.18);border-radius:8px;margin-bottom:6px">
+            <div class="mav" style="background:${col(d.member)};width:28px;height:28px;font-size:11px;flex-shrink:0">${(d.member||'?')[0].toUpperCase()}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:700;color:var(--txt)">${d.member}</div>
+              <div style="font-size:10px;color:var(--sub2)">${d.note||'Cash deposit'} · ${fmtDate(d.date)||''}</div>
+            </div>
+            <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:800;color:var(--amber);flex-shrink:0">${fmt(d.amount)}</div>
+            <button class="btn bg bxs" style="color:var(--rose);flex-shrink:0" onclick="delDeposit('${id}')">✕</button>
+          </div>`).join('')}
+      </div>`;
+  }
+
+  el.innerHTML = settleHtml + depsHtml;
 }
 
 
