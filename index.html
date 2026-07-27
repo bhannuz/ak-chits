@@ -1092,6 +1092,27 @@ window.renderAdmin = () => {
         </div>`;
       }).join('') : '<div style="padding:12px 0;font-size:12px;color:var(--sub2)">No members yet</div>';
 
+      const expRows = tripExps.length ? tripExps
+        .slice()
+        .sort((a,b)=>(b.date||'').localeCompare(a.date||''))
+        .map(e=>{
+          const split = (e.splitBetween||[]).join(', ');
+          return `<div class="adm-mem-row" style="align-items:flex-start">
+            <div style="width:30px;height:30px;border-radius:10px;background:rgba(124,95,255,.15);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">${(e.category||'📦').split(' ')[0]||'📦'}</div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;justify-content:space-between;gap:8px">
+                <div style="font-weight:700;font-size:13px">${e.name||'Untitled expense'}</div>
+                <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:13px;font-weight:800;color:var(--lime);white-space:nowrap">${fmt(e.amount)}</div>
+              </div>
+              <div style="font-size:10px;color:var(--sub2);margin-top:2px">
+                Paid by <strong style="color:var(--sub)">${e.paidBy||'?'}</strong>${e.date?` · ${fmtDate(e.date)}`:''}${e.category?` · ${e.category.split(' ').slice(1).join(' ')||e.category}`:''}
+              </div>
+              ${split?`<div style="font-size:10px;color:var(--sub2);margin-top:2px">Split: ${split}</div>`:''}
+              ${e.notes?`<div style="font-size:10px;color:var(--sub2);font-style:italic;margin-top:2px">"${e.notes}"</div>`:''}
+            </div>
+          </div>`;
+        }).join('') : '<div style="padding:12px 0;font-size:12px;color:var(--sub2)">No expenses yet</div>';
+
       return `<div class="trip-card">
         <div class="trip-card-head" onclick="toggleTripCard(this)">
           <div style="min-width:0;flex:1">
@@ -1123,6 +1144,9 @@ window.renderAdmin = () => {
           <!-- Members -->
           <div style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:1.2px;margin:10px 0 4px">Members</div>
           ${memRows}
+          <!-- Expenses -->
+          <div style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:1.2px;margin:14px 0 4px">Expenses</div>
+          ${expRows}
         </div>
       </div>`;
     }).join('');
