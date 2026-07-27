@@ -997,7 +997,7 @@ function loadSession(){
 $('btn-login').onclick = doLogin;
 $('l-code').onkeydown  = e => { if(e.key==='Enter') doLogin(); };
 
-const ADMIN_CODE = '1AKU';   // ← alphanumeric admin code (case-insensitive)
+const ADMIN_CODE = '1MAK';   // ← alphanumeric admin code (case-insensitive)
 
 async function doLogin(){
   const code=$('l-code').value.trim().toUpperCase(); setErr('l-err','');
